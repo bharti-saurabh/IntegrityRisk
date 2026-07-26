@@ -1,0 +1,2795 @@
+{
+  "meta": {
+    "source": "MCC Miscoding synthetic dataset v2",
+    "note": "One real (synthetic) flagged exemplar per integrity family. Peer z-scores, the composite decomposition, rule thresholds and signature views are the live pipeline\u2019s \u2014 no PII or card numbers. Decision-support indicators, not final determinations."
+  },
+  "families": [
+    {
+      "key": "mcc_miscoding",
+      "label": "MCC Miscoding",
+      "color": "#2563eb",
+      "icon": "Layers",
+      "route": "/mcc",
+      "edu": {
+        "tagline": "A benign category code hiding a riskier line of business.",
+        "definition": "A merchant registers under a low-risk category code, but actually sells something riskier \u2014 gambling, adult, pharma \u2014 that the bank would have priced differently or refused outright.",
+        "analogy": "A late-night casino operating behind a shopfront licensed as a \u2018gift shop\u2019.",
+        "mechanic": [
+          "Apply for card acceptance under a boring, low-risk category code (e.g. 5999 misc. retail).",
+          "Route the real, higher-risk product through that clean shell.",
+          "Behaviour \u2014 hours, channel, geography, declines \u2014 follows the true business, not the declared one.",
+          "Collect the lighter scrutiny, lower fees and smaller reserves the true category would never get."
+        ],
+        "cost": "The acquiring bank under-priced the risk and eats the chargebacks; card networks levy miscoding fines; an illegal true vertical adds regulatory and reputational exposure.",
+        "legitTwin": "A genuine specialty retailer resembles none of the prohibited verticals \u2014 a miscoder lights up several at once. That concurrency is the tell.",
+        "victim": "Acquirer + card network + regulator"
+      },
+      "identity": {
+        "merchantId": "MID0001122",
+        "name": "Stellar General Store Valletta",
+        "corp": "Stellar Global Pte Ltd",
+        "city": "Valletta",
+        "country": "MT",
+        "declaredMcc": "5999",
+        "declaredAs": "Misc. and Specialty Retail Stores",
+        "mccGroup": "Retail Other",
+        "txnCount": 439,
+        "grossSalesUsd": 20050.07,
+        "activeDays": 360
+      },
+      "tells": [
+        {
+          "tag": "night",
+          "why": "Booked between 11pm and 5am \u2014 a gambling/adult rhythm, not a retailer\u2019s."
+        },
+        {
+          "tag": "round",
+          "why": "An exact round number \u2014 people rarely buy goods at precisely $60.00."
+        },
+        {
+          "tag": "cnp",
+          "why": "Card-not-present \u2014 no physical card, unusual for the declared shopfront."
+        },
+        {
+          "tag": "offshore",
+          "why": "Settled through an acquirer in a third country the declared business never needs."
+        },
+        {
+          "tag": "declined",
+          "why": "Refused by the issuer \u2014 often because the true product isn\u2019t permitted."
+        }
+      ],
+      "transactions": [
+        {
+          "time": "2026-06-24 22:07",
+          "hour": 23,
+          "amount": 20.26,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "HELP*STELLARG624",
+          "tells": [
+            "night",
+            "cnp",
+            "offshore"
+          ]
+        },
+        {
+          "time": "2026-06-25 17:16",
+          "hour": 18,
+          "amount": 45.0,
+          "channel": "RECURRING",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "HELP*STELLARG624",
+          "tells": [
+            "cnp",
+            "offshore"
+          ]
+        },
+        {
+          "time": "2026-06-26 00:12",
+          "hour": 1,
+          "amount": 25.39,
+          "channel": "RECURRING",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "HELP*STELLARG624",
+          "tells": [
+            "night",
+            "cnp",
+            "offshore"
+          ]
+        },
+        {
+          "time": "2026-06-27 16:52",
+          "hour": 17,
+          "amount": 97.2,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "HELP*STELLARG624",
+          "tells": [
+            "cnp",
+            "offshore"
+          ]
+        },
+        {
+          "time": "2026-06-27 23:34",
+          "hour": 0,
+          "amount": 60.0,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "HELP*STELLARG624",
+          "tells": [
+            "night",
+            "cnp",
+            "offshore"
+          ]
+        },
+        {
+          "time": "2026-06-28 09:35",
+          "hour": 10,
+          "amount": 27.87,
+          "channel": "RECURRING",
+          "cardPresent": false,
+          "issuer": "CW",
+          "acquirer": "US",
+          "approved": false,
+          "authDesc": "Decline for CVV2 failure",
+          "descriptor": "HELP*STELLARG624",
+          "tells": [
+            "cnp",
+            "offshore",
+            "declined"
+          ]
+        },
+        {
+          "time": "2026-06-28 23:59",
+          "hour": 0,
+          "amount": 20.0,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "JP",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "HELP*STELLARG624",
+          "tells": [
+            "night",
+            "cnp",
+            "offshore"
+          ]
+        },
+        {
+          "time": "2026-06-29 07:04",
+          "hour": 8,
+          "amount": 106.3,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "HELP*STELLARG624",
+          "tells": [
+            "cnp",
+            "offshore"
+          ]
+        },
+        {
+          "time": "2026-06-29 09:09",
+          "hour": 10,
+          "amount": 15.89,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "NL",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "HELP*STELLARG624",
+          "tells": [
+            "cnp",
+            "offshore"
+          ]
+        }
+      ],
+      "deviations": [
+        {
+          "key": "pct_night_txn",
+          "label": "Night-hour share",
+          "plainLabel": "after-midnight sales",
+          "kind": "pct",
+          "value": 0.476,
+          "z": 2.59,
+          "baseline": 0.14,
+          "baselineLabel": "typical for the declared code",
+          "multiple": 3.4,
+          "hot": true
+        },
+        {
+          "key": "pct_decline_not_permitted",
+          "label": "\u2018Not permitted\u2019 declines",
+          "plainLabel": "blocked-as-not-allowed sales",
+          "kind": "pct",
+          "value": 0.059,
+          "z": 1.88,
+          "baseline": 0.0,
+          "baselineLabel": "the peer median",
+          "multiple": null,
+          "hot": true
+        },
+        {
+          "key": "pct_cnp",
+          "label": "Card-not-present share",
+          "plainLabel": "card-not-present sales",
+          "kind": "pct",
+          "value": 0.964,
+          "z": 1.72,
+          "baseline": 0.55,
+          "baselineLabel": "typical for the declared code",
+          "multiple": 1.8,
+          "hot": true
+        },
+        {
+          "key": "pct_round_amount",
+          "label": "Round-amount share",
+          "plainLabel": "round-number sales",
+          "kind": "pct",
+          "value": 0.162,
+          "z": 0.7,
+          "baseline": 0.032,
+          "baselineLabel": "the peer median",
+          "multiple": 5.0,
+          "hot": false
+        },
+        {
+          "key": "avg_ticket_usd",
+          "label": "Average ticket",
+          "plainLabel": "typical charge",
+          "kind": "usd",
+          "value": 56.234,
+          "z": -0.37,
+          "baseline": 87.0,
+          "baselineLabel": "typical for the declared code",
+          "multiple": 0.6,
+          "hot": false
+        },
+        {
+          "key": "pct_offshore_acquirer",
+          "label": "Offshore-acquirer share",
+          "plainLabel": "offshore-routed sales",
+          "kind": "pct",
+          "value": 0.0,
+          "z": -0.25,
+          "baseline": 0.0,
+          "baselineLabel": "the peer median",
+          "multiple": null,
+          "hot": false
+        }
+      ],
+      "signature": {
+        "kind": "fingerprint",
+        "entries": [
+          {
+            "key": "dating_escort",
+            "label": "Dating & escort",
+            "tier": "P1",
+            "score": 99.7,
+            "isTop": true
+          },
+          {
+            "key": "adult",
+            "label": "Adult content",
+            "tier": "P1",
+            "score": 99.5,
+            "isTop": false
+          },
+          {
+            "key": "nutra_subscription",
+            "label": "Nutra subscriptions",
+            "tier": "P3",
+            "score": 99.3,
+            "isTop": false
+          },
+          {
+            "key": "cyberlocker",
+            "label": "Cyberlockers",
+            "tier": "P2",
+            "score": 99.1,
+            "isTop": false
+          },
+          {
+            "key": "gambling",
+            "label": "Gambling",
+            "tier": "P1",
+            "score": 98.9,
+            "isTop": false
+          },
+          {
+            "key": "telemarketing",
+            "label": "Telemarketing",
+            "tier": "P3",
+            "score": 98.9,
+            "isTop": false
+          }
+        ],
+        "lit": 6
+      },
+      "score": {
+        "integrityRiskScore": 99.7,
+        "compositeZ": 3.679,
+        "reconstructedZ": 3.681,
+        "percentile": 95.7,
+        "tier": "Critical",
+        "exposureWeighted": 89.2,
+        "patternScore": 98.8,
+        "patternLabel": "Miscoding pattern score",
+        "routedBy": "both",
+        "flagReason": "model + rule",
+        "drivers": [
+          {
+            "key": "z_pct_decline_not_permitted",
+            "label": "pct decline not permitted",
+            "z": 1.88,
+            "weight": 1.7,
+            "contribution": 0.736,
+            "share": 25.5
+          },
+          {
+            "key": "z_night_vs_mcc_expected",
+            "label": "night vs mcc expected",
+            "z": 2.54,
+            "weight": 1.2,
+            "contribution": 0.704,
+            "share": 24.4
+          },
+          {
+            "key": "z_cnp_vs_mcc_expected",
+            "label": "cnp vs mcc expected",
+            "z": 1.69,
+            "weight": 1.2,
+            "contribution": 0.468,
+            "share": 16.2
+          },
+          {
+            "key": "z_descriptor_changes",
+            "label": "descriptor changes",
+            "z": 1.36,
+            "weight": 1.1,
+            "contribution": 0.346,
+            "share": 12.0
+          },
+          {
+            "key": "z_txn_per_card",
+            "label": "txn per card",
+            "z": 1.63,
+            "weight": 0.9,
+            "contribution": 0.339,
+            "share": 11.8
+          },
+          {
+            "key": "z_descriptor_name_jaccard",
+            "label": "descriptor name jaccard",
+            "z": -1.25,
+            "weight": -1.0,
+            "contribution": 0.288,
+            "share": 10.0
+          }
+        ],
+        "ruleChecks": null,
+        "tierBins": [
+          {
+            "tier": "Low",
+            "range": "\u2264 60"
+          },
+          {
+            "tier": "Monitor",
+            "range": "60\u201375"
+          },
+          {
+            "tier": "Elevated",
+            "range": "75\u201385"
+          },
+          {
+            "tier": "High",
+            "range": "85\u201393"
+          },
+          {
+            "tier": "Critical",
+            "range": "> 93"
+          }
+        ]
+      },
+      "rules": [
+        {
+          "name": "descriptor_churn_rule",
+          "label": "Descriptor churn",
+          "expr": "descriptor_changes \u2265 3  AND  descriptor_name_jaccard < 0.20",
+          "plain": "The billing name changes repeatedly to unrelated words \u2014 resetting dispute monitoring."
+        },
+        {
+          "name": "dispute_excursion_rule",
+          "label": "Dispute excursion",
+          "expr": "chargeback_rate_bps > 100  AND  refund_rate > 0.05",
+          "plain": "Chargebacks and refunds run far above any healthy merchant."
+        },
+        {
+          "name": "issuer_prohibition_rule",
+          "label": "Issuer prohibition declines",
+          "expr": "\u2018transaction not permitted\u2019 decline rate > 0.05",
+          "plain": "Issuers keep declining the true product as \u2018not permitted\u2019 despite a clean code."
+        }
+      ],
+      "verdict": {
+        "declaredMcc": "5999",
+        "declaredAs": "Misc. and Specialty Retail Stores",
+        "behavesAs": "Dating & escort (P1)",
+        "familyLabel": "MCC Miscoding",
+        "priorityTier": "P1",
+        "riskTier": "Critical",
+        "routedBy": "both",
+        "firingRule": "Descriptor churn",
+        "exposure": 20050.07,
+        "rulesTriggered": 3,
+        "trueArchetype": "miscoded_dating_escort"
+      }
+    },
+    {
+      "key": "mcc_abuse",
+      "label": "MCC Abuse (interchange)",
+      "color": "#7c3aed",
+      "icon": "Gauge",
+      "route": "/mcc",
+      "edu": {
+        "tagline": "The right business, coded into a cheaper interchange band than it deserves.",
+        "definition": "The merchant is roughly in the right business, but is coded into a cheaper interchange band than its behaviour warrants \u2014 underpaying network fees on every sale.",
+        "analogy": "Shipping freight but labelling every pallet \u2018documents\u2019 to get the cheaper letter rate.",
+        "mechanic": [
+          "Get assigned \u2014 or negotiate into \u2014 a lower interchange band than the behaviour qualifies for.",
+          "Flag transactions to hold the cheap rate: mark card-not-present as card-present, one-off as recurring.",
+          "Pocket the few basis points of difference across millions of dollars in volume."
+        ],
+        "cost": "The network and the acquirer are systematically underpaid; the issuer is under-compensated for the risk it carries. Audits claw back the shortfall and add assessments.",
+        "legitTwin": "A legitimate merchant\u2019s declared band matches its behaviour. Here the paid rate sits tens of basis points below the band the behaviour actually warrants.",
+        "victim": "Acquirer + card network"
+      },
+      "identity": {
+        "merchantId": "MID0000443",
+        "name": "Blue Solutions Denver",
+        "corp": "Blue Meridian Concepts",
+        "city": "Denver",
+        "country": "US",
+        "declaredMcc": "8398",
+        "declaredAs": "Charitable and Social Service Orgs",
+        "mccGroup": "Nonprofit",
+        "txnCount": 5775,
+        "grossSalesUsd": 319738.61,
+        "activeDays": 360
+      },
+      "tells": [
+        {
+          "tag": "cnp",
+          "why": "Card-not-present \u2014 no physical card, unusual for the declared shopfront."
+        },
+        {
+          "tag": "recurring",
+          "why": "Tagged \u2018recurring\u2019 to qualify for a cheaper interchange band."
+        },
+        {
+          "tag": "cpmismatch",
+          "why": "Flagged card-present, but the channel says card-not-present \u2014 a rate-qualification trick."
+        }
+      ],
+      "transactions": [
+        {
+          "time": "2026-06-18 17:32",
+          "hour": 11,
+          "amount": 43.14,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": []
+        },
+        {
+          "time": "2026-06-22 17:01",
+          "hour": 11,
+          "amount": 121.36,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": []
+        },
+        {
+          "time": "2026-06-29 07:46",
+          "hour": 1,
+          "amount": 41.5,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": []
+        },
+        {
+          "time": "2026-06-29 16:56",
+          "hour": 10,
+          "amount": 56.54,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 17:25",
+          "hour": 11,
+          "amount": 41.27,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 17:28",
+          "hour": 11,
+          "amount": 27.61,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 18:00",
+          "hour": 12,
+          "amount": 35.23,
+          "channel": "MOTO",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": false,
+          "authDesc": "Do not honor",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 18:19",
+          "hour": 12,
+          "amount": 28.3,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 19:22",
+          "hour": 13,
+          "amount": 42.26,
+          "channel": "RECURRING",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": [
+            "cnp",
+            "recurring"
+          ]
+        },
+        {
+          "time": "2026-06-29 19:50",
+          "hour": 13,
+          "amount": 84.53,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 22:37",
+          "hour": 16,
+          "amount": 30.77,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 23:24",
+          "hour": 17,
+          "amount": 31.45,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "BLUE*SOLUTIONS",
+          "tells": [
+            "cnp"
+          ]
+        }
+      ],
+      "deviations": [
+        {
+          "key": "interchange_advantage_bps",
+          "label": "Interchange advantage",
+          "plainLabel": "fee underpayment",
+          "kind": "bps",
+          "value": 56.424,
+          "z": 2.7,
+          "baseline": 56.724,
+          "baselineLabel": "the peer median",
+          "multiple": 1.0,
+          "hot": true
+        },
+        {
+          "key": "pct_cnp",
+          "label": "Card-not-present share",
+          "plainLabel": "card-not-present sales",
+          "kind": "pct",
+          "value": 0.979,
+          "z": 1.89,
+          "baseline": 0.9,
+          "baselineLabel": "typical for the declared code",
+          "multiple": 1.1,
+          "hot": true
+        },
+        {
+          "key": "pct_recurring",
+          "label": "Recurring-flagged share",
+          "plainLabel": "\u2018recurring\u2019-tagged sales",
+          "kind": "pct",
+          "value": 0.166,
+          "z": 1.27,
+          "baseline": 0.161,
+          "baselineLabel": "the peer median",
+          "multiple": 1.0,
+          "hot": false
+        },
+        {
+          "key": "pct_keyed",
+          "label": "Keyed-entry share",
+          "plainLabel": "hand-keyed sales",
+          "kind": "pct",
+          "value": 0.054,
+          "z": 0.7,
+          "baseline": 0.053,
+          "baselineLabel": "the peer median",
+          "multiple": 1.0,
+          "hot": false
+        },
+        {
+          "key": "effective_interchange_bps",
+          "label": "Effective interchange",
+          "plainLabel": "rate actually paid",
+          "kind": "bps",
+          "value": 191.104,
+          "z": -0.36,
+          "baseline": 190.863,
+          "baselineLabel": "the peer median",
+          "multiple": 1.0,
+          "hot": false
+        }
+      ],
+      "signature": {
+        "kind": "interchange",
+        "declaredBps": 140.0,
+        "expectedBps": 247.5,
+        "effectiveBps": 191.1,
+        "advantageBps": 56.4,
+        "cnpVsExpected": 0.079,
+        "grossUsd": 319738.61,
+        "leakedFeesUsd": 1804.08
+      },
+      "score": {
+        "integrityRiskScore": 16.2,
+        "compositeZ": -1.058,
+        "reconstructedZ": -1.06,
+        "percentile": 18.9,
+        "tier": "Low",
+        "exposureWeighted": 15.4,
+        "patternScore": 99.5,
+        "patternLabel": "Interchange-abuse pattern score",
+        "routedBy": "rule",
+        "flagReason": "rule",
+        "drivers": [
+          {
+            "key": "z_pct_recurring",
+            "label": "pct recurring",
+            "z": 1.27,
+            "weight": 0.6,
+            "contribution": 0.175,
+            "share": 60.1
+          },
+          {
+            "key": "z_cnp_vs_mcc_expected",
+            "label": "cnp vs mcc expected",
+            "z": 0.34,
+            "weight": 1.2,
+            "contribution": 0.095,
+            "share": 32.6
+          },
+          {
+            "key": "z_refund_rate_count",
+            "label": "refund rate count",
+            "z": 0.11,
+            "weight": 0.8,
+            "contribution": 0.021,
+            "share": 7.2
+          }
+        ],
+        "ruleChecks": {
+          "rule": "interchange_abuse_rule",
+          "ruleLabel": "Interchange abuse",
+          "mode": "either path",
+          "checks": [
+            {
+              "label": "Interchange advantage",
+              "col": "interchange_advantage_bps",
+              "actual": 56.424,
+              "op": ">",
+              "threshold": 50,
+              "kind": "bps",
+              "pass": true
+            },
+            {
+              "label": "CNP above expected",
+              "col": "cnp_vs_mcc_expected",
+              "actual": 0.079,
+              "op": ">",
+              "threshold": 0.55,
+              "kind": "pct",
+              "pass": false
+            }
+          ]
+        },
+        "tierBins": [
+          {
+            "tier": "Low",
+            "range": "\u2264 60"
+          },
+          {
+            "tier": "Monitor",
+            "range": "60\u201375"
+          },
+          {
+            "tier": "Elevated",
+            "range": "75\u201385"
+          },
+          {
+            "tier": "High",
+            "range": "85\u201393"
+          },
+          {
+            "tier": "Critical",
+            "range": "> 93"
+          }
+        ]
+      },
+      "rules": [
+        {
+          "name": "interchange_abuse_rule",
+          "label": "Interchange abuse",
+          "expr": "interchange advantage > 50bps on a cheap band, or CNP-mismatch > 0.55",
+          "plain": "The rate actually paid sits well below the band the behaviour warrants."
+        }
+      ],
+      "verdict": {
+        "declaredMcc": "8398",
+        "declaredAs": "Charitable and Social Service Orgs",
+        "behavesAs": "an underpriced interchange band",
+        "familyLabel": "MCC Abuse (interchange)",
+        "priorityTier": "\u2014",
+        "riskTier": "Low",
+        "routedBy": "rule",
+        "firingRule": "Interchange abuse",
+        "exposure": 319738.61,
+        "rulesTriggered": 1,
+        "trueArchetype": "mcc_abuse_interchange"
+      }
+    },
+    {
+      "key": "split_ticketing",
+      "label": "Split Ticketing",
+      "color": "#d97706",
+      "icon": "Split",
+      "route": "/split",
+      "edu": {
+        "tagline": "One purchase chopped into bursts to slip under an authorization ceiling.",
+        "definition": "A single purchase is deliberately split into several smaller charges within minutes, so each fragment stays under an authorization ceiling the whole would have tripped.",
+        "analogy": "Buying a $2,000 TV as ten separate $200 gift-cards to dodge the \u2018manager approval over $500\u2019 rule.",
+        "mechanic": [
+          "The real ticket would exceed an auth floor, a review threshold or a no-signature ceiling.",
+          "The terminal rings it as several back-to-back charges on the same card.",
+          "Each fragment auto-approves under the ceiling; the aggregate never gets a single-transaction review."
+        ],
+        "cost": "Bypasses the issuer\u2019s per-transaction risk controls, so fraud and disputes the ceiling was meant to stop land on the issuer; the acquirer eats chargebacks and limit-avoidance fines.",
+        "legitTwin": "Legitimate splits (deposit + balance, partial shipment) are spaced out. Abuse is dense in time and hugs the ceiling \u2014 that combination is the tell.",
+        "victim": "Issuer + acquirer"
+      },
+      "identity": {
+        "merchantId": "MID0000978",
+        "name": "Ironwood Bazaar Cleveland",
+        "corp": "Ironwood Trading Co",
+        "city": "Cleveland",
+        "country": "US",
+        "declaredMcc": "5732",
+        "declaredAs": "Electronics Stores",
+        "mccGroup": "Retail Durable",
+        "txnCount": 3620,
+        "grossSalesUsd": 695923.54,
+        "activeDays": 360
+      },
+      "tells": [
+        {
+          "tag": "ceiling",
+          "why": "Sits just below a round authorization ceiling \u2014 a split-ticket fragment."
+        },
+        {
+          "tag": "burst",
+          "why": "Part of a same-card burst of charges moments apart."
+        },
+        {
+          "tag": "round",
+          "why": "An exact round number \u2014 people rarely buy goods at precisely $60.00."
+        }
+      ],
+      "transactions": [
+        {
+          "time": "2026-06-28 13:10",
+          "hour": 7,
+          "amount": 100.0,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": [
+            "round"
+          ]
+        },
+        {
+          "time": "2026-06-29 14:45",
+          "hour": 8,
+          "amount": 242.87,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": [
+            "burst"
+          ]
+        },
+        {
+          "time": "2026-06-29 14:48",
+          "hour": 8,
+          "amount": 223.58,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "GB",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": [
+            "burst"
+          ]
+        },
+        {
+          "time": "2026-06-29 14:51",
+          "hour": 8,
+          "amount": 220.59,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": [
+            "burst"
+          ]
+        },
+        {
+          "time": "2026-06-29 14:53",
+          "hour": 8,
+          "amount": 231.14,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": false,
+          "authDesc": "Expired card",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": [
+            "burst"
+          ]
+        },
+        {
+          "time": "2026-06-29 17:40",
+          "hour": 11,
+          "amount": 233.73,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "GB",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": [
+            "burst"
+          ]
+        },
+        {
+          "time": "2026-06-29 17:46",
+          "hour": 11,
+          "amount": 227.07,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": [
+            "burst"
+          ]
+        },
+        {
+          "time": "2026-06-29 17:48",
+          "hour": 11,
+          "amount": 233.46,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": [
+            "burst"
+          ]
+        },
+        {
+          "time": "2026-06-29 17:58",
+          "hour": 11,
+          "amount": 230.04,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": [
+            "burst"
+          ]
+        },
+        {
+          "time": "2026-06-29 20:16",
+          "hour": 14,
+          "amount": 62.42,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "GB",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": []
+        },
+        {
+          "time": "2026-06-29 21:19",
+          "hour": 15,
+          "amount": 836.36,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": []
+        },
+        {
+          "time": "2026-06-29 22:54",
+          "hour": 16,
+          "amount": 307.71,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "IRONWOOD*BAZAAR",
+          "tells": []
+        }
+      ],
+      "deviations": [
+        {
+          "key": "split_burst_events",
+          "label": "Burst events",
+          "plainLabel": "split bursts",
+          "kind": "num",
+          "value": 144.0,
+          "z": 5.0,
+          "baseline": 0.0,
+          "baselineLabel": "the peer median",
+          "multiple": null,
+          "hot": true
+        },
+        {
+          "key": "pct_txn_in_split_burst",
+          "label": "Sales inside a burst",
+          "plainLabel": "split-burst sales",
+          "kind": "pct",
+          "value": 0.159,
+          "z": 2.2,
+          "baseline": 0.0,
+          "baselineLabel": "the peer median",
+          "multiple": null,
+          "hot": true
+        },
+        {
+          "key": "mean_split_burst_size",
+          "label": "Avg burst size",
+          "plainLabel": "charges per burst",
+          "kind": "num",
+          "value": 4.0,
+          "z": 2.14,
+          "baseline": 0.0,
+          "baselineLabel": "the peer median",
+          "multiple": null,
+          "hot": true
+        },
+        {
+          "key": "pct_cards_multi_use",
+          "label": "Multi-use cards",
+          "plainLabel": "cards used repeatedly",
+          "kind": "pct",
+          "value": 0.805,
+          "z": 2.02,
+          "baseline": 0.675,
+          "baselineLabel": "the peer median",
+          "multiple": 1.2,
+          "hot": true
+        },
+        {
+          "key": "pct_near_ceiling",
+          "label": "Near-ceiling share",
+          "plainLabel": "just-under-limit sales",
+          "kind": "pct",
+          "value": 0.303,
+          "z": 1.87,
+          "baseline": 0.185,
+          "baselineLabel": "the peer median",
+          "multiple": 1.6,
+          "hot": true
+        }
+      ],
+      "signature": {
+        "kind": "split",
+        "ceiling": 300,
+        "bursts": [
+          {
+            "start": "2026-01-28 17:26",
+            "size": 4,
+            "total": 959.46,
+            "amounts": [
+              237.89,
+              238.48,
+              241.05,
+              242.04
+            ]
+          },
+          {
+            "start": "2025-12-24 18:17",
+            "size": 4,
+            "total": 956.49,
+            "amounts": [
+              232.99,
+              239.9,
+              240.17,
+              243.43
+            ]
+          },
+          {
+            "start": "2026-02-14 18:17",
+            "size": 4,
+            "total": 953.47,
+            "amounts": [
+              229.1,
+              238.24,
+              242.17,
+              243.96
+            ]
+          },
+          {
+            "start": "2025-08-02 00:02",
+            "size": 4,
+            "total": 951.86,
+            "amounts": [
+              229.23,
+              238.62,
+              239.61,
+              244.4
+            ]
+          },
+          {
+            "start": "2025-11-29 15:37",
+            "size": 4,
+            "total": 950.69,
+            "amounts": [
+              234.75,
+              234.83,
+              236.22,
+              244.89
+            ]
+          },
+          {
+            "start": "2025-11-23 14:03",
+            "size": 4,
+            "total": 950.67,
+            "amounts": [
+              233.59,
+              236.74,
+              237.99,
+              242.35
+            ]
+          }
+        ],
+        "nearCeilingPct": 0.303,
+        "burstEvents": 144,
+        "avgGapSec": 654271.0
+      },
+      "score": {
+        "integrityRiskScore": 93.2,
+        "compositeZ": 1.689,
+        "reconstructedZ": 1.687,
+        "percentile": 87.7,
+        "tier": "Critical",
+        "exposureWeighted": 89.8,
+        "patternScore": 100.0,
+        "patternLabel": "Split-ticketing pattern score",
+        "routedBy": "both",
+        "flagReason": "model + rule",
+        "drivers": [
+          {
+            "key": "z_pct_txn_in_split_burst",
+            "label": "pct txn in split burst",
+            "z": 2.2,
+            "weight": 1.1,
+            "contribution": 0.558,
+            "share": 28.0
+          },
+          {
+            "key": "z_txn_per_card",
+            "label": "txn per card",
+            "z": 2.19,
+            "weight": 0.9,
+            "contribution": 0.454,
+            "share": 22.8
+          },
+          {
+            "key": "z_pct_round_amount",
+            "label": "pct round amount",
+            "z": 1.67,
+            "weight": 1.0,
+            "contribution": 0.386,
+            "share": 19.4
+          },
+          {
+            "key": "z_pct_cross_border",
+            "label": "pct cross border",
+            "z": 1.66,
+            "weight": 0.9,
+            "contribution": 0.345,
+            "share": 17.3
+          },
+          {
+            "key": "z_refund_rate_count",
+            "label": "refund rate count",
+            "z": 0.87,
+            "weight": 0.8,
+            "contribution": 0.16,
+            "share": 8.0
+          },
+          {
+            "key": "z_pct_decline_suspected_fraud",
+            "label": "pct decline suspected fraud",
+            "z": 0.55,
+            "weight": 0.7,
+            "contribution": 0.088,
+            "share": 4.4
+          }
+        ],
+        "ruleChecks": {
+          "rule": "split_ticketing_rule",
+          "ruleLabel": "Split-ticket burst",
+          "mode": "all",
+          "checks": [
+            {
+              "label": "Sales inside a split burst",
+              "col": "pct_txn_in_split_burst",
+              "actual": 0.159,
+              "op": ">",
+              "threshold": 0.1,
+              "kind": "pct",
+              "pass": true
+            },
+            {
+              "label": "Amounts near the ceiling",
+              "col": "pct_near_ceiling",
+              "actual": 0.303,
+              "op": ">",
+              "threshold": 0.15,
+              "kind": "pct",
+              "pass": true
+            }
+          ]
+        },
+        "tierBins": [
+          {
+            "tier": "Low",
+            "range": "\u2264 60"
+          },
+          {
+            "tier": "Monitor",
+            "range": "60\u201375"
+          },
+          {
+            "tier": "Elevated",
+            "range": "75\u201385"
+          },
+          {
+            "tier": "High",
+            "range": "85\u201393"
+          },
+          {
+            "tier": "Critical",
+            "range": "> 93"
+          }
+        ]
+      },
+      "rules": [
+        {
+          "name": "split_ticketing_rule",
+          "label": "Split-ticket burst",
+          "expr": "pct_txn_in_split_burst > 0.10  AND  pct_near_ceiling > 0.15",
+          "plain": "Many charges cluster just under an authorization ceiling, moments apart on one card."
+        }
+      ],
+      "verdict": {
+        "declaredMcc": "5732",
+        "declaredAs": "Electronics Stores",
+        "behavesAs": "one purchase split into sub-ceiling bursts",
+        "familyLabel": "Split Ticketing",
+        "priorityTier": "\u2014",
+        "riskTier": "Critical",
+        "routedBy": "both",
+        "firingRule": "Split-ticket burst",
+        "exposure": 695923.54,
+        "rulesTriggered": 1,
+        "trueArchetype": "split_ticketing"
+      }
+    },
+    {
+      "key": "factoring",
+      "label": "Factoring",
+      "color": "#e11d48",
+      "icon": "Share2",
+      "route": "/factoring",
+      "edu": {
+        "tagline": "One registered account secretly settling for a network of hidden sellers.",
+        "definition": "A registered merchant runs other, undisclosed businesses\u2019 card sales through its own account \u2014 the bank thinks it is paying one shop but is settling for a hidden network.",
+        "analogy": "A licensed market stall quietly renting its till to a dozen unlicensed vendors.",
+        "mechanic": [
+          "A merchant with a clean, approved account lends its ID to third parties who couldn\u2019t get their own.",
+          "Those sub-merchants\u2019 sales are injected into the host\u2019s settlement stream.",
+          "Descriptors, geographies and volume suddenly diverge from the host\u2019s declared business."
+        ],
+        "cost": "The acquirer onboards un-vetted, unknown sellers blind \u2014 absorbing their chargebacks and unknowingly laundering their proceeds, with the AML/BSA liability that carries.",
+        "legitTwin": "Legitimate marketplaces and payment facilitators disclose their sub-merchants. Factoring hides them \u2014 the plurality of undisclosed identities is the tell.",
+        "victim": "Acquirer (AML exposure)"
+      },
+      "identity": {
+        "merchantId": "MID0000671",
+        "name": "Redstone Provisions Toronto",
+        "corp": "Redstone Industries",
+        "city": "Toronto",
+        "country": "CA",
+        "declaredMcc": "5261",
+        "declaredAs": "Lawn and Garden Supply Stores",
+        "mccGroup": "Retail Home",
+        "txnCount": 778,
+        "grossSalesUsd": 114385.55,
+        "activeDays": 360
+      },
+      "tells": [
+        {
+          "tag": "submerchant",
+          "why": "Carries a sub-merchant ID \u2014 a hidden third party settling through this account."
+        },
+        {
+          "tag": "offshore",
+          "why": "Settled through an acquirer in a third country the declared business never needs."
+        },
+        {
+          "tag": "big",
+          "why": "An unusually large, clean ticket \u2014 the shape of a cash withdrawal, not a sale."
+        }
+      ],
+      "transactions": [
+        {
+          "time": "2026-06-23 13:19",
+          "hour": 8,
+          "amount": 175.0,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "ONLINE PURCHASE 192",
+          "tells": [
+            "offshore",
+            "submerchant"
+          ]
+        },
+        {
+          "time": "2026-06-23 18:25",
+          "hour": 13,
+          "amount": 33.59,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "CW",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "MERCHANT SERVICES 403",
+          "tells": [
+            "offshore",
+            "submerchant"
+          ]
+        },
+        {
+          "time": "2026-06-24 06:33",
+          "hour": 1,
+          "amount": 15.89,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "CW",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "ONLINE PURCHASE 192",
+          "tells": [
+            "offshore",
+            "submerchant"
+          ]
+        },
+        {
+          "time": "2026-06-24 15:09",
+          "hour": 10,
+          "amount": 7.73,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SVC PAYMENT 735",
+          "tells": [
+            "offshore",
+            "submerchant"
+          ]
+        },
+        {
+          "time": "2026-06-26 07:48",
+          "hour": 2,
+          "amount": 32.14,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "CW",
+          "approved": false,
+          "authDesc": "Do not honor",
+          "descriptor": "SVC PAYMENT 735",
+          "tells": [
+            "offshore",
+            "submerchant"
+          ]
+        },
+        {
+          "time": "2026-06-27 16:49",
+          "hour": 11,
+          "amount": 123.5,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "CW",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "MERCHANT SERVICES 403",
+          "tells": [
+            "offshore",
+            "submerchant"
+          ]
+        },
+        {
+          "time": "2026-06-27 20:37",
+          "hour": 15,
+          "amount": 20.06,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SVC PAYMENT 735",
+          "tells": [
+            "offshore",
+            "submerchant"
+          ]
+        },
+        {
+          "time": "2026-06-28 11:02",
+          "hour": 6,
+          "amount": 103.79,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "SG",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SUBSCRIPTION SVC",
+          "tells": [
+            "offshore"
+          ]
+        },
+        {
+          "time": "2026-06-29 20:04",
+          "hour": 15,
+          "amount": 38.99,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "CW",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "MERCHANT SERVICES 403",
+          "tells": [
+            "offshore",
+            "submerchant"
+          ]
+        }
+      ],
+      "deviations": [
+        {
+          "key": "n_sub_merchant_ids",
+          "label": "Sub-merchant IDs",
+          "plainLabel": "hidden sellers",
+          "kind": "num",
+          "value": 4.0,
+          "z": 5.0,
+          "baseline": 3.0,
+          "baselineLabel": "the peer median",
+          "multiple": 1.3,
+          "hot": true
+        },
+        {
+          "key": "pct_txn_with_sub_merchant",
+          "label": "Sales via sub-merchants",
+          "plainLabel": "third-party sales",
+          "kind": "pct",
+          "value": 0.695,
+          "z": 5.0,
+          "baseline": 0.717,
+          "baselineLabel": "the peer median",
+          "multiple": 1.0,
+          "hot": true
+        },
+        {
+          "key": "n_distinct_descriptors",
+          "label": "Distinct billing names",
+          "plainLabel": "brands under one account",
+          "kind": "num",
+          "value": 5.0,
+          "z": 3.89,
+          "baseline": 4.0,
+          "baselineLabel": "the peer median",
+          "multiple": 1.2,
+          "hot": true
+        },
+        {
+          "key": "volume_spike_ratio",
+          "label": "Volume spike",
+          "plainLabel": "sudden volume jump",
+          "kind": "num",
+          "value": 2.438,
+          "z": 1.65,
+          "baseline": 1.325,
+          "baselineLabel": "the peer median",
+          "multiple": 1.8,
+          "hot": true
+        }
+      ],
+      "signature": {
+        "kind": "factoring",
+        "declared": "Redstone Provisions Toronto",
+        "nSub": 4,
+        "subs": [
+          {
+            "id": "SUB2414130",
+            "descriptor": "WEB PAYMENT 313",
+            "txns": 132,
+            "volume": 78616.02
+          },
+          {
+            "id": "SUB1568469",
+            "descriptor": "MERCHANT SERVICES 403",
+            "txns": 131,
+            "volume": 13313.75
+          },
+          {
+            "id": "SUB6671776",
+            "descriptor": "ONLINE PURCHASE 192",
+            "txns": 136,
+            "volume": 12733.23
+          },
+          {
+            "id": "SUB8786732",
+            "descriptor": "SVC PAYMENT 735",
+            "txns": 142,
+            "volume": 4634.19
+          }
+        ],
+        "spikeRatio": 2.4,
+        "pctViaSub": 0.695,
+        "monthly": [
+          {
+            "month": "2025-07",
+            "volume": 9320.38
+          },
+          {
+            "month": "2025-08",
+            "volume": 10344.31
+          },
+          {
+            "month": "2025-09",
+            "volume": 9586.45
+          },
+          {
+            "month": "2025-10",
+            "volume": 9426.96
+          },
+          {
+            "month": "2025-11",
+            "volume": 11083.47
+          },
+          {
+            "month": "2025-12",
+            "volume": 25059.62
+          },
+          {
+            "month": "2026-01",
+            "volume": 11110.04
+          },
+          {
+            "month": "2026-02",
+            "volume": 11503.89
+          },
+          {
+            "month": "2026-03",
+            "volume": 10215.02
+          },
+          {
+            "month": "2026-04",
+            "volume": 11202.38
+          },
+          {
+            "month": "2026-05",
+            "volume": 9628.31
+          },
+          {
+            "month": "2026-06",
+            "volume": 6876.94
+          }
+        ]
+      },
+      "score": {
+        "integrityRiskScore": 100.0,
+        "compositeZ": 5.252,
+        "reconstructedZ": 5.252,
+        "percentile": 99.1,
+        "tier": "Critical",
+        "exposureWeighted": 92.8,
+        "patternScore": 100.0,
+        "patternLabel": "Factoring pattern score",
+        "routedBy": "both",
+        "flagReason": "model + rule",
+        "drivers": [
+          {
+            "key": "z_descriptor_changes",
+            "label": "descriptor changes",
+            "z": 5.0,
+            "weight": 1.1,
+            "contribution": 1.268,
+            "share": 27.0
+          },
+          {
+            "key": "z_n_sub_merchant_ids",
+            "label": "n sub merchant ids",
+            "z": 5.0,
+            "weight": 1.0,
+            "contribution": 1.153,
+            "share": 24.5
+          },
+          {
+            "key": "z_pct_offshore_acquirer",
+            "label": "pct offshore acquirer",
+            "z": 3.0,
+            "weight": 1.3,
+            "contribution": 0.9,
+            "share": 19.1
+          },
+          {
+            "key": "z_pct_generic_descriptor",
+            "label": "pct generic descriptor",
+            "z": 3.85,
+            "weight": 0.8,
+            "contribution": 0.711,
+            "share": 15.1
+          },
+          {
+            "key": "z_descriptor_name_jaccard",
+            "label": "descriptor name jaccard",
+            "z": -1.69,
+            "weight": -1.0,
+            "contribution": 0.39,
+            "share": 8.3
+          },
+          {
+            "key": "z_pct_round_amount",
+            "label": "pct round amount",
+            "z": 1.21,
+            "weight": 1.0,
+            "contribution": 0.28,
+            "share": 6.0
+          }
+        ],
+        "ruleChecks": {
+          "rule": "factoring_rule",
+          "ruleLabel": "Sub-merchant factoring",
+          "mode": "all",
+          "checks": [
+            {
+              "label": "Distinct sub-merchant IDs",
+              "col": "n_sub_merchant_ids",
+              "actual": 4.0,
+              "op": "\u2265",
+              "threshold": 2,
+              "kind": "num",
+              "pass": true
+            },
+            {
+              "label": "Volume spike ratio",
+              "col": "volume_spike_ratio",
+              "actual": 2.438,
+              "op": ">",
+              "threshold": 3,
+              "kind": "num",
+              "pass": false
+            }
+          ]
+        },
+        "tierBins": [
+          {
+            "tier": "Low",
+            "range": "\u2264 60"
+          },
+          {
+            "tier": "Monitor",
+            "range": "60\u201375"
+          },
+          {
+            "tier": "Elevated",
+            "range": "75\u201385"
+          },
+          {
+            "tier": "High",
+            "range": "85\u201393"
+          },
+          {
+            "tier": "Critical",
+            "range": "> 93"
+          }
+        ]
+      },
+      "rules": [
+        {
+          "name": "descriptor_churn_rule",
+          "label": "Descriptor churn",
+          "expr": "descriptor_changes \u2265 3  AND  descriptor_name_jaccard < 0.20",
+          "plain": "The billing name changes repeatedly to unrelated words \u2014 resetting dispute monitoring."
+        }
+      ],
+      "verdict": {
+        "declaredMcc": "5261",
+        "declaredAs": "Lawn and Garden Supply Stores",
+        "behavesAs": "a settlement hub for undisclosed sellers",
+        "familyLabel": "Factoring",
+        "priorityTier": "\u2014",
+        "riskTier": "Critical",
+        "routedBy": "both",
+        "firingRule": "Sub-merchant factoring",
+        "exposure": 114385.55,
+        "rulesTriggered": 1,
+        "trueArchetype": "factoring_host"
+      }
+    },
+    {
+      "key": "descriptor",
+      "label": "Descriptor Intelligence",
+      "color": "#059669",
+      "icon": "Type",
+      "route": "/descriptors",
+      "edu": {
+        "tagline": "Rotating the billing name faster than chargeback monitoring can catch up.",
+        "definition": "The merchant keeps changing the billing name shown on customer statements, so no single name ever accumulates enough chargebacks to enter a monitoring programme.",
+        "analogy": "A scam call-centre swapping its caller-ID every few days so no number gets enough complaints to be blocked.",
+        "mechanic": [
+          "A high-chargeback operation knows networks monitor disputes per billing descriptor.",
+          "Before any descriptor crosses a monitoring threshold, it rotates to a fresh, dissimilar name.",
+          "Complaints and disputes scatter across many short-lived names, each individually below the radar."
+        ],
+        "cost": "Customers can\u2019t recognise the charge to dispute it; issuers field the confusion; the acquirer harbours a merchant that should already be in a network monitoring programme.",
+        "legitTwin": "A one-time rebrand keeps some of the old name and doesn\u2019t reset a chargeback spike. Churn shares almost no words between names and repeats \u2014 that dissimilarity-over-time is the tell.",
+        "victim": "Cardholders + issuer"
+      },
+      "identity": {
+        "merchantId": "MID0000149",
+        "name": "Fairmount Stream Miami",
+        "corp": "Fairmount Ventures",
+        "city": "Miami",
+        "country": "US",
+        "declaredMcc": "5968",
+        "declaredAs": "Direct Marketing - Continuity/Subscription",
+        "mccGroup": "Direct Mktg",
+        "txnCount": 1814,
+        "grossSalesUsd": 61650.89,
+        "activeDays": 360
+      },
+      "tells": [
+        {
+          "tag": "cnp",
+          "why": "Card-not-present \u2014 no physical card, unusual for the declared shopfront."
+        },
+        {
+          "tag": "declined",
+          "why": "Refused by the issuer \u2014 often because the true product isn\u2019t permitted."
+        },
+        {
+          "tag": "round",
+          "why": "An exact round number \u2014 people rarely buy goods at precisely $60.00."
+        }
+      ],
+      "transactions": [
+        {
+          "time": "2026-05-02 05:34",
+          "hour": 23,
+          "amount": 49.62,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "PH",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SUBSCRIPTION SVC",
+          "tells": []
+        },
+        {
+          "time": "2026-05-04 12:20",
+          "hour": 6,
+          "amount": 69.2,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SUBSCRIPTION SVC",
+          "tells": []
+        },
+        {
+          "time": "2026-05-20 16:08",
+          "hour": 10,
+          "amount": 78.65,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "ONLINE PURCHASE",
+          "tells": []
+        },
+        {
+          "time": "2026-06-28 20:24",
+          "hour": 14,
+          "amount": 24.11,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "AU",
+          "acquirer": "US",
+          "approved": false,
+          "authDesc": "Insufficient funds",
+          "descriptor": "ONLINE PURCHASE",
+          "tells": [
+            "cnp",
+            "declined"
+          ]
+        },
+        {
+          "time": "2026-06-28 21:20",
+          "hour": 15,
+          "amount": 22.55,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "ONLINE PURCHASE",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-28 22:13",
+          "hour": 16,
+          "amount": 27.48,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "ONLINE PURCHASE",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-28 23:30",
+          "hour": 17,
+          "amount": 45.73,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "FR",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "ONLINE PURCHASE",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 09:25",
+          "hour": 3,
+          "amount": 15.03,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "ONLINE PURCHASE",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 17:31",
+          "hour": 11,
+          "amount": 30.88,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "ONLINE PURCHASE",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 18:15",
+          "hour": 12,
+          "amount": 54.86,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "ONLINE PURCHASE",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 22:01",
+          "hour": 16,
+          "amount": 13.17,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "ONLINE PURCHASE",
+          "tells": [
+            "cnp"
+          ]
+        },
+        {
+          "time": "2026-06-29 23:48",
+          "hour": 17,
+          "amount": 56.38,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": false,
+          "authDesc": "Do not honor",
+          "descriptor": "ONLINE PURCHASE",
+          "tells": [
+            "cnp",
+            "declined"
+          ]
+        }
+      ],
+      "deviations": [
+        {
+          "key": "descriptor_changes",
+          "label": "Billing-name changes",
+          "plainLabel": "name switches",
+          "kind": "num",
+          "value": 6.0,
+          "z": 5.0,
+          "baseline": 2.0,
+          "baselineLabel": "the peer median",
+          "multiple": 3.0,
+          "hot": true
+        },
+        {
+          "key": "n_distinct_descriptors",
+          "label": "Distinct billing names",
+          "plainLabel": "different names used",
+          "kind": "num",
+          "value": 7.0,
+          "z": 5.0,
+          "baseline": 3.0,
+          "baselineLabel": "the peer median",
+          "multiple": 2.3,
+          "hot": true
+        },
+        {
+          "key": "descriptor_name_jaccard",
+          "label": "Name similarity",
+          "plainLabel": "word overlap between names",
+          "kind": "num",
+          "value": 0.0,
+          "z": -1.69,
+          "baseline": 0.0,
+          "baselineLabel": "the peer median",
+          "multiple": null,
+          "hot": true
+        },
+        {
+          "key": "pct_generic_descriptor",
+          "label": "Generic-name share",
+          "plainLabel": "vague-name sales",
+          "kind": "pct",
+          "value": 0.428,
+          "z": 1.47,
+          "baseline": 0.341,
+          "baselineLabel": "the peer median",
+          "multiple": 1.3,
+          "hot": false
+        },
+        {
+          "key": "chargeback_rate_bps",
+          "label": "Chargeback rate",
+          "plainLabel": "customer disputes",
+          "kind": "bps",
+          "value": 27.563,
+          "z": 0.04,
+          "baseline": 64.24,
+          "baselineLabel": "the peer median",
+          "multiple": 0.4,
+          "hot": false
+        }
+      ],
+      "signature": {
+        "kind": "descriptor",
+        "changes": 6,
+        "jaccard": 0.0,
+        "distinct": 7,
+        "chargebackBps": 28.0,
+        "descriptors": [
+          {
+            "name": "FAIRMOUNTS88",
+            "firstSeen": "2025-07-05",
+            "txns": 260,
+            "share": 0.143
+          },
+          {
+            "name": "FAIRMOUNTS27",
+            "firstSeen": "2025-08-26",
+            "txns": 259,
+            "share": 0.143
+          },
+          {
+            "name": "FAIRMOUNTS30",
+            "firstSeen": "2025-10-20",
+            "txns": 259,
+            "share": 0.143
+          },
+          {
+            "name": "CUSTOMER SERVICE",
+            "firstSeen": "2025-12-07",
+            "txns": 259,
+            "share": 0.143
+          },
+          {
+            "name": "FAIRMOUNTS11",
+            "firstSeen": "2026-01-27",
+            "txns": 259,
+            "share": 0.143
+          },
+          {
+            "name": "SUBSCRIPTION SVC",
+            "firstSeen": "2026-03-18",
+            "txns": 259,
+            "share": 0.143
+          },
+          {
+            "name": "ONLINE PURCHASE",
+            "firstSeen": "2026-05-08",
+            "txns": 259,
+            "share": 0.143
+          }
+        ]
+      },
+      "score": {
+        "integrityRiskScore": 82.6,
+        "compositeZ": 1.007,
+        "reconstructedZ": 1.008,
+        "percentile": 84.8,
+        "tier": "Elevated",
+        "exposureWeighted": 75.7,
+        "patternScore": 100.0,
+        "patternLabel": "Descriptor-churn pattern score",
+        "routedBy": "rule",
+        "flagReason": "rule",
+        "drivers": [
+          {
+            "key": "z_descriptor_changes",
+            "label": "descriptor changes",
+            "z": 5.0,
+            "weight": 1.1,
+            "contribution": 1.268,
+            "share": 58.5
+          },
+          {
+            "key": "z_descriptor_name_jaccard",
+            "label": "descriptor name jaccard",
+            "z": -1.69,
+            "weight": -1.0,
+            "contribution": 0.39,
+            "share": 18.0
+          },
+          {
+            "key": "z_pct_generic_descriptor",
+            "label": "pct generic descriptor",
+            "z": 1.47,
+            "weight": 0.8,
+            "contribution": 0.272,
+            "share": 12.6
+          },
+          {
+            "key": "z_refund_rate_count",
+            "label": "refund rate count",
+            "z": 1.06,
+            "weight": 0.8,
+            "contribution": 0.195,
+            "share": 9.0
+          },
+          {
+            "key": "z_pct_decline_suspected_fraud",
+            "label": "pct decline suspected fraud",
+            "z": 0.19,
+            "weight": 0.7,
+            "contribution": 0.03,
+            "share": 1.4
+          },
+          {
+            "key": "z_chargeback_rate_bps",
+            "label": "chargeback rate bps",
+            "z": 0.04,
+            "weight": 1.2,
+            "contribution": 0.011,
+            "share": 0.5
+          }
+        ],
+        "ruleChecks": {
+          "rule": "descriptor_churn_rule",
+          "ruleLabel": "Descriptor churn",
+          "mode": "all",
+          "checks": [
+            {
+              "label": "Billing-name changes",
+              "col": "descriptor_changes",
+              "actual": 6.0,
+              "op": "\u2265",
+              "threshold": 3,
+              "kind": "num",
+              "pass": true
+            },
+            {
+              "label": "Name word-overlap (Jaccard)",
+              "col": "descriptor_name_jaccard",
+              "actual": 0.0,
+              "op": "<",
+              "threshold": 0.2,
+              "kind": "num",
+              "pass": true
+            }
+          ]
+        },
+        "tierBins": [
+          {
+            "tier": "Low",
+            "range": "\u2264 60"
+          },
+          {
+            "tier": "Monitor",
+            "range": "60\u201375"
+          },
+          {
+            "tier": "Elevated",
+            "range": "75\u201385"
+          },
+          {
+            "tier": "High",
+            "range": "85\u201393"
+          },
+          {
+            "tier": "Critical",
+            "range": "> 93"
+          }
+        ]
+      },
+      "rules": [
+        {
+          "name": "descriptor_churn_rule",
+          "label": "Descriptor churn",
+          "expr": "descriptor_changes \u2265 3  AND  descriptor_name_jaccard < 0.20",
+          "plain": "The billing name changes repeatedly to unrelated words \u2014 resetting dispute monitoring."
+        }
+      ],
+      "verdict": {
+        "declaredMcc": "5968",
+        "declaredAs": "Direct Marketing - Continuity/Subscription",
+        "behavesAs": "a rotating-descriptor billing operation",
+        "familyLabel": "Descriptor Intelligence",
+        "priorityTier": "\u2014",
+        "riskTier": "Elevated",
+        "routedBy": "rule",
+        "firingRule": "Descriptor churn",
+        "exposure": 61650.89,
+        "rulesTriggered": 1,
+        "trueArchetype": "descriptor_churn_only"
+      }
+    },
+    {
+      "key": "cash",
+      "label": "Cash Disbursement",
+      "color": "#6366f1",
+      "icon": "Banknote",
+      "route": "/cash",
+      "edu": {
+        "tagline": "Card acceptance used as an unlicensed cash-out channel.",
+        "definition": "The merchant uses card acceptance to hand out cash \u2014 effectively an unlicensed ATM \u2014 dodging the cash-advance fees and AML scrutiny a real cash business carries.",
+        "analogy": "A \u2018gift shop\u2019 whose register only ever rings up neat $200 and $500 \u2018purchases\u2019 and hands back an envelope of cash.",
+        "mechanic": [
+          "Charge a card and return most of the value as cash, keeping a fee.",
+          "Because it\u2019s coded as retail, it dodges cash-advance interchange, cash-out limits and AML scrutiny.",
+          "Enables money laundering and converts stolen cards to untraceable cash."
+        ],
+        "cost": "The acquirer becomes an unknowing cash-out and laundering conduit (BSA/OFAC liability); interchange is under-collected; issuers absorb the stolen-card fraud that gets cashed out.",
+        "legitTwin": "Round-number pricing alone is innocent. Cash-out combines round hundreds with high tickets and none of retail\u2019s texture \u2014 no shipping, no refunds, no variety.",
+        "victim": "Acquirer (AML) + issuer"
+      },
+      "identity": {
+        "merchantId": "MID0000895",
+        "name": "Global Wellness Philadelphia",
+        "corp": "Global Zenith NV",
+        "city": "Philadelphia",
+        "country": "US",
+        "declaredMcc": "6012",
+        "declaredAs": "Financial Institutions - Merchandise",
+        "mccGroup": "Financial",
+        "txnCount": 124,
+        "grossSalesUsd": 74141.15000000001,
+        "activeDays": 352
+      },
+      "tells": [
+        {
+          "tag": "round",
+          "why": "An exact round number \u2014 people rarely buy goods at precisely $60.00."
+        },
+        {
+          "tag": "big",
+          "why": "An unusually large, clean ticket \u2014 the shape of a cash withdrawal, not a sale."
+        },
+        {
+          "tag": "offshore",
+          "why": "Settled through an acquirer in a third country the declared business never needs."
+        }
+      ],
+      "transactions": [
+        {
+          "time": "2026-05-03 13:40",
+          "hour": 7,
+          "amount": 443.9,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "CY",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": []
+        },
+        {
+          "time": "2026-05-14 17:39",
+          "hour": 11,
+          "amount": 850.0,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": [
+            "big"
+          ]
+        },
+        {
+          "time": "2026-05-20 21:38",
+          "hour": 15,
+          "amount": 1150.0,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": false,
+          "authDesc": "Insufficient funds",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": [
+            "big"
+          ]
+        },
+        {
+          "time": "2026-05-25 19:22",
+          "hour": 13,
+          "amount": 941.81,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "FR",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": [
+            "big"
+          ]
+        },
+        {
+          "time": "2026-05-26 00:52",
+          "hour": 18,
+          "amount": 1472.05,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "CY",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": [
+            "big"
+          ]
+        },
+        {
+          "time": "2026-06-01 11:27",
+          "hour": 5,
+          "amount": 1300.0,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": [
+            "round",
+            "big"
+          ]
+        },
+        {
+          "time": "2026-06-01 11:52",
+          "hour": 5,
+          "amount": 400.0,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": false,
+          "authDesc": "Insufficient funds",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": [
+            "round"
+          ]
+        },
+        {
+          "time": "2026-06-04 16:29",
+          "hour": 10,
+          "amount": 450.0,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": false,
+          "authDesc": "Exceeds withdrawal frequency limit",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": []
+        },
+        {
+          "time": "2026-06-16 11:12",
+          "hour": 5,
+          "amount": 450.0,
+          "channel": "POS",
+          "cardPresent": true,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": false,
+          "authDesc": "Do not honor",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": []
+        },
+        {
+          "time": "2026-06-18 16:26",
+          "hour": 10,
+          "amount": 566.07,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": [
+            "big"
+          ]
+        },
+        {
+          "time": "2026-06-24 14:38",
+          "hour": 8,
+          "amount": 950.0,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": false,
+          "authDesc": "Do not honor",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": [
+            "big"
+          ]
+        },
+        {
+          "time": "2026-06-24 22:10",
+          "hour": 16,
+          "amount": 650.0,
+          "channel": "ECOMMERCE",
+          "cardPresent": false,
+          "issuer": "US",
+          "acquirer": "US",
+          "approved": true,
+          "authDesc": "Approved",
+          "descriptor": "SQ *GLOBAL*WELLNESS",
+          "tells": [
+            "big"
+          ]
+        }
+      ],
+      "deviations": [
+        {
+          "key": "pct_round_100",
+          "label": "Round-$100 share",
+          "plainLabel": "exact-hundred sales",
+          "kind": "pct",
+          "value": 0.444,
+          "z": 5.0,
+          "baseline": 0.329,
+          "baselineLabel": "the peer median",
+          "multiple": 1.3,
+          "hot": true
+        },
+        {
+          "key": "pct_ticket_gt_500",
+          "label": "Large-ticket share",
+          "plainLabel": "charges over $500",
+          "kind": "pct",
+          "value": 0.798,
+          "z": 5.0,
+          "baseline": 0.708,
+          "baselineLabel": "the peer median",
+          "multiple": 1.1,
+          "hot": true
+        },
+        {
+          "key": "pct_quasi_cash",
+          "label": "Quasi-cash share",
+          "plainLabel": "cash-like sales",
+          "kind": "pct",
+          "value": 0.556,
+          "z": 5.0,
+          "baseline": 0.278,
+          "baselineLabel": "the peer median",
+          "multiple": 2.0,
+          "hot": true
+        },
+        {
+          "key": "avg_ticket_usd",
+          "label": "Average ticket",
+          "plainLabel": "typical charge",
+          "kind": "usd",
+          "value": 807.814,
+          "z": 3.97,
+          "baseline": 260.0,
+          "baselineLabel": "typical for the declared code",
+          "multiple": 3.1,
+          "hot": true
+        }
+      ],
+      "signature": {
+        "kind": "cash",
+        "roundShare": 0.444,
+        "quasiShare": 0.556,
+        "gt500Share": 0.798,
+        "avgTicket": 807.81,
+        "histogram": [
+          {
+            "label": "<100",
+            "count": 0,
+            "round": false
+          },
+          {
+            "label": "100",
+            "count": 0,
+            "round": true
+          },
+          {
+            "label": "200",
+            "count": 2,
+            "round": true
+          },
+          {
+            "label": "300",
+            "count": 5,
+            "round": true
+          },
+          {
+            "label": "400",
+            "count": 16,
+            "round": false
+          },
+          {
+            "label": "500",
+            "count": 33,
+            "round": true
+          },
+          {
+            "label": "750",
+            "count": 39,
+            "round": false
+          },
+          {
+            "label": "1k",
+            "count": 27,
+            "round": false
+          },
+          {
+            "label": "2k+",
+            "count": 2,
+            "round": false
+          }
+        ],
+        "roundHits": [
+          {
+            "amount": 300,
+            "count": 1
+          },
+          {
+            "amount": 400,
+            "count": 6
+          },
+          {
+            "amount": 500,
+            "count": 2
+          },
+          {
+            "amount": 600,
+            "count": 6
+          },
+          {
+            "amount": 700,
+            "count": 6
+          },
+          {
+            "amount": 800,
+            "count": 5
+          },
+          {
+            "amount": 900,
+            "count": 8
+          },
+          {
+            "amount": 1100,
+            "count": 5
+          },
+          {
+            "amount": 1200,
+            "count": 1
+          },
+          {
+            "amount": 1300,
+            "count": 5
+          },
+          {
+            "amount": 1400,
+            "count": 4
+          },
+          {
+            "amount": 1500,
+            "count": 3
+          },
+          {
+            "amount": 1700,
+            "count": 1
+          },
+          {
+            "amount": 2000,
+            "count": 1
+          }
+        ]
+      },
+      "score": {
+        "integrityRiskScore": 99.9,
+        "compositeZ": 4.714,
+        "reconstructedZ": 4.714,
+        "percentile": 97.6,
+        "tier": "Critical",
+        "exposureWeighted": 91.9,
+        "patternScore": 100.0,
+        "patternLabel": "Cash-disbursement pattern score",
+        "routedBy": "both",
+        "flagReason": "model + rule",
+        "drivers": [
+          {
+            "key": "z_pct_round_amount",
+            "label": "pct round amount",
+            "z": 5.0,
+            "weight": 1.0,
+            "contribution": 1.153,
+            "share": 21.1
+          },
+          {
+            "key": "z_pct_quasi_cash",
+            "label": "pct quasi cash",
+            "z": 5.0,
+            "weight": 1.0,
+            "contribution": 1.153,
+            "share": 21.1
+          },
+          {
+            "key": "z_pct_decline_not_permitted",
+            "label": "pct decline not permitted",
+            "z": 2.75,
+            "weight": 1.7,
+            "contribution": 1.078,
+            "share": 19.7
+          },
+          {
+            "key": "z_txn_per_card",
+            "label": "txn per card",
+            "z": 4.08,
+            "weight": 0.9,
+            "contribution": 0.846,
+            "share": 15.5
+          },
+          {
+            "key": "z_chargeback_rate_bps",
+            "label": "chargeback rate bps",
+            "z": 2.42,
+            "weight": 1.2,
+            "contribution": 0.669,
+            "share": 12.2
+          },
+          {
+            "key": "z_refund_rate_count",
+            "label": "refund rate count",
+            "z": 3.08,
+            "weight": 0.8,
+            "contribution": 0.569,
+            "share": 10.4
+          }
+        ],
+        "ruleChecks": {
+          "rule": "cash_disbursement_rule",
+          "ruleLabel": "Cash disbursement",
+          "mode": "all",
+          "checks": [
+            {
+              "label": "Round-$100 share",
+              "col": "pct_round_100",
+              "actual": 0.444,
+              "op": ">",
+              "threshold": 0.4,
+              "kind": "pct",
+              "pass": true
+            },
+            {
+              "label": "Average ticket",
+              "col": "avg_ticket_usd",
+              "actual": 807.814,
+              "op": ">",
+              "threshold": 400,
+              "kind": "usd",
+              "pass": true
+            },
+            {
+              "label": "Charges over $500",
+              "col": "pct_ticket_gt_500",
+              "actual": 0.798,
+              "op": ">",
+              "threshold": 0.3,
+              "kind": "pct",
+              "pass": true
+            }
+          ]
+        },
+        "tierBins": [
+          {
+            "tier": "Low",
+            "range": "\u2264 60"
+          },
+          {
+            "tier": "Monitor",
+            "range": "60\u201375"
+          },
+          {
+            "tier": "Elevated",
+            "range": "75\u201385"
+          },
+          {
+            "tier": "High",
+            "range": "85\u201393"
+          },
+          {
+            "tier": "Critical",
+            "range": "> 93"
+          }
+        ]
+      },
+      "rules": [
+        {
+          "name": "dispute_excursion_rule",
+          "label": "Dispute excursion",
+          "expr": "chargeback_rate_bps > 100  AND  refund_rate > 0.05",
+          "plain": "Chargebacks and refunds run far above any healthy merchant."
+        }
+      ],
+      "verdict": {
+        "declaredMcc": "6012",
+        "declaredAs": "Financial Institutions - Merchandise",
+        "behavesAs": "an unlicensed cash-out channel",
+        "familyLabel": "Cash Disbursement",
+        "priorityTier": "\u2014",
+        "riskTier": "Critical",
+        "routedBy": "both",
+        "firingRule": "Cash disbursement",
+        "exposure": 74141.15000000001,
+        "rulesTriggered": 1,
+        "trueArchetype": "cash_disbursement"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1767 @@
+{
+  "meta": {
+    "source": "MCC Miscoding synthetic dataset v2",
+    "merchantsScored": 1492,
+    "flaggedMerchants": 236,
+    "note": "All entities synthetic. Feature weights and calibration are the live pipeline's; precision/recall are measured against planted labels. Outputs are decision-support indicators, not final determinations.",
+    "featureGlossaryCount": 47
+  },
+  "models": [
+    {
+      "id": "det-mcc-miscoding",
+      "name": "MCC Miscoding Detector",
+      "family": "mcc_miscoding",
+      "kind": "method-detector",
+      "typeLabel": "Peer-normalized logistic scorer",
+      "version": "2.3.0",
+      "status": "production",
+      "summary": "Declared MCC vs. observed acceptance behaviour. Fires when a merchant's channel, timing and ticket profile do not match the category it settles under.",
+      "detects": "Merchants coded into a benign MCC while transacting like a prohibited or restricted vertical.",
+      "output": "score_mcc_miscoding",
+      "features": [
+        {
+          "key": "z_cnp_vs_mcc_expected",
+          "label": "CNP share vs MCC-expected",
+          "weight": 1.4,
+          "importance": 15.9,
+          "direction": "up"
+        },
+        {
+          "key": "z_night_vs_mcc_expected",
+          "label": "Night share vs MCC-expected",
+          "weight": 1.4,
+          "importance": 15.9,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_decline_not_permitted",
+          "label": "\u2018Transaction not permitted\u2019 decline rate",
+          "weight": 1.3,
+          "importance": 14.8,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_round_amount",
+          "label": "Round-amount share",
+          "weight": 1.1,
+          "importance": 12.5,
+          "direction": "up"
+        },
+        {
+          "key": "z_ticket_vs_mcc_expected",
+          "label": "Ticket size vs MCC-expected",
+          "weight": 1.0,
+          "importance": 11.4,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_cross_border",
+          "label": "Cross-border share",
+          "weight": 0.9,
+          "importance": 10.2,
+          "direction": "up"
+        },
+        {
+          "key": "z_txn_per_card",
+          "label": "Transactions per card",
+          "weight": 0.9,
+          "importance": 10.2,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_offshore_acquirer",
+          "label": "Offshore-acquirer share",
+          "weight": 0.8,
+          "importance": 9.1,
+          "direction": "up"
+        }
+      ],
+      "featureCount": 8,
+      "calibration": {
+        "link": "logistic",
+        "k": 1.35,
+        "normalization": "peer z-score (same-MCC cohort, shrunk to global for thin peers)",
+        "output": "score_mcc_miscoding \u00b7 0\u2013100"
+      },
+      "rules": [],
+      "metrics": {
+        "precision": 0.402,
+        "recall": 0.931,
+        "f1": 0.561,
+        "tp": 121,
+        "fp": 180,
+        "fn": 9,
+        "support": 130,
+        "auc": 0.947,
+        "operatingPoint": "score_mcc_miscoding \u2265 70",
+        "gtNote": "vs. planted content-miscoding archetypes"
+      }
+    },
+    {
+      "id": "det-split-ticketing",
+      "name": "Split-Ticket Burst Detector",
+      "family": "split_ticketing",
+      "kind": "method-detector",
+      "typeLabel": "Peer-normalized logistic scorer",
+      "version": "1.9.0",
+      "status": "production",
+      "summary": "Bursts of near-identical, near-ceiling authorizations on the same card within a short window \u2014 one sale sliced under the floor limit.",
+      "detects": "Ticket splitting to stay below authorization or review ceilings.",
+      "output": "score_split_ticketing",
+      "features": [
+        {
+          "key": "z_pct_txn_in_split_burst",
+          "label": "Share of txns inside a split burst",
+          "weight": 2.2,
+          "importance": 29.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_near_ceiling",
+          "label": "Near-authorization-ceiling share",
+          "weight": 1.6,
+          "importance": 21.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_split_burst_events",
+          "label": "Split-burst event count",
+          "weight": 1.3,
+          "importance": 17.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_mean_split_burst_size",
+          "label": "Mean split-burst size",
+          "weight": 0.9,
+          "importance": 12.0,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_cards_multi_use",
+          "label": "Multi-use-card share",
+          "weight": 0.8,
+          "importance": 10.7,
+          "direction": "up"
+        },
+        {
+          "key": "z_mean_split_gap_sec",
+          "label": "Mean gap between split legs (sec)",
+          "weight": -0.7,
+          "importance": 9.3,
+          "direction": "down"
+        }
+      ],
+      "featureCount": 6,
+      "calibration": {
+        "link": "logistic",
+        "k": 1.35,
+        "normalization": "peer z-score (same-MCC cohort, shrunk to global for thin peers)",
+        "output": "score_split_ticketing \u00b7 0\u2013100"
+      },
+      "rules": [
+        {
+          "name": "split_ticketing_rule",
+          "expr": "pct_txn_in_split_burst > 0.10  AND  pct_near_ceiling > 0.15",
+          "family": "split_ticketing"
+        }
+      ],
+      "metrics": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "tp": 20,
+        "fp": 0,
+        "fn": 0,
+        "support": 20,
+        "auc": 1.0,
+        "operatingPoint": "family routing (score + rule)",
+        "gtNote": "vs. planted Split Ticketing archetype"
+      }
+    },
+    {
+      "id": "det-factoring",
+      "name": "Factoring / Aggregation Detector",
+      "family": "factoring",
+      "kind": "method-detector",
+      "typeLabel": "Peer-normalized logistic scorer",
+      "version": "1.6.0",
+      "status": "production",
+      "summary": "One acquiring shell settling for many undisclosed sub-merchants \u2014 sub-merchant fan-out, descriptor sprawl and volume spikes with low name coherence.",
+      "detects": "Transaction laundering: a host processing third-party volume it never underwrote.",
+      "output": "score_factoring",
+      "features": [
+        {
+          "key": "z_n_sub_merchant_ids",
+          "label": "Distinct sub-merchant IDs",
+          "weight": 1.7,
+          "importance": 17.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_volume_spike_ratio",
+          "label": "Volume-spike ratio",
+          "weight": 1.5,
+          "importance": 15.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_max_mom_growth",
+          "label": "Peak month-over-month growth",
+          "weight": 1.2,
+          "importance": 12.2,
+          "direction": "up"
+        },
+        {
+          "key": "z_n_distinct_descriptors",
+          "label": "Distinct descriptors",
+          "weight": 1.2,
+          "importance": 12.2,
+          "direction": "up"
+        },
+        {
+          "key": "z_descriptor_name_jaccard",
+          "label": "Descriptor / DBA name similarity",
+          "weight": -1.2,
+          "importance": 12.2,
+          "direction": "down"
+        },
+        {
+          "key": "z_pct_generic_descriptor",
+          "label": "Generic-descriptor share",
+          "weight": 1.1,
+          "importance": 11.2,
+          "direction": "up"
+        },
+        {
+          "key": "z_ticket_cv",
+          "label": "Ticket coefficient of variation",
+          "weight": 1.0,
+          "importance": 10.2,
+          "direction": "up"
+        },
+        {
+          "key": "z_issuer_country_entropy",
+          "label": "Issuer-country entropy",
+          "weight": 0.9,
+          "importance": 9.2,
+          "direction": "up"
+        }
+      ],
+      "featureCount": 8,
+      "calibration": {
+        "link": "logistic",
+        "k": 1.35,
+        "normalization": "peer z-score (same-MCC cohort, shrunk to global for thin peers)",
+        "output": "score_factoring \u00b7 0\u2013100"
+      },
+      "rules": [
+        {
+          "name": "factoring_rule",
+          "expr": "n_sub_merchant_ids \u2265 2  AND  volume_spike_ratio > 3",
+          "family": "factoring"
+        }
+      ],
+      "metrics": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "tp": 17,
+        "fp": 0,
+        "fn": 0,
+        "support": 17,
+        "auc": 0.999,
+        "operatingPoint": "family routing (score + rule)",
+        "gtNote": "vs. planted Factoring archetype"
+      }
+    },
+    {
+      "id": "det-descriptor",
+      "name": "Descriptor Intelligence",
+      "family": "descriptor",
+      "kind": "method-detector",
+      "typeLabel": "Peer-normalized logistic scorer",
+      "version": "1.4.0",
+      "status": "production",
+      "summary": "Churning, generic or URL-laden billing descriptors that drift away from the registered DBA name \u2014 a concealment tell independent of content.",
+      "detects": "Descriptor manipulation used to evade name-match monitoring and cardholder recognition.",
+      "output": "score_descriptor",
+      "features": [
+        {
+          "key": "z_descriptor_changes",
+          "label": "Descriptor-change count",
+          "weight": 1.8,
+          "importance": 25.7,
+          "direction": "up"
+        },
+        {
+          "key": "z_descriptor_name_jaccard",
+          "label": "Descriptor / DBA name similarity",
+          "weight": -1.6,
+          "importance": 22.9,
+          "direction": "down"
+        },
+        {
+          "key": "z_n_distinct_descriptors",
+          "label": "Distinct descriptors",
+          "weight": 1.5,
+          "importance": 21.4,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_generic_descriptor",
+          "label": "Generic-descriptor share",
+          "weight": 1.3,
+          "importance": 18.6,
+          "direction": "up"
+        },
+        {
+          "key": "z_has_url_descriptor",
+          "label": "URL-in-descriptor flag",
+          "weight": 0.8,
+          "importance": 11.4,
+          "direction": "up"
+        }
+      ],
+      "featureCount": 5,
+      "calibration": {
+        "link": "logistic",
+        "k": 1.35,
+        "normalization": "peer z-score (same-MCC cohort, shrunk to global for thin peers)",
+        "output": "score_descriptor \u00b7 0\u2013100"
+      },
+      "rules": [
+        {
+          "name": "descriptor_churn_rule",
+          "expr": "descriptor_changes \u2265 3  AND  descriptor_name_jaccard < 0.20",
+          "family": "descriptor"
+        }
+      ],
+      "metrics": {
+        "precision": 0.319,
+        "recall": 1.0,
+        "f1": 0.483,
+        "tp": 86,
+        "fp": 184,
+        "fn": 0,
+        "support": 86,
+        "auc": 0.984,
+        "operatingPoint": "score_descriptor \u2265 70",
+        "gtNote": "vs. planted descriptor-churn behaviour"
+      }
+    },
+    {
+      "id": "det-mcc-abuse",
+      "name": "Interchange-Abuse Detector",
+      "family": "mcc_abuse",
+      "kind": "method-detector",
+      "typeLabel": "Peer-normalized logistic scorer",
+      "version": "2.1.0",
+      "status": "production",
+      "summary": "A large positive interchange advantage sitting on a card-not-present profile inside a category that should be card-present (grocery / fuel / charity).",
+      "detects": "MCC chosen for a cheaper interchange band than the behaviour warrants \u2014 a revenue-integrity class, not a prohibited-content class.",
+      "output": "score_mcc_abuse",
+      "features": [
+        {
+          "key": "z_interchange_advantage_bps",
+          "label": "Interchange advantage (bps)",
+          "weight": 2.0,
+          "importance": 27.4,
+          "direction": "up"
+        },
+        {
+          "key": "z_cnp_vs_mcc_expected",
+          "label": "CNP share vs MCC-expected",
+          "weight": 1.6,
+          "importance": 21.9,
+          "direction": "up"
+        },
+        {
+          "key": "z_effective_interchange_bps",
+          "label": "Effective interchange paid (bps)",
+          "weight": -1.1,
+          "importance": 15.1,
+          "direction": "down"
+        },
+        {
+          "key": "z_declared_band_is_cheap",
+          "label": "Declared cheap-interchange band",
+          "weight": 1.0,
+          "importance": 13.7,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_recurring",
+          "label": "Recurring / negative-option share",
+          "weight": 0.7,
+          "importance": 9.6,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_token",
+          "label": "Tokenized-credential share",
+          "weight": 0.5,
+          "importance": 6.8,
+          "direction": "up"
+        },
+        {
+          "key": "z_chargeback_rate_bps",
+          "label": "Chargeback rate (bps)",
+          "weight": -0.4,
+          "importance": 5.5,
+          "direction": "down"
+        }
+      ],
+      "featureCount": 7,
+      "calibration": {
+        "link": "logistic",
+        "k": 1.35,
+        "normalization": "peer z-score (same-MCC cohort, shrunk to global for thin peers)",
+        "output": "score_mcc_abuse \u00b7 0\u2013100"
+      },
+      "rules": [
+        {
+          "name": "interchange_abuse_rule",
+          "expr": "interchange_advantage_bps > 50 on a cheap band  OR  CNP-vs-expected > 0.55 with advantage > 25",
+          "family": "mcc_abuse"
+        }
+      ],
+      "metrics": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "tp": 25,
+        "fp": 0,
+        "fn": 0,
+        "support": 25,
+        "auc": 0.997,
+        "operatingPoint": "family routing (score + rule)",
+        "gtNote": "vs. planted MCC Abuse (interchange) archetype"
+      }
+    },
+    {
+      "id": "det-cash",
+      "name": "Cash-Disbursement Detector",
+      "family": "cash",
+      "kind": "method-detector",
+      "typeLabel": "Peer-normalized logistic scorer",
+      "version": "1.5.0",
+      "status": "production",
+      "summary": "Very round, high-ticket, repeat-card draws against a merchant whose declared category is not a permitted cash outlet.",
+      "detects": "Quasi-cash extraction / factoring-for-cash outside licensed cash MCCs.",
+      "output": "score_cash_disbursement",
+      "features": [
+        {
+          "key": "z_pct_round_100",
+          "label": "Round-$100 share",
+          "weight": 1.8,
+          "importance": 18.6,
+          "direction": "up"
+        },
+        {
+          "key": "z_avg_ticket_usd",
+          "label": "Average ticket (USD)",
+          "weight": 1.4,
+          "importance": 14.4,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_ticket_gt_500",
+          "label": "High-ticket (>$500) share",
+          "weight": 1.3,
+          "importance": 13.4,
+          "direction": "up"
+        },
+        {
+          "key": "z_txn_per_card",
+          "label": "Transactions per card",
+          "weight": 1.2,
+          "importance": 12.4,
+          "direction": "up"
+        },
+        {
+          "key": "z_max_txn_single_card",
+          "label": "Largest single-card volume",
+          "weight": 1.1,
+          "importance": 11.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_decline_limit",
+          "label": "\u2018Exceeds limit\u2019 decline rate",
+          "weight": 1.0,
+          "importance": 10.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_distinct_amount_ratio",
+          "label": "Distinct-amount ratio",
+          "weight": -1.0,
+          "importance": 10.3,
+          "direction": "down"
+        },
+        {
+          "key": "z_pct_quasi_cash",
+          "label": "Quasi-cash share",
+          "weight": 0.9,
+          "importance": 9.3,
+          "direction": "up"
+        }
+      ],
+      "featureCount": 8,
+      "calibration": {
+        "link": "logistic",
+        "k": 1.35,
+        "normalization": "peer z-score (same-MCC cohort, shrunk to global for thin peers)",
+        "output": "score_cash_disbursement \u00b7 0\u2013100"
+      },
+      "rules": [
+        {
+          "name": "undeclared_quasi_cash_rule",
+          "expr": "pct_quasi_cash > 0.25  AND  MCC not in cash bands",
+          "family": "cash"
+        },
+        {
+          "name": "cash_disbursement_rule",
+          "expr": "pct_round_100 > 0.40  AND  avg_ticket_usd > 400  AND  pct_ticket_gt_500 > 0.30",
+          "family": "cash"
+        }
+      ],
+      "metrics": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "tp": 9,
+        "fp": 0,
+        "fn": 0,
+        "support": 9,
+        "auc": 0.992,
+        "operatingPoint": "family routing (score + rule)",
+        "gtNote": "vs. planted Cash Disbursement archetype"
+      }
+    },
+    {
+      "id": "ensemble-integrity",
+      "name": "Integrity Composite",
+      "family": "ensemble",
+      "kind": "ensemble",
+      "typeLabel": "Weighted logistic ensemble + tiering",
+      "version": "3.0.0",
+      "status": "production",
+      "summary": "The portfolio risk score. A single weighted combination of the strongest cross-typology signals \u2014 not a max over the sub-models, which would inflate every merchant. Binned into Low \u2192 Critical tiers.",
+      "detects": "Any merchant whose overall behaviour departs from its declared category, across all six typologies at once.",
+      "output": "integrity_risk_score",
+      "features": [
+        {
+          "key": "z_pct_decline_not_permitted",
+          "label": "\u2018Transaction not permitted\u2019 decline rate",
+          "weight": 1.7,
+          "importance": 9.0,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_offshore_acquirer",
+          "label": "Offshore-acquirer share",
+          "weight": 1.3,
+          "importance": 6.9,
+          "direction": "up"
+        },
+        {
+          "key": "z_cnp_vs_mcc_expected",
+          "label": "CNP share vs MCC-expected",
+          "weight": 1.2,
+          "importance": 6.4,
+          "direction": "up"
+        },
+        {
+          "key": "z_night_vs_mcc_expected",
+          "label": "Night share vs MCC-expected",
+          "weight": 1.2,
+          "importance": 6.4,
+          "direction": "up"
+        },
+        {
+          "key": "z_chargeback_rate_bps",
+          "label": "Chargeback rate (bps)",
+          "weight": 1.2,
+          "importance": 6.4,
+          "direction": "up"
+        },
+        {
+          "key": "z_descriptor_changes",
+          "label": "Descriptor-change count",
+          "weight": 1.1,
+          "importance": 5.9,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_txn_in_split_burst",
+          "label": "Share of txns inside a split burst",
+          "weight": 1.1,
+          "importance": 5.9,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_round_amount",
+          "label": "Round-amount share",
+          "weight": 1.0,
+          "importance": 5.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_descriptor_name_jaccard",
+          "label": "Descriptor / DBA name similarity",
+          "weight": -1.0,
+          "importance": 5.3,
+          "direction": "down"
+        },
+        {
+          "key": "z_n_sub_merchant_ids",
+          "label": "Distinct sub-merchant IDs",
+          "weight": 1.0,
+          "importance": 5.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_quasi_cash",
+          "label": "Quasi-cash share",
+          "weight": 1.0,
+          "importance": 5.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_cross_border",
+          "label": "Cross-border share",
+          "weight": 0.9,
+          "importance": 4.8,
+          "direction": "up"
+        },
+        {
+          "key": "z_txn_per_card",
+          "label": "Transactions per card",
+          "weight": 0.9,
+          "importance": 4.8,
+          "direction": "up"
+        },
+        {
+          "key": "z_refund_rate_count",
+          "label": "Refund rate",
+          "weight": 0.8,
+          "importance": 4.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_generic_descriptor",
+          "label": "Generic-descriptor share",
+          "weight": 0.8,
+          "importance": 4.3,
+          "direction": "up"
+        },
+        {
+          "key": "z_ticket_vs_mcc_expected",
+          "label": "Ticket size vs MCC-expected",
+          "weight": 0.7,
+          "importance": 3.7,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_decline_suspected_fraud",
+          "label": "\u2018Suspected fraud\u2019 decline rate",
+          "weight": 0.7,
+          "importance": 3.7,
+          "direction": "up"
+        },
+        {
+          "key": "z_pct_recurring",
+          "label": "Recurring / negative-option share",
+          "weight": 0.6,
+          "importance": 3.2,
+          "direction": "up"
+        },
+        {
+          "key": "z_volume_spike_ratio",
+          "label": "Volume-spike ratio",
+          "weight": 0.6,
+          "importance": 3.2,
+          "direction": "up"
+        }
+      ],
+      "featureCount": 19,
+      "calibration": {
+        "link": "logistic",
+        "k": 1.55,
+        "normalization": "peer z-score \u2192 weighted sum \u2192 logistic",
+        "tiers": [
+          {
+            "tier": "Low",
+            "range": "\u2264 60"
+          },
+          {
+            "tier": "Monitor",
+            "range": "60\u201375"
+          },
+          {
+            "tier": "Elevated",
+            "range": "75\u201385"
+          },
+          {
+            "tier": "High",
+            "range": "85\u201393"
+          },
+          {
+            "tier": "Critical",
+            "range": "> 93"
+          }
+        ],
+        "output": "integrity_risk_score \u00b7 0\u2013100 + risk_tier"
+      },
+      "rules": [],
+      "metrics": {
+        "precision": 0.826,
+        "recall": 0.99,
+        "f1": 0.901,
+        "tp": 195,
+        "fp": 41,
+        "fn": 2,
+        "support": 197,
+        "auc": 0.964,
+        "operatingPoint": "flag_for_investigation (score \u2265 85 OR rule)",
+        "gtNote": "vs. any planted integrity violation or interchange abuse"
+      }
+    }
+  ],
+  "contentBank": {
+    "id": "content-bank",
+    "name": "MCC-Miscoding Content Bank",
+    "family": "mcc_miscoding",
+    "kind": "content-classifier",
+    "typeLabel": "11 peer-normalized content classifiers (P1/P2/P3)",
+    "version": "2.3.0",
+    "status": "production",
+    "summary": "Eleven behavioural fingerprints for the prohibited / restricted verticals a miscoder hides inside. The argmax names the likely concealed category; the P1/P2/P3 rollup is the reliable, audited read.",
+    "detects": "Which prohibited vertical a miscoded merchant most resembles.",
+    "output": "top_category \u00b7 score_<category>",
+    "calibration": {
+      "link": "logistic",
+      "k": 1.35,
+      "normalization": "peer z-score (same-MCC cohort)",
+      "output": "score_<category> \u00b7 0\u2013100"
+    },
+    "subModels": [
+      {
+        "key": "gambling",
+        "label": "Gambling",
+        "tier": "P1",
+        "features": [
+          {
+            "key": "z_pct_decline_not_permitted",
+            "label": "\u2018Transaction not permitted\u2019 decline rate",
+            "weight": 1.6,
+            "importance": 14.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_round_amount",
+            "label": "Round-amount share",
+            "weight": 1.5,
+            "importance": 13.2,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_night_txn",
+            "label": "Night-hour transaction share",
+            "weight": 1.4,
+            "importance": 12.3,
+            "direction": "up"
+          },
+          {
+            "key": "z_txn_per_card",
+            "label": "Transactions per card",
+            "weight": 1.3,
+            "importance": 11.4,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_offshore_acquirer",
+            "label": "Offshore-acquirer share",
+            "weight": 1.1,
+            "importance": 9.6,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cross_border",
+            "label": "Cross-border share",
+            "weight": 1.0,
+            "importance": 8.8,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cnp",
+            "label": "Card-not-present share",
+            "weight": 0.9,
+            "importance": 7.9,
+            "direction": "up"
+          },
+          {
+            "key": "z_max_txn_single_card",
+            "label": "Largest single-card volume",
+            "weight": 0.8,
+            "importance": 7.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_ticket_vs_mcc_expected",
+            "label": "Ticket size vs MCC-expected",
+            "weight": 0.7,
+            "importance": 6.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_quasi_cash",
+            "label": "Quasi-cash share",
+            "weight": 0.6,
+            "importance": 5.3,
+            "direction": "up"
+          },
+          {
+            "key": "z_hour_entropy",
+            "label": "Hour-of-day entropy",
+            "weight": -0.5,
+            "importance": 4.4,
+            "direction": "down"
+          }
+        ],
+        "featureCount": 11,
+        "support": 32,
+        "flagged": 33,
+        "topFeatures": [
+          "\u2018Transaction not permitted\u2019 decline rate",
+          "Round-amount share",
+          "Night-hour transaction share"
+        ],
+        "metrics": {
+          "precision": 0.091,
+          "recall": 0.094,
+          "f1": 0.092,
+          "tp": 3,
+          "fp": 30,
+          "fn": 29,
+          "support": 32
+        }
+      },
+      {
+        "key": "dating_escort",
+        "label": "Dating & escort",
+        "tier": "P1",
+        "features": [
+          {
+            "key": "z_pct_night_txn",
+            "label": "Night-hour transaction share",
+            "weight": 1.5,
+            "importance": 14.7,
+            "direction": "up"
+          },
+          {
+            "key": "z_chargeback_rate_bps",
+            "label": "Chargeback rate (bps)",
+            "weight": 1.3,
+            "importance": 12.7,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cnp",
+            "label": "Card-not-present share",
+            "weight": 1.2,
+            "importance": 11.8,
+            "direction": "up"
+          },
+          {
+            "key": "z_descriptor_changes",
+            "label": "Descriptor-change count",
+            "weight": 1.2,
+            "importance": 11.8,
+            "direction": "up"
+          },
+          {
+            "key": "z_cnp_vs_mcc_expected",
+            "label": "CNP share vs MCC-expected",
+            "weight": 1.1,
+            "importance": 10.8,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_recurring",
+            "label": "Recurring / negative-option share",
+            "weight": 1.0,
+            "importance": 9.8,
+            "direction": "up"
+          },
+          {
+            "key": "z_refund_rate_count",
+            "label": "Refund rate",
+            "weight": 1.0,
+            "importance": 9.8,
+            "direction": "up"
+          },
+          {
+            "key": "z_descriptor_name_jaccard",
+            "label": "Descriptor / DBA name similarity",
+            "weight": -1.0,
+            "importance": 9.8,
+            "direction": "down"
+          },
+          {
+            "key": "z_pct_offshore_acquirer",
+            "label": "Offshore-acquirer share",
+            "weight": 0.9,
+            "importance": 8.8,
+            "direction": "up"
+          }
+        ],
+        "featureCount": 9,
+        "support": 20,
+        "flagged": 10,
+        "topFeatures": [
+          "Night-hour transaction share",
+          "Chargeback rate (bps)",
+          "Card-not-present share"
+        ],
+        "metrics": {
+          "precision": 0.4,
+          "recall": 0.2,
+          "f1": 0.267,
+          "tp": 4,
+          "fp": 6,
+          "fn": 16,
+          "support": 20
+        }
+      },
+      {
+        "key": "pharma",
+        "label": "Pharma",
+        "tier": "P1",
+        "features": [
+          {
+            "key": "z_pct_cross_border",
+            "label": "Cross-border share",
+            "weight": 1.5,
+            "importance": 15.8,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_recurring",
+            "label": "Recurring / negative-option share",
+            "weight": 1.2,
+            "importance": 12.6,
+            "direction": "up"
+          },
+          {
+            "key": "z_chargeback_rate_bps",
+            "label": "Chargeback rate (bps)",
+            "weight": 1.2,
+            "importance": 12.6,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cb_service_reason",
+            "label": "\u2018Service not rendered\u2019 chargeback share",
+            "weight": 1.1,
+            "importance": 11.6,
+            "direction": "up"
+          },
+          {
+            "key": "z_refund_rate_count",
+            "label": "Refund rate",
+            "weight": 1.0,
+            "importance": 10.5,
+            "direction": "up"
+          },
+          {
+            "key": "z_issuer_country_entropy",
+            "label": "Issuer-country entropy",
+            "weight": 1.0,
+            "importance": 10.5,
+            "direction": "up"
+          },
+          {
+            "key": "z_descriptor_changes",
+            "label": "Descriptor-change count",
+            "weight": 0.9,
+            "importance": 9.5,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_offshore_acquirer",
+            "label": "Offshore-acquirer share",
+            "weight": 0.9,
+            "importance": 9.5,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_generic_descriptor",
+            "label": "Generic-descriptor share",
+            "weight": 0.7,
+            "importance": 7.4,
+            "direction": "up"
+          }
+        ],
+        "featureCount": 9,
+        "support": 7,
+        "flagged": 30,
+        "topFeatures": [
+          "Cross-border share",
+          "Recurring / negative-option share",
+          "Chargeback rate (bps)"
+        ],
+        "metrics": {
+          "precision": 0.067,
+          "recall": 0.286,
+          "f1": 0.108,
+          "tp": 2,
+          "fp": 28,
+          "fn": 5,
+          "support": 7
+        }
+      },
+      {
+        "key": "adult",
+        "label": "Adult content",
+        "tier": "P1",
+        "features": [
+          {
+            "key": "z_chargeback_rate_bps",
+            "label": "Chargeback rate (bps)",
+            "weight": 1.4,
+            "importance": 14.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_night_txn",
+            "label": "Night-hour transaction share",
+            "weight": 1.3,
+            "importance": 13.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_descriptor_changes",
+            "label": "Descriptor-change count",
+            "weight": 1.3,
+            "importance": 13.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_recurring",
+            "label": "Recurring / negative-option share",
+            "weight": 1.2,
+            "importance": 12.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cnp",
+            "label": "Card-not-present share",
+            "weight": 1.1,
+            "importance": 11.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_refund_rate_count",
+            "label": "Refund rate",
+            "weight": 1.0,
+            "importance": 10.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_descriptor_name_jaccard",
+            "label": "Descriptor / DBA name similarity",
+            "weight": -1.0,
+            "importance": 10.0,
+            "direction": "down"
+          },
+          {
+            "key": "z_pct_offshore_acquirer",
+            "label": "Offshore-acquirer share",
+            "weight": 0.9,
+            "importance": 9.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_ticket_lt_20",
+            "label": "Micro-ticket (<$20) share",
+            "weight": 0.8,
+            "importance": 8.0,
+            "direction": "up"
+          }
+        ],
+        "featureCount": 9,
+        "support": 4,
+        "flagged": 12,
+        "topFeatures": [
+          "Chargeback rate (bps)",
+          "Night-hour transaction share",
+          "Descriptor-change count"
+        ],
+        "metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "tp": 0,
+          "fp": 12,
+          "fn": 4,
+          "support": 4
+        }
+      },
+      {
+        "key": "crypto_cash",
+        "label": "Crypto / quasi-cash",
+        "tier": "P2",
+        "features": [
+          {
+            "key": "z_pct_quasi_cash",
+            "label": "Quasi-cash share",
+            "weight": 2.0,
+            "importance": 18.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_round_100",
+            "label": "Round-$100 share",
+            "weight": 1.6,
+            "importance": 14.4,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_decline_limit",
+            "label": "\u2018Exceeds limit\u2019 decline rate",
+            "weight": 1.3,
+            "importance": 11.7,
+            "direction": "up"
+          },
+          {
+            "key": "z_txn_per_card",
+            "label": "Transactions per card",
+            "weight": 1.2,
+            "importance": 10.8,
+            "direction": "up"
+          },
+          {
+            "key": "z_ticket_vs_mcc_expected",
+            "label": "Ticket size vs MCC-expected",
+            "weight": 1.2,
+            "importance": 10.8,
+            "direction": "up"
+          },
+          {
+            "key": "z_avg_ticket_usd",
+            "label": "Average ticket (USD)",
+            "weight": 1.1,
+            "importance": 9.9,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_ticket_gt_500",
+            "label": "High-ticket (>$500) share",
+            "weight": 1.0,
+            "importance": 9.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_distinct_amount_ratio",
+            "label": "Distinct-amount ratio",
+            "weight": -0.9,
+            "importance": 8.1,
+            "direction": "down"
+          },
+          {
+            "key": "z_pct_offshore_acquirer",
+            "label": "Offshore-acquirer share",
+            "weight": 0.8,
+            "importance": 7.2,
+            "direction": "up"
+          }
+        ],
+        "featureCount": 9,
+        "support": 26,
+        "flagged": 25,
+        "topFeatures": [
+          "Quasi-cash share",
+          "Round-$100 share",
+          "\u2018Exceeds limit\u2019 decline rate"
+        ],
+        "metrics": {
+          "precision": 0.36,
+          "recall": 0.346,
+          "f1": 0.353,
+          "tp": 9,
+          "fp": 16,
+          "fn": 17,
+          "support": 26
+        }
+      },
+      {
+        "key": "game_of_skill",
+        "label": "Game of skill",
+        "tier": "P2",
+        "features": [
+          {
+            "key": "z_pct_round_amount",
+            "label": "Round-amount share",
+            "weight": 1.4,
+            "importance": 16.9,
+            "direction": "up"
+          },
+          {
+            "key": "z_txn_per_card",
+            "label": "Transactions per card",
+            "weight": 1.3,
+            "importance": 15.7,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_decline_not_permitted",
+            "label": "\u2018Transaction not permitted\u2019 decline rate",
+            "weight": 1.2,
+            "importance": 14.5,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_night_txn",
+            "label": "Night-hour transaction share",
+            "weight": 1.1,
+            "importance": 13.3,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cross_border",
+            "label": "Cross-border share",
+            "weight": 1.0,
+            "importance": 12.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_max_txn_single_card",
+            "label": "Largest single-card volume",
+            "weight": 0.9,
+            "importance": 10.8,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_quasi_cash",
+            "label": "Quasi-cash share",
+            "weight": 0.7,
+            "importance": 8.4,
+            "direction": "up"
+          },
+          {
+            "key": "z_ticket_vs_mcc_expected",
+            "label": "Ticket size vs MCC-expected",
+            "weight": 0.7,
+            "importance": 8.4,
+            "direction": "up"
+          }
+        ],
+        "featureCount": 8,
+        "support": 15,
+        "flagged": 26,
+        "topFeatures": [
+          "Round-amount share",
+          "Transactions per card",
+          "\u2018Transaction not permitted\u2019 decline rate"
+        ],
+        "metrics": {
+          "precision": 0.192,
+          "recall": 0.333,
+          "f1": 0.244,
+          "tp": 5,
+          "fp": 21,
+          "fn": 10,
+          "support": 15
+        }
+      },
+      {
+        "key": "cyberlocker",
+        "label": "Cyberlockers",
+        "tier": "P2",
+        "features": [
+          {
+            "key": "z_pct_recurring",
+            "label": "Recurring / negative-option share",
+            "weight": 1.9,
+            "importance": 19.2,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cb_service_reason",
+            "label": "\u2018Service not rendered\u2019 chargeback share",
+            "weight": 1.6,
+            "importance": 16.2,
+            "direction": "up"
+          },
+          {
+            "key": "z_chargeback_rate_bps",
+            "label": "Chargeback rate (bps)",
+            "weight": 1.4,
+            "importance": 14.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_refund_rate_count",
+            "label": "Refund rate",
+            "weight": 1.3,
+            "importance": 13.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_decline_rate",
+            "label": "Overall decline rate",
+            "weight": 1.1,
+            "importance": 11.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_ticket_lt_20",
+            "label": "Micro-ticket (<$20) share",
+            "weight": 0.9,
+            "importance": 9.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_generic_descriptor",
+            "label": "Generic-descriptor share",
+            "weight": 0.9,
+            "importance": 9.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_descriptor_name_jaccard",
+            "label": "Descriptor / DBA name similarity",
+            "weight": -0.8,
+            "importance": 8.1,
+            "direction": "down"
+          }
+        ],
+        "featureCount": 8,
+        "support": 4,
+        "flagged": 11,
+        "topFeatures": [
+          "Recurring / negative-option share",
+          "\u2018Service not rendered\u2019 chargeback share",
+          "Chargeback rate (bps)"
+        ],
+        "metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "tp": 0,
+          "fp": 11,
+          "fn": 4,
+          "support": 4
+        }
+      },
+      {
+        "key": "nutra_subscription",
+        "label": "Nutra subscriptions",
+        "tier": "P3",
+        "features": [
+          {
+            "key": "z_pct_recurring",
+            "label": "Recurring / negative-option share",
+            "weight": 1.9,
+            "importance": 19.2,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cb_service_reason",
+            "label": "\u2018Service not rendered\u2019 chargeback share",
+            "weight": 1.5,
+            "importance": 15.2,
+            "direction": "up"
+          },
+          {
+            "key": "z_chargeback_rate_bps",
+            "label": "Chargeback rate (bps)",
+            "weight": 1.4,
+            "importance": 14.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_refund_rate_count",
+            "label": "Refund rate",
+            "weight": 1.3,
+            "importance": 13.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_descriptor_changes",
+            "label": "Descriptor-change count",
+            "weight": 1.1,
+            "importance": 11.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_decline_rate",
+            "label": "Overall decline rate",
+            "weight": 1.0,
+            "importance": 10.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_generic_descriptor",
+            "label": "Generic-descriptor share",
+            "weight": 0.9,
+            "importance": 9.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_descriptor_name_jaccard",
+            "label": "Descriptor / DBA name similarity",
+            "weight": -0.8,
+            "importance": 8.1,
+            "direction": "down"
+          }
+        ],
+        "featureCount": 8,
+        "support": 20,
+        "flagged": 52,
+        "topFeatures": [
+          "Recurring / negative-option share",
+          "\u2018Service not rendered\u2019 chargeback share",
+          "Chargeback rate (bps)"
+        ],
+        "metrics": {
+          "precision": 0.154,
+          "recall": 0.4,
+          "f1": 0.222,
+          "tp": 8,
+          "fp": 44,
+          "fn": 12,
+          "support": 20
+        }
+      },
+      {
+        "key": "financial_trading",
+        "label": "Financial trading",
+        "tier": "P3",
+        "features": [
+          {
+            "key": "z_ticket_vs_mcc_expected",
+            "label": "Ticket size vs MCC-expected",
+            "weight": 1.5,
+            "importance": 15.2,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_ticket_gt_500",
+            "label": "High-ticket (>$500) share",
+            "weight": 1.4,
+            "importance": 14.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cross_border",
+            "label": "Cross-border share",
+            "weight": 1.4,
+            "importance": 14.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_round_100",
+            "label": "Round-$100 share",
+            "weight": 1.3,
+            "importance": 13.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_decline_limit",
+            "label": "\u2018Exceeds limit\u2019 decline rate",
+            "weight": 1.2,
+            "importance": 12.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_offshore_acquirer",
+            "label": "Offshore-acquirer share",
+            "weight": 1.1,
+            "importance": 11.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cnp",
+            "label": "Card-not-present share",
+            "weight": 1.0,
+            "importance": 10.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_avg_ticket_usd",
+            "label": "Average ticket (USD)",
+            "weight": 1.0,
+            "importance": 10.1,
+            "direction": "up"
+          }
+        ],
+        "featureCount": 8,
+        "support": 14,
+        "flagged": 6,
+        "topFeatures": [
+          "Ticket size vs MCC-expected",
+          "High-ticket (>$500) share",
+          "Cross-border share"
+        ],
+        "metrics": {
+          "precision": 0.5,
+          "recall": 0.214,
+          "f1": 0.3,
+          "tp": 3,
+          "fp": 3,
+          "fn": 11,
+          "support": 14
+        }
+      },
+      {
+        "key": "telemarketing",
+        "label": "Telemarketing",
+        "tier": "P3",
+        "features": [
+          {
+            "key": "z_pct_keyed",
+            "label": "Keyed-entry share",
+            "weight": 1.4,
+            "importance": 15.4,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cb_service_reason",
+            "label": "\u2018Service not rendered\u2019 chargeback share",
+            "weight": 1.4,
+            "importance": 15.4,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_moto",
+            "label": "MOTO share",
+            "weight": 1.2,
+            "importance": 13.2,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_recurring",
+            "label": "Recurring / negative-option share",
+            "weight": 1.1,
+            "importance": 12.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_refund_rate_count",
+            "label": "Refund rate",
+            "weight": 1.1,
+            "importance": 12.1,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cnp",
+            "label": "Card-not-present share",
+            "weight": 1.0,
+            "importance": 11.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_cnp_vs_mcc_expected",
+            "label": "CNP share vs MCC-expected",
+            "weight": 1.0,
+            "importance": 11.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_descriptor_changes",
+            "label": "Descriptor-change count",
+            "weight": 0.9,
+            "importance": 9.9,
+            "direction": "up"
+          }
+        ],
+        "featureCount": 8,
+        "support": 7,
+        "flagged": 29,
+        "topFeatures": [
+          "Keyed-entry share",
+          "\u2018Service not rendered\u2019 chargeback share",
+          "MOTO share"
+        ],
+        "metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "tp": 0,
+          "fp": 29,
+          "fn": 7,
+          "support": 7
+        }
+      },
+      {
+        "key": "tobacco_vape",
+        "label": "Tobacco & vape",
+        "tier": "P3",
+        "features": [
+          {
+            "key": "z_pct_night_txn",
+            "label": "Night-hour transaction share",
+            "weight": 0.9,
+            "importance": 18.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_chargeback_rate_bps",
+            "label": "Chargeback rate (bps)",
+            "weight": 0.9,
+            "importance": 18.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_decline_not_permitted",
+            "label": "\u2018Transaction not permitted\u2019 decline rate",
+            "weight": 0.9,
+            "importance": 18.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cnp",
+            "label": "Card-not-present share",
+            "weight": 0.8,
+            "importance": 16.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_pct_cross_border",
+            "label": "Cross-border share",
+            "weight": 0.8,
+            "importance": 16.0,
+            "direction": "up"
+          },
+          {
+            "key": "z_ticket_vs_mcc_expected",
+            "label": "Ticket size vs MCC-expected",
+            "weight": 0.7,
+            "importance": 14.0,
+            "direction": "up"
+          }
+        ],
+        "featureCount": 6,
+        "support": 3,
+        "flagged": 2,
+        "topFeatures": [
+          "Night-hour transaction share",
+          "Chargeback rate (bps)",
+          "\u2018Transaction not permitted\u2019 decline rate"
+        ],
+        "metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "tp": 0,
+          "fp": 2,
+          "fn": 3,
+          "support": 3
+        }
+      }
+    ],
+    "tierMetrics": {
+      "P1": {
+        "precision": 0.247,
+        "recall": 0.42,
+        "f1": 0.311,
+        "tp": 21,
+        "fp": 64,
+        "fn": 29,
+        "support": 50
+      },
+      "P2": {
+        "precision": 0.258,
+        "recall": 0.444,
+        "f1": 0.327,
+        "tp": 16,
+        "fp": 46,
+        "fn": 20,
+        "support": 36
+      },
+      "P3": {
+        "precision": 0.202,
+        "recall": 0.409,
+        "f1": 0.271,
+        "tp": 18,
+        "fp": 71,
+        "fn": 26,
+        "support": 44
+      }
+    },
+    "note": "Within-category argmax attribution is directional on saturated scores; the P1/P2/P3 tier detection is measured against planted labels."
+  },
+  "rulePack": {
+    "id": "rule-pack",
+    "name": "Expert Rule Pack",
+    "family": "rules",
+    "kind": "expert-rules",
+    "typeLabel": "9 deterministic gates",
+    "version": "2.2.0",
+    "status": "production",
+    "summary": "A transparent, non-ML complement to the scorers. Each gate is a hard, auditable threshold; a merchant reaches the queue via the model OR the rules, so a clean-scoring merchant that trips a rule is still surfaced.",
+    "detects": "Bright-line policy breaches that must fire regardless of the learned score.",
+    "output": "rules_triggered \u00b7 flag_reason",
+    "rules": [
+      {
+        "name": "split_ticketing_rule",
+        "family": "split_ticketing",
+        "expr": "pct_txn_in_split_burst > 0.10  AND  pct_near_ceiling > 0.15",
+        "fired": 20
+      },
+      {
+        "name": "factoring_rule",
+        "family": "factoring",
+        "expr": "n_sub_merchant_ids \u2265 2  AND  volume_spike_ratio > 3",
+        "fired": 0
+      },
+      {
+        "name": "descriptor_churn_rule",
+        "family": "descriptor",
+        "expr": "descriptor_changes \u2265 3  AND  descriptor_name_jaccard < 0.20",
+        "fired": 76
+      },
+      {
+        "name": "undeclared_quasi_cash_rule",
+        "family": "cash",
+        "expr": "pct_quasi_cash > 0.25  AND  MCC not in cash bands",
+        "fired": 21
+      },
+      {
+        "name": "gambling_behaviour_rule",
+        "family": "mcc_miscoding",
+        "expr": "pct_night_txn > 0.35  AND  pct_round_amount > 0.30  AND  pct_cross_border > 0.30",
+        "fired": 3
+      },
+      {
+        "name": "dispute_excursion_rule",
+        "family": "mcc_miscoding",
+        "expr": "chargeback_rate_bps > 100  AND  refund_rate_count > 0.05",
+        "fired": 51
+      },
+      {
+        "name": "issuer_prohibition_rule",
+        "family": "mcc_miscoding",
+        "expr": "pct_decline_not_permitted > 0.05",
+        "fired": 59
+      },
+      {
+        "name": "cash_disbursement_rule",
+        "family": "cash",
+        "expr": "pct_round_100 > 0.40  AND  avg_ticket_usd > 400  AND  pct_ticket_gt_500 > 0.30",
+        "fired": 1
+      },
+      {
+        "name": "interchange_abuse_rule",
+        "family": "mcc_abuse",
+        "expr": "interchange_advantage_bps > 50 on a cheap band  OR  CNP-vs-expected > 0.55 with advantage > 25",
+        "fired": 25
+      }
+    ],
+    "totalFired": 256
+  }
+}

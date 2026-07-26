@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Local env / secrets (never commit keys — the demo needs none)
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Python (optional reference pipeline)
+__pycache__/
+*.pyc
+.venv/
+venv/
+scripts/artifacts/
+
+# Raw synthetic datasets / pipeline inputs — too large for git (some >100MB).
+# The deployed demo ships only the compact JSON it actually loads
+# (public/data/*, src/data/*.json), so these source dirs are excluded.
+/MCC Miscoding Data/
+/MCC Miscoding Data v2/
+/MCC Miscoding Data.zip

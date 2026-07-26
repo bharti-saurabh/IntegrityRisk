@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integrity risk · the anatomy of five merchant patterns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDEFF3;
+  --surface:#FFFFFF;
+  --sunk:#F5F7FA;
+  --ink:#0F1116;
+  --slate:#5A6376;
+  --grey:#98A0AE;
+  --line:#DDE2EA;
+  --line-soft:#E9EDF3;
+  --declared:#8A93A3;
+  --observed:#4B32E8;
+  --observed-soft:#EEEBFE;
+  --flag:#E03038;
+  --flag-soft:#FDECEC;
+  --ok:#0E9F6E;
+  --amber:#C77700;
+
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:"Inter",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+
+  --gutter:clamp(20px,4vw,64px);
+  --ease:cubic-bezier(.22,.68,.36,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);color:var(--ink);font-family:var(--body);
+  font-weight:400;line-height:1.55;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--observed);color:#fff}
+
+/* ---------- shared type ---------- */
+.eyebrow{
+  font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--grey);
+}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+h1,h2,h3,h4{font-family:var(--display);font-weight:600;letter-spacing:-.02em;line-height:1.02}
+
+/* ---------- top bar ---------- */
+header#bar{
+  position:fixed;top:0;left:0;right:0;height:56px;z-index:60;
+  display:flex;align-items:center;gap:16px;padding:0 var(--gutter);
+  background:rgba(237,239,243,.86);backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);border-bottom:1px solid transparent;
+  transition:border-color .3s;
+}
+header#bar.stuck{border-bottom-color:var(--line)}
+#bar .lock{width:9px;height:9px;border:2px solid var(--observed);border-radius:2px;flex:none}
+#bar .ttl{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:-.02em}
+#bar .sub{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--grey)}
+#bar .prog{margin-left:auto;display:flex;align-items:center;gap:10px}
+#bar .prog .track{width:120px;height:2px;background:var(--line);position:relative}
+#bar .prog .track b{position:absolute;inset:0 100% 0 0;background:var(--ink);transition:right .18s linear}
+#bar .prog .n{font-family:var(--mono);font-size:10px;color:var(--grey);letter-spacing:.1em}
+
+/* ---------- hero ---------- */
+#hero{
+  min-height:100svh;display:flex;flex-direction:column;justify-content:center;
+  padding:120px var(--gutter) 60px;position:relative;
+}
+#hero .kicker{margin-bottom:34px;opacity:0;animation:rise .9s var(--ease) .15s forwards}
+#hero h1{
+  font-size:clamp(42px,8.2vw,124px);font-weight:600;letter-spacing:-.045em;line-height:.92;
+  max-width:16ch;
+}
+#hero h1 span{display:block;opacity:0;animation:rise 1s var(--ease) forwards}
+#hero h1 span:nth-child(1){animation-delay:.25s}
+#hero h1 span:nth-child(2){animation-delay:.36s}
+#hero h1 span.acc{color:var(--observed)}
+#hero .lede{
+  margin-top:34px;max-width:52ch;font-size:clamp(15px,1.5vw,19px);font-weight:300;
+  color:var(--slate);line-height:1.6;opacity:0;animation:rise 1s var(--ease) .5s forwards;
+}
+#hero .lede b{font-weight:500;color:var(--ink)}
+
+/* the seam, introduced in the hero */
+#seamDemo{
+  margin-top:56px;max-width:760px;opacity:0;animation:rise 1s var(--ease) .68s forwards;
+}
+.seam{
+  position:relative;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  background:var(--surface);
+}
+.seam .half{padding:18px 20px;display:flex;align-items:center;gap:16px;min-height:76px}
+.seam .half.top{background:var(--sunk)}
+.seam .rule{
+  height:0;border-top:1.5px dashed var(--observed);position:relative;
+}
+.seam .rule::after{
+  content:attr(data-label);position:absolute;left:20px;top:-8px;
+  background:var(--observed);color:#fff;font-family:var(--mono);font-size:9px;
+  letter-spacing:.14em;text-transform:uppercase;padding:2px 8px;
+}
+.seam .tag{
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--grey);width:88px;flex:none;
+}
+.seam .val{font-family:var(--display);font-size:clamp(16px,2vw,22px);font-weight:500;letter-spacing:-.02em}
+.seam .val.obs{color:var(--observed)}
+#hero .scroll{
+  margin-top:52px;display:flex;align-items:center;gap:10px;color:var(--grey);
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  opacity:0;animation:rise 1s var(--ease) .9s forwards;
+}
+#hero .scroll i{display:block;width:22px;height:1px;background:var(--grey);animation:slide 1.8s infinite var(--ease)}
+
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes slide{0%,100%{transform:translateX(0);opacity:.4}50%{transform:translateX(6px);opacity:1}}
+
+/* ---------- premise ---------- */
+#premise{padding:100px var(--gutter);border-top:1px solid var(--line)}
+.wrap{max-width:1180px;margin:0 auto}
+.split2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:clamp(28px,6vw,90px);align-items:start}
+#premise h2{font-size:clamp(26px,3.6vw,46px);max-width:14ch}
+#premise .body p{font-size:16px;color:var(--slate);font-weight:300;line-height:1.7;max-width:56ch}
+#premise .body p + p{margin-top:18px}
+#premise .body p b{color:var(--ink);font-weight:500}
+.contrast{margin-top:34px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line)}
+.contrast div{background:var(--surface);padding:20px}
+.contrast .h{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--grey)}
+.contrast .t{margin-top:10px;font-family:var(--display);font-size:18px;font-weight:500;letter-spacing:-.02em}
+.contrast .d{margin-top:8px;font-size:13.5px;color:var(--slate);font-weight:300;line-height:1.6}
+.contrast div.on .t{color:var(--observed)}
+
+/* ---------- index ---------- */
+#index{padding:0 var(--gutter) 100px}
+#index .head{display:flex;align-items:baseline;gap:16px;padding-bottom:16px;border-bottom:1px solid var(--ink)}
+#index .head h2{font-size:clamp(20px,2.4vw,28px)}
+#index .head .c{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--grey)}
+.ix{
+  display:grid;grid-template-columns:34px minmax(0,1.5fr) minmax(0,2fr) 132px;
+  gap:20px;align-items:center;padding:20px 4px;border-bottom:1px solid var(--line-soft);
+  text-decoration:none;color:inherit;transition:background .25s var(--ease),padding .25s var(--ease);
+}
+.ix:hover{background:var(--surface);padding-left:14px;padding-right:14px}
+.ix .ic{width:26px;height:26px;color:var(--observed)}
+.ix .nm{font-family:var(--display);font-size:clamp(17px,2vw,21px);font-weight:500;letter-spacing:-.02em}
+.ix .ds{font-size:13.5px;color:var(--slate);font-weight:300}
+.ix .dp{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.ix .dp .lb{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--grey)}
+.ix .dp .bars{display:flex;gap:3px}
+.ix .dp .bars i{width:12px;height:5px;background:var(--line);display:block}
+.ix .dp .bars i.f{background:var(--observed)}
+
+/* ---------- pattern sections ---------- */
+.pat{padding:96px var(--gutter);border-top:1px solid var(--line)}
+.pat:nth-child(even){background:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0))}
+.pat .top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,5vw,72px);align-items:end}
+.pat .idn{display:flex;align-items:center;gap:12px}
+.pat .idn svg{width:24px;height:24px;color:var(--observed)}
+.pat h2{font-size:clamp(30px,4.6vw,60px);margin-top:20px;letter-spacing:-.035em;max-width:13ch}
+.pat .aka{margin-top:14px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--grey)}
+.pat .def{font-size:clamp(15px,1.6vw,18px);color:var(--slate);font-weight:300;line-height:1.65;max-width:48ch}
+.pat .def b{color:var(--ink);font-weight:500}
+
+/* figure */
+.fig{margin-top:52px;border:1px solid var(--line);background:var(--surface)}
+.fig .fhd{
+  display:flex;align-items:center;gap:14px;padding:13px 20px;border-bottom:1px solid var(--line);
+  background:var(--sunk);
+}
+.fig .fhd .ft{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--slate)}
+.fig .fhd .fb{
+  margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  border:1px solid var(--ink);background:transparent;color:var(--ink);padding:7px 14px;cursor:pointer;
+  transition:background .2s var(--ease),color .2s var(--ease);
+}
+.fig .fhd .fb:hover{background:var(--ink);color:#fff}
+.fig .fhd .fb:focus-visible{outline:2px solid var(--observed);outline-offset:2px}
+.fig .fbody{padding:0}
+.lane{padding:24px 22px;position:relative}
+.lane.declared{background:var(--sunk)}
+.lane .lk{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--grey);margin-bottom:16px;display:flex;align-items:center;gap:8px;
+}
+.lane .lk i{width:6px;height:6px;background:var(--declared);display:block}
+.lane.observed .lk{color:var(--observed)}
+.lane.observed .lk i{background:var(--observed)}
+.divider{
+  height:0;border-top:1.5px dashed var(--observed);position:relative;margin:0;
+}
+.divider span{
+  position:absolute;left:22px;top:-9px;background:var(--observed);color:#fff;
+  font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:2px 9px;
+}
+.divider em{
+  position:absolute;right:22px;top:-9px;background:var(--paper);color:var(--observed);
+  font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  padding:2px 9px;border:1px solid var(--observed);font-style:normal;
+}
+
+/* --- 1 MCC bars --- */
+.bars{display:flex;flex-direction:column;gap:11px}
+.brow{display:grid;grid-template-columns:170px minmax(0,1fr) 74px;gap:14px;align-items:center}
+.brow .bl{font-family:var(--mono);font-size:11px;color:var(--slate)}
+.brow .bt{height:9px;background:var(--line-soft);position:relative;overflow:hidden}
+.brow .bt b{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--declared);transition:width 1.1s var(--ease)}
+.lane.observed .brow .bt b{background:var(--observed)}
+.brow .bv{font-family:var(--mono);font-size:11px;text-align:right;color:var(--slate);font-variant-numeric:tabular-nums}
+.lane.observed .brow .bv{color:var(--observed)}
+.codechip{
+  display:inline-flex;align-items:center;gap:10px;padding:9px 14px;border:1px solid var(--line);
+  background:var(--surface);font-family:var(--mono);font-size:12px;
+}
+.lane.observed .codechip{border-color:var(--flag);background:var(--flag-soft);color:var(--flag)}
+.codechip b{font-weight:600}
+.matchnote{
+  margin-top:18px;font-size:13.5px;color:var(--slate);font-weight:300;max-width:60ch;
+  opacity:0;transform:translateY(6px);transition:all .6s var(--ease) .5s;
+}
+.fig.run .matchnote{opacity:1;transform:none}
+.matchnote b{color:var(--flag);font-weight:500}
+
+/* --- 2 split tickets --- */
+.tickstage{position:relative;min-height:96px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tick{
+  border:1px solid var(--line);background:var(--surface);padding:12px 16px;min-width:104px;
+  transition:all .7s var(--ease);
+}
+.tick .amt{font-family:var(--display);font-size:20px;font-weight:600;letter-spacing:-.02em}
+.tick .mt{font-family:var(--mono);font-size:9.5px;color:var(--grey);letter-spacing:.1em;margin-top:4px}
+.tick.big{border-color:var(--ink);min-width:180px}
+.tick.big .amt{font-size:30px}
+.tick.piece{opacity:0;transform:translateY(-14px) scale(.94);border-color:var(--observed);color:var(--observed)}
+.fig.run .tick.piece{opacity:1;transform:none}
+.fig.run .tick.big{opacity:.28;filter:grayscale(1)}
+.threshold{
+  display:flex;align-items:center;gap:12px;padding:10px 22px;background:var(--flag-soft);
+  border-top:1px solid var(--flag);border-bottom:1px solid var(--flag);
+}
+.threshold .tl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--flag)}
+.threshold .tr{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--flag)}
+.sumline{
+  margin-top:18px;font-family:var(--mono);font-size:12px;color:var(--slate);
+  opacity:0;transition:opacity .6s var(--ease) .7s;
+}
+.fig.run .sumline{opacity:1}
+.sumline b{color:var(--flag)}
+
+/* --- 3 factoring --- */
+.mid{
+  border:1px solid var(--ink);background:var(--surface);padding:18px 20px;max-width:420px;
+}
+.mid .mn{font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:-.02em}
+.mid .mm{font-family:var(--mono);font-size:11px;color:var(--slate);margin-top:7px}
+.mid .mrow{margin-top:14px;display:flex;gap:18px;flex-wrap:wrap}
+.mid .mrow div{font-family:var(--mono);font-size:10.5px;color:var(--grey)}
+.mid .mrow div b{color:var(--ink);font-weight:500;display:block;margin-top:3px;font-size:12px}
+.tenants{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.tenant{
+  border:1px solid var(--line);background:var(--surface);padding:16px;
+  opacity:.24;filter:blur(1.5px);transition:all .8s var(--ease);
+}
+.fig.run .tenant{opacity:1;filter:none;border-color:var(--observed)}
+.fig.run .tenant:nth-child(2){transition-delay:.16s}
+.fig.run .tenant:nth-child(3){transition-delay:.32s}
+.tenant .tn{font-family:var(--display);font-size:15px;font-weight:600;letter-spacing:-.01em}
+.tenant .tc{font-family:var(--mono);font-size:10px;color:var(--flag);margin-top:6px;letter-spacing:.08em}
+.tenant .tv{font-family:var(--mono);font-size:11px;color:var(--slate);margin-top:10px}
+.pipes{height:56px;position:relative}
+.pipes svg{width:100%;height:100%;overflow:visible}
+.pipes path{stroke:var(--line);stroke-width:1.5;fill:none;stroke-dasharray:4 4;transition:stroke .8s var(--ease)}
+.fig.run .pipes path{stroke:var(--observed)}
+.pipes circle{r:0;fill:var(--observed);transition:r .4s var(--ease)}
+.fig.run .pipes circle{r:3}
+
+/* --- 4 descriptor --- */
+.stmt{border:1px solid var(--line);background:var(--surface);max-width:620px}
+.stmt .sh{
+  padding:12px 16px;border-bottom:1px solid var(--line);background:var(--sunk);
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--grey);
+  display:flex;
+}
+.stmt .sh span:last-child{margin-left:auto}
+.srow{
+  display:grid;grid-template-columns:1fr 92px;gap:12px;padding:13px 16px;
+  border-bottom:1px solid var(--line-soft);align-items:center;
+}
+.srow:last-child{border-bottom:none}
+.srow .d1{font-family:var(--mono);font-size:12.5px;letter-spacing:.02em}
+.srow .d2{
+  font-size:12px;color:var(--observed);margin-top:5px;font-weight:400;
+  max-height:0;opacity:0;overflow:hidden;transition:all .5s var(--ease);
+}
+.fig.run .srow .d2{max-height:30px;opacity:1;margin-top:6px}
+.srow .amt{font-family:var(--mono);font-size:12.5px;text-align:right;color:var(--slate)}
+.srow.bad .d1{color:var(--flag)}
+.srow .flagtag{
+  display:inline-block;margin-left:9px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--flag);border:1px solid var(--flag);padding:1px 6px;
+  opacity:0;transition:opacity .5s var(--ease) .3s;
+}
+.fig.run .srow .flagtag{opacity:1}
+
+/* --- 5 cash --- */
+.flowline{display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.node{
+  border:1px solid var(--line);background:var(--surface);padding:14px 18px;min-width:132px;
+}
+.node .nk{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--grey)}
+.node .nv{font-family:var(--display);font-size:17px;font-weight:600;letter-spacing:-.02em;margin-top:6px}
+.arrow{width:44px;height:1px;background:var(--line);position:relative;flex:none}
+.arrow::after{content:"";position:absolute;right:0;top:-3px;border-left:6px solid var(--line);border-top:3.5px solid transparent;border-bottom:3.5px solid transparent}
+.lane.observed .node{border-color:var(--observed)}
+.lane.observed .node .nv{color:var(--observed)}
+.lane.observed .arrow{background:var(--observed)}
+.lane.observed .arrow::after{border-left-color:var(--observed)}
+.node.empty{border-style:dashed;background:transparent}
+.node.empty .nv{color:var(--grey)}
+.node.cash{border-color:var(--flag);background:var(--flag-soft)}
+.node.cash .nv{color:var(--flag)}
+.node.hidden{opacity:0;transform:translateX(-10px);transition:all .7s var(--ease)}
+.fig.run .node.hidden{opacity:1;transform:none}
+.fig.run .node.hidden:nth-of-type(2){transition-delay:.2s}
+
+/* ---------- three-up strip ---------- */
+.strip{margin-top:46px;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.cell{background:var(--surface);padding:24px 22px}
+.cell h4{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--grey)}
+.cell ul{list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:11px}
+.cell li{font-size:13.5px;color:var(--slate);font-weight:300;line-height:1.5;padding-left:16px;position:relative}
+.cell li::before{content:"";position:absolute;left:0;top:8px;width:7px;height:1px;background:var(--grey)}
+.cell li b{color:var(--ink);font-weight:500}
+.cell.signal li::before{background:var(--observed)}
+.cell.cost li::before{background:var(--flag)}
+.cell .big{font-family:var(--display);font-size:clamp(26px,3vw,38px);font-weight:600;letter-spacing:-.035em;margin-top:14px}
+.cell .bigsub{font-size:13px;color:var(--slate);font-weight:300;margin-top:8px;line-height:1.55}
+
+/* ---------- chain ---------- */
+#chain{padding:100px var(--gutter);border-top:1px solid var(--ink);background:var(--surface)}
+#chain h2{font-size:clamp(28px,4vw,52px);max-width:18ch}
+#chain .lede{margin-top:22px;max-width:56ch;font-size:16px;color:var(--slate);font-weight:300;line-height:1.7}
+.ladder{margin-top:54px;display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+.rung{background:var(--surface);padding:22px 18px;position:relative;opacity:0;transform:translateY(14px);transition:all .7s var(--ease)}
+.rung.in{opacity:1;transform:none}
+.rung .step{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--observed)}
+.rung .nm{font-family:var(--display);font-size:16px;font-weight:600;letter-spacing:-.02em;margin-top:12px}
+.rung .ds{font-size:12.5px;color:var(--slate);font-weight:300;margin-top:10px;line-height:1.55}
+.rung .bar{height:3px;background:var(--line-soft);margin-top:18px;position:relative;overflow:hidden}
+.rung .bar b{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--observed);transition:width 1s var(--ease)}
+.rung.in .bar b{width:var(--w)}
+
+/* ---------- close ---------- */
+#close{padding:110px var(--gutter) 130px;border-top:1px solid var(--line)}
+#close .q{font-family:var(--display);font-size:clamp(26px,4.4vw,58px);font-weight:600;letter-spacing:-.04em;line-height:1.06;max-width:20ch}
+#close .q em{font-style:normal;color:var(--observed)}
+#close .sig{margin-top:40px;display:flex;gap:34px;flex-wrap:wrap}
+#close .sig div{font-family:var(--mono);font-size:11px;color:var(--grey);letter-spacing:.1em}
+#close .sig div b{display:block;font-family:var(--display);font-size:26px;color:var(--ink);letter-spacing:-.03em;margin-top:8px;font-weight:600}
+
+footer{padding:26px var(--gutter);border-top:1px solid var(--line);display:flex;gap:16px;flex-wrap:wrap}
+footer span{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--grey)}
+footer span:last-child{margin-left:auto}
+
+/* ---------- reveal ---------- */
+.rv{opacity:0;transform:translateY(20px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.rv.in{opacity:1;transform:none}
+
+/* ---------- responsive ---------- */
+@media (max-width:1000px){
+  .split2,.pat .top{grid-template-columns:1fr;gap:26px}
+  .strip,.contrast{grid-template-columns:1fr}
+  .ladder{grid-template-columns:1fr 1fr}
+  .tenants{grid-template-columns:1fr}
+  .pipes{display:none}
+  .ix{grid-template-columns:26px 1fr;gap:14px}
+  .ix .ds,.ix .dp{display:none}
+  .brow{grid-template-columns:110px 1fr 58px;gap:10px}
+  .brow .bl{font-size:10px}
+}
+@media (max-width:620px){
+  .ladder{grid-template-columns:1fr}
+  #bar .sub,#bar .prog .n{display:none}
+  .flowline{gap:8px}
+  .arrow{width:22px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+  html{scroll-behavior:auto}
+  #hero .kicker,#hero h1 span,#hero .lede,#seamDemo,#hero .scroll{opacity:1;animation:none}
+}
+</style>
+</head>
+<body>
+
+<header id="bar">
+  <div class="lock"></div>
+  <div>
+    <div class="ttl">Integrity risk</div>
+  </div>
+  <div class="sub">Merchant portfolio · anatomy</div>
+  <div class="prog">
+    <span class="n" id="progN">00 / 05</span>
+    <div class="track"><b id="progB"></b></div>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section id="hero">
+  <div class="eyebrow kicker">Five patterns · one seam</div>
+  <h1>
+    <span>What the merchant</span>
+    <span class="acc">declares isn't what<br>the money does.</span>
+  </h1>
+  <p class="lede">
+    Cardholder fraud is a stranger using a card. <b>Integrity risk is the merchant itself
+    being something other than what the file says.</b> It hides in codes, tickets, MIDs and
+    statement strings, and it clears authorization every time.
+  </p>
+
+  <div id="seamDemo">
+    <div class="seam">
+      <div class="half top">
+        <div class="tag">Declared</div>
+        <div class="val">MCC 5812 · Eating places · $84 average ticket</div>
+      </div>
+      <div class="rule" data-label="the seam"></div>
+      <div class="half">
+        <div class="tag">Observed</div>
+        <div class="val obs">99% card-not-present · 2 a.m. peak · 41% cross-border</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll"><i></i>Five anatomies below</div>
+</section>
+
+<!-- ============ PREMISE ============ -->
+<section id="premise">
+  <div class="wrap split2">
+    <h2>Nothing here is a declined transaction.</h2>
+    <div class="body">
+      <p>
+        Every pattern on this page approves. The card is valid, the cardholder is real,
+        the funds move, the merchant is boarded. Fraud controls look at the transaction
+        and find nothing wrong with it, because nothing is wrong with it.
+      </p>
+      <p>
+        What's wrong is the <b>description</b>. A category code that doesn't match the goods.
+        One sale wearing six receipts. A merchant ID carrying somebody else's business.
+        A statement line the cardholder can't place. A purchase that hands over cash.
+      </p>
+      <p>
+        Integrity risk is only visible when you compare the declared record against
+        observed behavior. That comparison is the seam, and it runs through all five.
+      </p>
+
+      <div class="contrast">
+        <div>
+          <div class="h">Fraud monitoring asks</div>
+          <div class="t">Is this transaction real?</div>
+          <div class="d">Card, device, velocity, geography, cardholder history. Answers in milliseconds, at the transaction.</div>
+        </div>
+        <div class="on">
+          <div class="h">Integrity monitoring asks</div>
+          <div class="t">Is this merchant what it claims?</div>
+          <div class="d">Category, ticket shape, ownership, descriptor, fulfilment. Answers over weeks, at the portfolio.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INDEX ============ -->
+<section id="index">
+  <div class="wrap">
+    <div class="head">
+      <h2>The five</h2>
+      <span class="c">Ordered by how deeply the truth is buried</span>
+    </div>
+
+    <a class="ix" href="#p1">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8V4h4M21 8V4h-4M3 16v4h4M21 16v4h-4"/><circle cx="12" cy="12" r="3"/><path d="m14.5 14.5 2 2"/></svg>
+      <div class="nm">MCC Miscoding</div>
+      <div class="ds">The merchant is filed under a category its behavior does not support.</div>
+      <div class="dp"><span class="lb">Concealment</span><span class="bars"><i class="f"></i><i class="f"></i><i></i><i></i><i></i></span></div>
+    </a>
+
+    <a class="ix" href="#p2">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 20V12a4 4 0 0 1 4-4h8"/><path d="m15 5 4 3-4 3"/></svg>
+      <div class="nm">Split-Ticketing</div>
+      <div class="ds">One sale cut into several so each piece sits under a control.</div>
+      <div class="dp"><span class="lb">Concealment</span><span class="bars"><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></span></div>
+    </a>
+
+    <a class="ix" href="#p3">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.4 10.7 7.2-4.2M8.4 13.3l7.2 4.2"/></svg>
+      <div class="nm">Factoring</div>
+      <div class="ds">A boarded merchant rents its ID to businesses that could never board.</div>
+      <div class="dp"><span class="lb">Concealment</span><span class="bars"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i></span></div>
+    </a>
+
+    <a class="ix" href="#p4">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg>
+      <div class="nm">Descriptor Intelligence</div>
+      <div class="ds">The one line the cardholder ever sees, and what it is built to prevent.</div>
+      <div class="dp"><span class="lb">Concealment</span><span class="bars"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i></span></div>
+    </a>
+
+    <a class="ix" href="#p5">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="6.5" width="19" height="11" rx="1.5"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+      <div class="nm">Cash-Disbursement</div>
+      <div class="ds">A purchase of goods where the goods are money.</div>
+      <div class="dp"><span class="lb">Concealment</span><span class="bars"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i></span></div>
+    </a>
+  </div>
+</section>
+
+<!-- ============ 1 · MCC MISCODING ============ -->
+<section class="pat" id="p1">
+  <div class="wrap">
+    <div class="top rv">
+      <div>
+        <div class="idn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8V4h4M21 8V4h-4M3 16v4h4M21 16v4h-4"/><circle cx="12" cy="12" r="3"/><path d="m14.5 14.5 2 2"/></svg>
+          <span class="eyebrow">MCC Miscoding Studio</span>
+        </div>
+        <h2>The category is a claim, not a fact.</h2>
+        <div class="aka">Also: category drift · code shopping · misclassification</div>
+      </div>
+      <p class="def">
+        A merchant category code decides interchange, which brand rules apply, whether issuers
+        will even authorize, and how closely anyone looks. <b>It is chosen at boarding and
+        rarely revisited.</b> Behavior moves. The code stays.
+      </p>
+    </div>
+
+    <div class="fig rv" data-fig>
+      <div class="fhd">
+        <span class="ft">Merchant 4419-2287 · boarded March 2023</span>
+        <button class="fb" data-run>Compare to peer group</button>
+      </div>
+      <div class="fbody">
+        <div class="lane declared">
+          <div class="lk"><i></i>Declared at boarding</div>
+          <div class="codechip"><b>MCC 5812</b> · Eating places and restaurants</div>
+          <div class="bars" style="margin-top:20px">
+            <div class="brow"><span class="bl">Peer avg ticket</span><span class="bt"><b data-w="22%"></b></span><span class="bv">$41</span></div>
+            <div class="brow"><span class="bl">Peer card-not-present</span><span class="bt"><b data-w="18%"></b></span><span class="bv">18%</span></div>
+            <div class="brow"><span class="bl">Peer refund rate</span><span class="bt"><b data-w="12%"></b></span><span class="bv">1.2%</span></div>
+            <div class="brow"><span class="bl">Peer cross-border</span><span class="bt"><b data-w="9%"></b></span><span class="bv">3%</span></div>
+            <div class="brow"><span class="bl">Peak hour</span><span class="bt"><b data-w="48%"></b></span><span class="bv">12:40</span></div>
+          </div>
+        </div>
+
+        <div class="divider"><span>the seam</span><em>gap</em></div>
+
+        <div class="lane observed">
+          <div class="lk"><i></i>Observed over 90 days</div>
+          <div class="codechip"><b>Behaves as MCC 7995</b> · Betting and wagering</div>
+          <div class="bars" style="margin-top:20px">
+            <div class="brow"><span class="bl">Avg ticket</span><span class="bt"><b data-w="71%"></b></span><span class="bv">$164</span></div>
+            <div class="brow"><span class="bl">Card-not-present</span><span class="bt"><b data-w="99%"></b></span><span class="bv">99%</span></div>
+            <div class="brow"><span class="bl">Refund rate</span><span class="bt"><b data-w="62%"></b></span><span class="bv">9.4%</span></div>
+            <div class="brow"><span class="bl">Cross-border</span><span class="bt"><b data-w="41%"></b></span><span class="bv">41%</span></div>
+            <div class="brow"><span class="bl">Peak hour</span><span class="bt"><b data-w="93%"></b></span><span class="bv">02:10</span></div>
+          </div>
+          <p class="matchnote">
+            No single measure is disqualifying. A restaurant can trade online, and some trade late.
+            <b>Five measures moving together, away from 61,000 peers, is not a restaurant.</b>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="strip rv">
+      <div class="cell">
+        <h4>Why a merchant does it</h4>
+        <ul>
+          <li><b>Cheaper interchange.</b> Category sets the rate. A few basis points across millions in volume is the whole motive.</li>
+          <li><b>Rule avoidance.</b> Restricted and prohibited categories carry registration, extra fees and brand scrutiny.</li>
+          <li><b>Issuer access.</b> Some issuers decline whole categories outright. Recoding restores approval.</li>
+          <li><b>Lower attention.</b> A benign code keeps the file out of enhanced monitoring queues.</li>
+        </ul>
+      </div>
+      <div class="cell signal">
+        <h4>What gives it away</h4>
+        <ul>
+          <li>Ticket-size distribution against a live peer cohort, not a static rule</li>
+          <li>Hour-of-day and day-of-week shape versus category norm</li>
+          <li>Card-present versus card-not-present mix, and 3DS take-up</li>
+          <li>Refund and chargeback profile inconsistent with the goods</li>
+          <li>Website content, checkout path and descriptor text against the code</li>
+          <li>Cross-border share and issuer-country spread</li>
+        </ul>
+      </div>
+      <div class="cell cost">
+        <h4>What it costs</h4>
+        <div class="big">Every downstream control</div>
+        <p class="bigsub">
+          Interchange is only the visible leak. The code is an input to fraud scoring,
+          underwriting limits, reserve sizing and reporting. Miscode the category and
+          every model beneath it is calibrated to the wrong business.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2 · SPLIT-TICKETING ============ -->
+<section class="pat" id="p2">
+  <div class="wrap">
+    <div class="top rv">
+      <div>
+        <div class="idn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 20V12a4 4 0 0 1 4-4h8"/><path d="m15 5 4 3-4 3"/></svg>
+          <span class="eyebrow">Split-Ticketing Lab</span>
+        </div>
+        <h2>Six receipts, one sale.</h2>
+        <div class="aka">Also: transaction splitting · structuring · ticket fragmentation</div>
+      </div>
+      <p class="def">
+        Controls are thresholds, and thresholds are public knowledge to anyone who trades
+        against them daily. <b>Split the amount and every piece passes a test the whole
+        would have failed.</b> Each fragment is a legitimate transaction. The set is not.
+      </p>
+    </div>
+
+    <div class="fig rv" data-fig>
+      <div class="fhd">
+        <span class="ft">Terminal 0093 · card ••4471 · 14:22–14:26</span>
+        <button class="fb" data-run>Run the split</button>
+      </div>
+      <div class="fbody">
+        <div class="lane declared">
+          <div class="lk"><i></i>The sale that happened</div>
+          <div class="tickstage">
+            <div class="tick big"><div class="amt">$2,400</div><div class="mt">One customer · one basket</div></div>
+          </div>
+        </div>
+
+        <div class="threshold">
+          <span class="tl">Control ceiling</span>
+          <span class="tr">$500 · step-up authentication and manual review above this line</span>
+        </div>
+
+        <div class="lane observed">
+          <div class="lk"><i></i>What the network received</div>
+          <div class="tickstage">
+            <div class="tick piece"><div class="amt">$400</div><div class="mt">14:22:07</div></div>
+            <div class="tick piece"><div class="amt">$400</div><div class="mt">14:22:51</div></div>
+            <div class="tick piece"><div class="amt">$400</div><div class="mt">14:23:38</div></div>
+            <div class="tick piece"><div class="amt">$400</div><div class="mt">14:24:19</div></div>
+            <div class="tick piece"><div class="amt">$400</div><div class="mt">14:25:02</div></div>
+            <div class="tick piece"><div class="amt">$400</div><div class="mt">14:25:44</div></div>
+          </div>
+          <p class="sumline">
+            Six approvals. Zero step-ups. Same card, same terminal, four minutes.
+            <b>Sum: $2,400 — the exact figure the ceiling existed to catch.</b>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="strip rv">
+      <div class="cell">
+        <h4>Why a merchant does it</h4>
+        <ul>
+          <li><b>Beat the ceiling.</b> Authorization floor limits, per-transaction caps, step-up and manual-review triggers.</li>
+          <li><b>Beat the calendar.</b> Daily or monthly volume caps set at underwriting.</li>
+          <li><b>Beat the report.</b> Amounts kept below regulatory or internal reporting thresholds.</li>
+          <li><b>Rescue a decline.</b> Sometimes it starts benignly, as a workaround for a limit, then becomes routine.</li>
+        </ul>
+      </div>
+      <div class="cell signal">
+        <h4>What gives it away</h4>
+        <ul>
+          <li>Same PAN and same MID inside a short window, repeatedly</li>
+          <li>Amounts that are even divisions, or that sum to round figures</li>
+          <li>Sequential or near-sequential authorization codes</li>
+          <li>Amount histogram piling up just beneath a known threshold</li>
+          <li>Identical terminal, operator ID and entry mode across the set</li>
+          <li>Cardholders disputing part of a set they only remember as one purchase</li>
+        </ul>
+      </div>
+      <div class="cell cost">
+        <h4>What it costs</h4>
+        <div class="big">Your limits stop being limits</div>
+        <p class="bigsub">
+          Exposure is understated across the whole portfolio because it is measured per
+          transaction. Disputes rise, since a cardholder who bought one thing sees six lines
+          and recognizes none of them.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 · FACTORING ============ -->
+<section class="pat" id="p3">
+  <div class="wrap">
+    <div class="top rv">
+      <div>
+        <div class="idn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.4 10.7 7.2-4.2M8.4 13.3l7.2 4.2"/></svg>
+          <span class="eyebrow">Factoring Explorer</span>
+        </div>
+        <h2>You underwrote one business and acquired four.</h2>
+        <div class="aka">Also: transaction laundering · aggregation · MID rental</div>
+      </div>
+      <p class="def">
+        Every business that cannot get a merchant account still wants card acceptance.
+        <b>The cheapest route is to pay one that already has it.</b> The MID stays clean on
+        paper. Underneath, it carries traffic from businesses no committee ever saw.
+      </p>
+    </div>
+
+    <div class="fig rv" data-fig>
+      <div class="fhd">
+        <span class="ft">MID 5502-8841 · underwriting file, last reviewed 19 months ago</span>
+        <button class="fb" data-run>Trace the traffic</button>
+      </div>
+      <div class="fbody">
+        <div class="lane declared">
+          <div class="lk"><i></i>The merchant on file</div>
+          <div class="mid">
+            <div class="mn">Lakeside Home &amp; Garden</div>
+            <div class="mm">MCC 5261 · Nursery and garden supply · Ohio, US</div>
+            <div class="mrow">
+              <div>Forecast monthly volume<b>$180,000</b></div>
+              <div>Expected avg ticket<b>$74</b></div>
+              <div>Channel<b>Card present, 80%</b></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"><span>the seam</span><em>who is really selling</em></div>
+
+        <div class="lane observed">
+          <div class="lk"><i></i>Traffic actually clearing on this MID</div>
+          <div class="pipes">
+            <svg viewBox="0 0 600 56" preserveAspectRatio="none">
+              <path d="M100 56 C100 20 300 36 300 0"/>
+              <path d="M300 56 L300 0"/>
+              <path d="M500 56 C500 20 300 36 300 0"/>
+              <circle cx="300" cy="8"/>
+            </svg>
+          </div>
+          <div class="tenants">
+            <div class="tenant">
+              <div class="tn">Offshore sportsbook</div>
+              <div class="tc">Prohibited category</div>
+              <div class="tv">$2.1M / month · 96% CNP · 38 issuer countries</div>
+            </div>
+            <div class="tenant">
+              <div class="tn">Nutraceutical trial biller</div>
+              <div class="tc">Terminated by prior acquirer</div>
+              <div class="tv">$740K / month · negative-option billing · 3.9% chargebacks</div>
+            </div>
+            <div class="tenant">
+              <div class="tn">Crypto on-ramp</div>
+              <div class="tc">Unlicensed in three markets</div>
+              <div class="tv">$1.3M / month · round amounts · instant settlement</div>
+            </div>
+          </div>
+          <p class="matchnote">
+            Forecast was $180,000 a month. <b>Actual is $4.3M, and the garden supply is a storefront
+            that keeps the file looking answerable.</b>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="strip rv">
+      <div class="cell">
+        <h4>Why it happens</h4>
+        <ul>
+          <li><b>Demand from the unbankable.</b> Prohibited, sanctioned, terminated or MATCH-listed businesses still need to accept cards.</li>
+          <li><b>A rentable asset.</b> A boarded MID with clean history is worth real money to sell access to.</li>
+          <li><b>Distance.</b> Sub-merchants, marketplaces and payment facilitators put layers between the acquirer and the seller.</li>
+          <li><b>Time.</b> Underwriting happens once. The business can change the week after.</li>
+        </ul>
+      </div>
+      <div class="cell signal">
+        <h4>What gives it away</h4>
+        <ul>
+          <li>Volume step-change with no matching marketing, seasonality or store openings</li>
+          <li>Cardholder geography that has nothing to do with the merchant's footprint</li>
+          <li>Checkout pages and payment URLs hosted off the merchant's own domain</li>
+          <li>Device and IP clusters shared with unrelated merchant files</li>
+          <li>Bimodal ticket distribution: two businesses, two shapes, one MID</li>
+          <li>Chargeback reason codes drifting toward goods never received or not as described</li>
+        </ul>
+      </div>
+      <div class="cell cost">
+        <h4>What it costs</h4>
+        <div class="big">Liability without knowledge</div>
+        <p class="bigsub">
+          The acquirer holds settlement risk for a business it never assessed, and brand,
+          sanctions and prohibited-goods exposure for content it never saw. When the sportsbook
+          fails, the chargebacks arrive against the garden supply.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4 · DESCRIPTOR ============ -->
+<section class="pat" id="p4">
+  <div class="wrap">
+    <div class="top rv">
+      <div>
+        <div class="idn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg>
+          <span class="eyebrow">Descriptor Intelligence</span>
+        </div>
+        <h2>Twenty-five characters decide whether anyone objects.</h2>
+        <div class="aka">Also: statement descriptor · soft descriptor · billing string</div>
+      </div>
+      <p class="def">
+        The descriptor is the only part of a merchant a cardholder ever reads.
+        <b>Make it clear and disputes fall. Make it unreadable and the cardholder cannot
+        name what to dispute.</b> Sometimes that's carelessness. Often it is the point.
+      </p>
+    </div>
+
+    <div class="fig rv" data-fig>
+      <div class="fhd">
+        <span class="ft">Cardholder statement · March</span>
+        <button class="fb" data-run>Show what's behind each line</button>
+      </div>
+      <div class="fbody">
+        <div class="lane declared">
+          <div class="lk"><i></i>What the cardholder sees</div>
+          <div class="stmt">
+            <div class="sh"><span>Description</span><span>Amount</span></div>
+
+            <div class="srow">
+              <div>
+                <div class="d1">GREENLEAF GARDEN OH</div>
+                <div class="d2">Lakeside Home &amp; Garden · recognizable, matches the receipt</div>
+              </div>
+              <div class="amt">64.20</div>
+            </div>
+
+            <div class="srow bad">
+              <div>
+                <div class="d1">SP* DIGITAL 8842119 <span class="flagtag">Rotating</span></div>
+                <div class="d2">Suffix changes every billing cycle, so no two statements match</div>
+              </div>
+              <div class="amt">89.99</div>
+            </div>
+
+            <div class="srow bad">
+              <div>
+                <div class="d1">WEBSVC*BILLING LTD <span class="flagtag">Generic</span></div>
+                <div class="d2">Names no product, no brand and no country of sale</div>
+              </div>
+              <div class="amt">129.00</div>
+            </div>
+
+            <div class="srow bad">
+              <div>
+                <div class="d1">LAKESIDE HG 5261 <span class="flagtag">Mismatch</span></div>
+                <div class="d2">Garden supply descriptor on a $1,450 sportsbook deposit</div>
+              </div>
+              <div class="amt">1,450.00</div>
+            </div>
+
+            <div class="srow bad">
+              <div>
+                <div class="d1">TRIAL SUPPORT 8006 <span class="flagtag">Changed</span></div>
+                <div class="d2">Rewritten four days after a chargeback spike, then again after the next</div>
+              </div>
+              <div class="amt">98.50</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"><span>the seam</span><em>recognition</em></div>
+
+        <div class="lane observed">
+          <div class="lk"><i></i>What the descriptor is doing</div>
+          <div class="bars">
+            <div class="brow"><span class="bl">Recognized on sight</span><span class="bt"><b data-w="21%"></b></span><span class="bv">21%</span></div>
+            <div class="brow"><span class="bl">"I don't recognize this"</span><span class="bt"><b data-w="64%"></b></span><span class="bv">64%</span></div>
+            <div class="brow"><span class="bl">Issuer call before dispute</span><span class="bt"><b data-w="47%"></b></span><span class="bv">47%</span></div>
+            <div class="brow"><span class="bl">Descriptor edits, 90 days</span><span class="bt"><b data-w="80%"></b></span><span class="bv">7</span></div>
+          </div>
+          <p class="matchnote">
+            An unreadable descriptor produces two opposite outcomes at once: disputes the merchant
+            never has to answer, because nobody can name the charge, and
+            <b>disputes the issuer cannot resolve, because nobody can name the charge.</b>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="strip rv">
+      <div class="cell">
+        <h4>Why it matters more than it looks</h4>
+        <ul>
+          <li><b>It is the mask for factoring.</b> A sub-merchant's traffic passes as the host's the moment the descriptor says so.</li>
+          <li><b>It manufactures first-party disputes.</b> Unrecognized charges are disputed by honest people.</li>
+          <li><b>It buys time.</b> Rotate the string and the pattern-matching that connects a merchant to its history breaks.</li>
+          <li><b>It is cheap to change.</b> No boarding, no review, often just a settings field.</li>
+        </ul>
+      </div>
+      <div class="cell signal">
+        <h4>What gives it away</h4>
+        <ul>
+          <li>Descriptor string that shares no tokens with the legal or trading name</li>
+          <li>Numeric suffixes that increment, rotate or reset by cycle</li>
+          <li>Edit frequency, and edits timed within days of a chargeback event</li>
+          <li>One descriptor family spanning several unrelated MIDs</li>
+          <li>Concentration of unrecognized-transaction dispute codes</li>
+          <li>Descriptor inconsistent with the MCC, the website and the checkout brand</li>
+        </ul>
+      </div>
+      <div class="cell cost">
+        <h4>What it costs</h4>
+        <div class="big">Trust, at the only touchpoint you have</div>
+        <p class="bigsub">
+          Dispute handling, issuer call volume and write-offs all rise. Worse, the descriptor
+          is the thread that ties a transaction back to a real business. Cut it and every
+          other investigation on this page gets harder.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5 · CASH DISBURSEMENT ============ -->
+<section class="pat" id="p5">
+  <div class="wrap">
+    <div class="top rv">
+      <div>
+        <div class="idn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="6.5" width="19" height="11" rx="1.5"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+          <span class="eyebrow">Cash-Disbursement</span>
+        </div>
+        <h2>The goods never existed. The money left anyway.</h2>
+        <div class="aka">Also: quasi-cash · cash-out · disguised cash advance</div>
+      </div>
+      <p class="def">
+        A card is swiped for merchandise. No merchandise moves. The cardholder walks out with
+        cash, chips, a wallet balance or crypto, minus a fee.
+        <b>Coded as a purchase, it dodges cash-advance pricing, cash-advance limits and every
+        rule written for handing out money.</b>
+      </p>
+    </div>
+
+    <div class="fig rv" data-fig>
+      <div class="fhd">
+        <span class="ft">Store 118 · card present · $1,000.00 · approved</span>
+        <button class="fb" data-run>Follow the goods</button>
+      </div>
+      <div class="fbody">
+        <div class="lane declared">
+          <div class="lk"><i></i>What the authorization says</div>
+          <div class="flowline">
+            <div class="node"><div class="nk">Card</div><div class="nv">••4471</div></div>
+            <div class="arrow"></div>
+            <div class="node"><div class="nk">Merchant</div><div class="nv">MCC 5732<br>Electronics</div></div>
+            <div class="arrow"></div>
+            <div class="node"><div class="nk">Cardholder receives</div><div class="nv">Goods, $1,000</div></div>
+          </div>
+        </div>
+
+        <div class="divider"><span>the seam</span><em>fulfilment</em></div>
+
+        <div class="lane observed">
+          <div class="lk"><i></i>What actually moved</div>
+          <div class="flowline">
+            <div class="node"><div class="nk">Card</div><div class="nv">••4471</div></div>
+            <div class="arrow"></div>
+            <div class="node"><div class="nk">Merchant</div><div class="nv">MCC 5732<br>Electronics</div></div>
+            <div class="arrow"></div>
+            <div class="node empty hidden"><div class="nk">Inventory movement</div><div class="nv">None</div></div>
+            <div class="arrow"></div>
+            <div class="node cash hidden"><div class="nk">Cardholder receives</div><div class="nv">$880 cash</div></div>
+          </div>
+          <p class="matchnote">
+            The merchant keeps $120 as the fee. The issuer priced this as a purchase, so it carries
+            no cash-advance rate, no cash-advance limit and no cash-advance flag.
+            <b>The credit line has been converted to cash without anyone recording that it was.</b>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="strip rv">
+      <div class="cell">
+        <h4>Why it happens</h4>
+        <ul>
+          <li><b>The cardholder wants cash</b> at purchase pricing instead of cash-advance pricing, and past the cash limit.</li>
+          <li><b>The merchant wants the fee</b> and books volume without holding stock.</li>
+          <li><b>Someone wants the trail broken.</b> Card in, cash out, is a laundering step with a legitimate-looking receipt.</li>
+          <li><b>A bust-out is being staged.</b> Lines are drawn down fully, then abandoned.</li>
+        </ul>
+      </div>
+      <div class="cell signal">
+        <h4>What gives it away</h4>
+        <ul>
+          <li>Round amounts, and amounts landing just under the available credit line</li>
+          <li>Sales volume with no matching inventory, shipping or fulfilment record</li>
+          <li>Same card, same merchant, repeated high-value visits in a short period</li>
+          <li>Approval rates and ticket sizes far above the category norm</li>
+          <li>Authorization patterns that mirror ATM behavior inside a retail MCC</li>
+          <li>Rapid utilization increase across a cohort of cards sharing one merchant</li>
+        </ul>
+      </div>
+      <div class="cell cost">
+        <h4>What it costs</h4>
+        <div class="big">Credit loss and an AML exposure</div>
+        <p class="bigsub">
+          The issuer carries an unsecured cash balance it never priced as cash. If the cards are
+          part of a bust-out, the loss lands in full. And a merchant converting cards to currency
+          at scale is a money services business that nobody licensed.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHAIN ============ -->
+<section id="chain">
+  <div class="wrap">
+    <h2>They are not five problems. They are one operation at five stages.</h2>
+    <p class="lede">
+      A portfolio rarely shows just one. The patterns compound, and each one exists to make the
+      next one survivable. Read left to right and the same merchant file appears at every step.
+    </p>
+
+    <div class="ladder">
+      <div class="rung" style="--w:22%">
+        <div class="step">Stage one</div>
+        <div class="nm">Get in</div>
+        <div class="ds">Board under a category that attracts no scrutiny and no registration.</div>
+        <div class="bar"><b></b></div>
+      </div>
+      <div class="rung" style="--w:40%">
+        <div class="step">Stage two</div>
+        <div class="nm">Stay under</div>
+        <div class="ds">Fragment tickets so nothing crosses a ceiling that would trigger review.</div>
+        <div class="bar"><b></b></div>
+      </div>
+      <div class="rung" style="--w:64%">
+        <div class="step">Stage three</div>
+        <div class="nm">Scale</div>
+        <div class="ds">Rent the MID out. Volume now arrives from businesses never underwritten.</div>
+        <div class="bar"><b></b></div>
+      </div>
+      <div class="rung" style="--w:82%">
+        <div class="step">Stage four</div>
+        <div class="nm">Stay unnamed</div>
+        <div class="ds">Descriptors keep the real seller off the statement and disputes unresolvable.</div>
+        <div class="bar"><b></b></div>
+      </div>
+      <div class="rung" style="--w:100%">
+        <div class="step">Stage five</div>
+        <div class="nm">Extract</div>
+        <div class="ds">Convert credit lines to cash, then leave the balances behind.</div>
+        <div class="bar"><b></b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CLOSE ============ -->
+<section id="close">
+  <div class="wrap">
+    <p class="q">
+      None of this is caught at the transaction.<br>
+      It is caught by holding the declared record<br>
+      against observed behavior, <em>continuously</em>.
+    </p>
+    <div class="sig">
+      <div>Patterns covered<b>05</b></div>
+      <div>Transactions that declined<b>00</b></div>
+      <div>Where the evidence lives<b>The portfolio</b></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>Integrity risk · anatomy</span>
+  <span>Illustrative figures</span>
+  <span>Five patterns, one seam</span>
+</footer>
+
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* --- scroll reveal --- */
+  var rvs = document.querySelectorAll('.rv, .rung');
+  if('IntersectionObserver' in window){
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    },{rootMargin:'0px 0px -12% 0px', threshold:.12});
+    rvs.forEach(function(el){ io.observe(el); });
+  } else {
+    rvs.forEach(function(el){ el.classList.add('in'); });
+  }
+
+  /* --- figure controls --- */
+  function runFig(fig){
+    if(fig.classList.contains('run')){
+      fig.classList.remove('run');
+      fig.querySelectorAll('.bt b').forEach(function(b){ b.style.width='0'; });
+      var btn0 = fig.querySelector('[data-run]');
+      if(btn0) btn0.textContent = btn0.dataset.label;
+      return;
+    }
+    fig.classList.add('run');
+    fig.querySelectorAll('.bt b').forEach(function(b,i){
+      setTimeout(function(){ b.style.width = b.dataset.w || '0'; }, reduce ? 0 : i*90);
+    });
+    var btn = fig.querySelector('[data-run]');
+    if(btn) btn.textContent = 'Reset';
+  }
+
+  document.querySelectorAll('[data-fig]').forEach(function(fig){
+    var btn = fig.querySelector('[data-run]');
+    if(!btn) return;
+    btn.dataset.label = btn.textContent.trim();
+    btn.addEventListener('click', function(){ runFig(fig); });
+  });
+
+  /* auto-run a figure the first time it is properly in view */
+  if('IntersectionObserver' in window){
+    var fo = new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          var f = e.target;
+          setTimeout(function(){ if(!f.classList.contains('run')) runFig(f); }, reduce ? 0 : 700);
+          fo.unobserve(f);
+        }
+      });
+    },{threshold:.35});
+    document.querySelectorAll('[data-fig]').forEach(function(f){ fo.observe(f); });
+  }
+
+  /* --- progress + sticky bar --- */
+  var bar = document.getElementById('bar');
+  var pb = document.getElementById('progB');
+  var pn = document.getElementById('progN');
+  var pats = Array.prototype.slice.call(document.querySelectorAll('.pat'));
+  var ticking = false;
+
+  function onScroll(){
+    var y = window.scrollY || window.pageYOffset;
+    bar.classList.toggle('stuck', y > 30);
+
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    var p = h > 0 ? Math.min(1, y/h) : 0;
+    pb.style.right = (100 - p*100) + '%';
+
+    var n = 0, mid = y + window.innerHeight*0.42;
+    pats.forEach(function(s,i){ if(s.offsetTop <= mid) n = i+1; });
+    pn.textContent = String(n).padStart(2,'0') + ' / 05';
+    ticking = false;
+  }
+  window.addEventListener('scroll', function(){
+    if(!ticking){ ticking = true; requestAnimationFrame(onScroll); }
+  }, {passive:true});
+  onScroll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,709 @@
+{
+  "portfolio": {
+    "merchantsMonitored": 1492,
+    "transactionsScored": 909850,
+    "grossSalesUsd": 91675356.89,
+    "flaggedMerchants": 236,
+    "flaggedExposureUsd": 37606666.46000001,
+    "flaggedExposurePct": 0.41021565375658947,
+    "criticalMerchants": 184
+  },
+  "detection": {
+    "precision": 0.826271186440678,
+    "recall": 0.9898477157360406,
+    "tp": 195,
+    "fp": 41,
+    "fn": 2,
+    "integrityViolations": 172,
+    "interchangeAbuse": 25
+  },
+  "tiers": [
+    {
+      "tier": "Critical",
+      "count": 184,
+      "exposure": 34363147.95999999
+    },
+    {
+      "tier": "High",
+      "count": 34,
+      "exposure": 1701435.51
+    },
+    {
+      "tier": "Elevated",
+      "count": 49,
+      "exposure": 1026304.01
+    },
+    {
+      "tier": "Monitor",
+      "count": 137,
+      "exposure": 3825999.2199999997
+    },
+    {
+      "tier": "Low",
+      "count": 1088,
+      "exposure": 50758470.19
+    }
+  ],
+  "families": [
+    {
+      "key": "mcc_miscoding",
+      "label": "MCC Miscoding",
+      "alerts": 158,
+      "exposure": 25944569.860000003,
+      "critical": 131,
+      "high": 23,
+      "tierCounts": {
+        "Critical": 131,
+        "High": 23,
+        "Elevated": 1,
+        "Monitor": 1,
+        "Low": 2
+      },
+      "separateClass": false,
+      "priorityTiers": [
+        {
+          "tier": "P1",
+          "label": "P1 \u2014 prohibited / high-harm",
+          "alerts": 60
+        },
+        {
+          "tier": "P2",
+          "label": "P2 \u2014 restricted",
+          "alerts": 43
+        },
+        {
+          "tier": "P3",
+          "label": "P3 \u2014 elevated",
+          "alerts": 55
+        }
+      ],
+      "subtypes": [
+        {
+          "key": "nutra_subscription",
+          "label": "Nutra subscriptions",
+          "tier": "P3",
+          "alerts": 41,
+          "exposure": 3092953.44
+        },
+        {
+          "key": "gambling",
+          "label": "Gambling",
+          "tier": "P1",
+          "alerts": 24,
+          "exposure": 6330783.28
+        },
+        {
+          "key": "crypto_cash",
+          "label": "Crypto / quasi-cash",
+          "tier": "P2",
+          "alerts": 21,
+          "exposure": 7791064.06
+        },
+        {
+          "key": "pharma",
+          "label": "Pharma",
+          "tier": "P1",
+          "alerts": 18,
+          "exposure": 888435.34
+        },
+        {
+          "key": "cyberlocker",
+          "label": "Cyberlockers",
+          "tier": "P2",
+          "alerts": 11,
+          "exposure": 309162.85
+        },
+        {
+          "key": "game_of_skill",
+          "label": "Game of skill",
+          "tier": "P2",
+          "alerts": 11,
+          "exposure": 1824864.3
+        },
+        {
+          "key": "adult",
+          "label": "Adult content",
+          "tier": "P1",
+          "alerts": 10,
+          "exposure": 423047.13
+        },
+        {
+          "key": "dating_escort",
+          "label": "Dating & escort",
+          "tier": "P1",
+          "alerts": 8,
+          "exposure": 270923.97
+        },
+        {
+          "key": "financial_trading",
+          "label": "Financial trading",
+          "tier": "P3",
+          "alerts": 6,
+          "exposure": 4569691.21
+        },
+        {
+          "key": "telemarketing",
+          "label": "Telemarketing",
+          "tier": "P3",
+          "alerts": 6,
+          "exposure": 396681.93
+        },
+        {
+          "key": "tobacco_vape",
+          "label": "Tobacco & vape",
+          "tier": "P3",
+          "alerts": 2,
+          "exposure": 46962.35
+        }
+      ]
+    },
+    {
+      "key": "mcc_abuse",
+      "label": "MCC Abuse (interchange)",
+      "alerts": 25,
+      "exposure": 1956882.8699999996,
+      "critical": 13,
+      "high": 4,
+      "tierCounts": {
+        "Critical": 13,
+        "High": 4,
+        "Elevated": 0,
+        "Monitor": 0,
+        "Low": 8
+      },
+      "separateClass": true,
+      "subtypes": [
+        {
+          "key": "telemarketing",
+          "label": "Telemarketing",
+          "tier": "P3",
+          "alerts": 21,
+          "exposure": 1874216.52
+        },
+        {
+          "key": "dating_escort",
+          "label": "Dating & escort",
+          "tier": "P1",
+          "alerts": 2,
+          "exposure": 39217.12
+        },
+        {
+          "key": "nutra_subscription",
+          "label": "Nutra subscriptions",
+          "tier": "P3",
+          "alerts": 2,
+          "exposure": 43449.23
+        }
+      ],
+      "priorityTiers": [
+        {
+          "tier": "P1",
+          "label": "P1 \u2014 prohibited / high-harm",
+          "alerts": 2
+        },
+        {
+          "tier": "P3",
+          "label": "P3 \u2014 elevated",
+          "alerts": 23
+        }
+      ]
+    },
+    {
+      "key": "split_ticketing",
+      "label": "Split Ticketing",
+      "alerts": 20,
+      "exposure": 2736606.88,
+      "critical": 13,
+      "high": 4,
+      "tierCounts": {
+        "Critical": 13,
+        "High": 4,
+        "Elevated": 0,
+        "Monitor": 1,
+        "Low": 2
+      },
+      "separateClass": false,
+      "subtypes": [
+        {
+          "key": "game_of_skill",
+          "label": "Game of skill",
+          "tier": "P2",
+          "alerts": 15,
+          "exposure": 2331730.98
+        },
+        {
+          "key": "crypto_cash",
+          "label": "Crypto / quasi-cash",
+          "tier": "P2",
+          "alerts": 3,
+          "exposure": 354341.83
+        },
+        {
+          "key": "nutra_subscription",
+          "label": "Nutra subscriptions",
+          "tier": "P3",
+          "alerts": 2,
+          "exposure": 50534.07
+        }
+      ],
+      "priorityTiers": [
+        {
+          "tier": "P2",
+          "label": "P2 \u2014 restricted",
+          "alerts": 18
+        },
+        {
+          "tier": "P3",
+          "label": "P3 \u2014 elevated",
+          "alerts": 2
+        }
+      ]
+    },
+    {
+      "key": "factoring",
+      "label": "Factoring",
+      "alerts": 17,
+      "exposure": 5294622.42,
+      "critical": 17,
+      "high": 0,
+      "tierCounts": {
+        "Critical": 17,
+        "High": 0,
+        "Elevated": 0,
+        "Monitor": 0,
+        "Low": 0
+      },
+      "separateClass": false,
+      "subtypes": [
+        {
+          "key": "pharma",
+          "label": "Pharma",
+          "tier": "P1",
+          "alerts": 12,
+          "exposure": 3479636.84
+        },
+        {
+          "key": "nutra_subscription",
+          "label": "Nutra subscriptions",
+          "tier": "P3",
+          "alerts": 3,
+          "exposure": 1260833.07
+        },
+        {
+          "key": "adult",
+          "label": "Adult content",
+          "tier": "P1",
+          "alerts": 1,
+          "exposure": 97387.67
+        },
+        {
+          "key": "crypto_cash",
+          "label": "Crypto / quasi-cash",
+          "tier": "P2",
+          "alerts": 1,
+          "exposure": 456764.84
+        }
+      ],
+      "priorityTiers": [
+        {
+          "tier": "P1",
+          "label": "P1 \u2014 prohibited / high-harm",
+          "alerts": 13
+        },
+        {
+          "tier": "P2",
+          "label": "P2 \u2014 restricted",
+          "alerts": 1
+        },
+        {
+          "tier": "P3",
+          "label": "P3 \u2014 elevated",
+          "alerts": 3
+        }
+      ]
+    },
+    {
+      "key": "descriptor",
+      "label": "Descriptor Intelligence",
+      "alerts": 7,
+      "exposure": 172071.05,
+      "critical": 1,
+      "high": 3,
+      "tierCounts": {
+        "Critical": 1,
+        "High": 3,
+        "Elevated": 2,
+        "Monitor": 0,
+        "Low": 1
+      },
+      "separateClass": false,
+      "subtypes": [
+        {
+          "key": "nutra_subscription",
+          "label": "Nutra subscriptions",
+          "tier": "P3",
+          "alerts": 4,
+          "exposure": 61716.08
+        },
+        {
+          "key": "telemarketing",
+          "label": "Telemarketing",
+          "tier": "P3",
+          "alerts": 2,
+          "exposure": 108173.14
+        },
+        {
+          "key": "adult",
+          "label": "Adult content",
+          "tier": "P1",
+          "alerts": 1,
+          "exposure": 2181.83
+        }
+      ],
+      "priorityTiers": [
+        {
+          "tier": "P1",
+          "label": "P1 \u2014 prohibited / high-harm",
+          "alerts": 1
+        },
+        {
+          "tier": "P3",
+          "label": "P3 \u2014 elevated",
+          "alerts": 6
+        }
+      ]
+    },
+    {
+      "key": "cash",
+      "label": "Cash Disbursement",
+      "alerts": 9,
+      "exposure": 1501913.38,
+      "critical": 9,
+      "high": 0,
+      "tierCounts": {
+        "Critical": 9,
+        "High": 0,
+        "Elevated": 0,
+        "Monitor": 0,
+        "Low": 0
+      },
+      "separateClass": false,
+      "subtypes": [
+        {
+          "key": "gambling",
+          "label": "Gambling",
+          "tier": "P1",
+          "alerts": 9,
+          "exposure": 1501913.38
+        }
+      ],
+      "priorityTiers": [
+        {
+          "tier": "P1",
+          "label": "P1 \u2014 prohibited / high-harm",
+          "alerts": 9
+        }
+      ]
+    }
+  ],
+  "priority": [
+    {
+      "id": "MID0001110",
+      "name": "Stellar Consulting Nashville",
+      "corp": "Stellar Elite LLC",
+      "city": "Nashville",
+      "country": "US",
+      "declaredMcc": "6012",
+      "mccGroup": "Financial",
+      "score": 100.0,
+      "tier": "Critical",
+      "family": "mcc_miscoding",
+      "familyLabel": "MCC Miscoding",
+      "subtype": "Gambling",
+      "exposure": 1214403.27,
+      "rules": [
+        "issuer_prohibition_rule"
+      ],
+      "flagReason": "model + rule"
+    },
+    {
+      "id": "MID0000071",
+      "name": "Helix Advisors Nashville",
+      "corp": "Helix Elite Holdings Ltd",
+      "city": "Nashville",
+      "country": "US",
+      "declaredMcc": "7392",
+      "mccGroup": "Services",
+      "score": 97.1,
+      "tier": "Critical",
+      "family": "mcc_miscoding",
+      "familyLabel": "MCC Miscoding",
+      "subtype": "Financial trading",
+      "exposure": 4391365.59,
+      "rules": [
+        "issuer_prohibition_rule"
+      ],
+      "flagReason": "model + rule"
+    },
+    {
+      "id": "MID0000942",
+      "name": "Apex Supply Co Nicosia",
+      "corp": "Apex Nova Holdings Ltd",
+      "city": "Nicosia",
+      "country": "CY",
+      "declaredMcc": "5999",
+      "mccGroup": "Retail Other",
+      "score": 99.1,
+      "tier": "Critical",
+      "family": "mcc_miscoding",
+      "familyLabel": "MCC Miscoding",
+      "subtype": "Crypto / quasi-cash",
+      "exposure": 1501827.98,
+      "rules": [
+        "issuer_prohibition_rule"
+      ],
+      "flagReason": "model + rule"
+    },
+    {
+      "id": "MID0000603",
+      "name": "Elmgrove Taqueria Columbus",
+      "corp": "Elmgrove Enterprises",
+      "city": "Columbus",
+      "country": "US",
+      "declaredMcc": "5812",
+      "mccGroup": "Retail F&B",
+      "score": 100.0,
+      "tier": "Critical",
+      "family": "factoring",
+      "familyLabel": "Factoring",
+      "subtype": null,
+      "exposure": 803966.3300000001,
+      "rules": [
+        "descriptor_churn_rule"
+      ],
+      "flagReason": "model + rule"
+    },
+    {
+      "id": "MID0001339",
+      "name": "Elmgrove Corner Store Charlotte",
+      "corp": "Elmgrove Retail Corp",
+      "city": "Charlotte",
+      "country": "US",
+      "declaredMcc": "5261",
+      "mccGroup": "Retail Home",
+      "score": 99.6,
+      "tier": "Critical",
+      "family": "factoring",
+      "familyLabel": "Factoring",
+      "subtype": null,
+      "exposure": 882843.15,
+      "rules": [
+        "descriptor_churn_rule"
+      ],
+      "flagReason": "model + rule"
+    },
+    {
+      "id": "MID0001334",
+      "name": "Nova Services Sunnyvale",
+      "corp": "Nova Onyx GmbH",
+      "city": "Sunnyvale",
+      "country": "US",
+      "declaredMcc": "6012",
+      "mccGroup": "Financial",
+      "score": 100.0,
+      "tier": "Critical",
+      "family": "mcc_miscoding",
+      "familyLabel": "MCC Miscoding",
+      "subtype": "Gambling",
+      "exposure": 752810.8500000001,
+      "rules": [
+        "issuer_prohibition_rule"
+      ],
+      "flagReason": "model + rule"
+    },
+    {
+      "id": "MID0001087",
+      "name": "Nova Advisors Dubai",
+      "corp": "Nova Fusion Ltd",
+      "city": "Dubai",
+      "country": "AE",
+      "declaredMcc": "7392",
+      "mccGroup": "Services",
+      "score": 100.0,
+      "tier": "Critical",
+      "family": "mcc_miscoding",
+      "familyLabel": "MCC Miscoding",
+      "subtype": "Gambling",
+      "exposure": 689722.89,
+      "rules": [
+        "undeclared_quasi_cash_rule",
+        "gambling_behaviour_rule",
+        "issuer_prohibition_rule"
+      ],
+      "flagReason": "model + rule"
+    },
+    {
+      "id": "MID0000943",
+      "name": "Apex Supply Co Charlotte",
+      "corp": "Apex Nova Holdings Ltd",
+      "city": "Charlotte",
+      "country": "US",
+      "declaredMcc": "5999",
+      "mccGroup": "Retail Other",
+      "score": 99.3,
+      "tier": "Critical",
+      "family": "mcc_miscoding",
+      "familyLabel": "MCC Miscoding",
+      "subtype": "Crypto / quasi-cash",
+      "exposure": 941587.41,
+      "rules": [
+        "issuer_prohibition_rule"
+      ],
+      "flagReason": "model + rule"
+    },
+    {
+      "id": "MID0001337",
+      "name": "Elmgrove Emporium Tampa",
+      "corp": "Elmgrove Retail Corp",
+      "city": "Tampa",
+      "country": "US",
+      "declaredMcc": "5261",
+      "mccGroup": "Retail Home",
+      "score": 99.5,
+      "tier": "Critical",
+      "family": "factoring",
+      "familyLabel": "Factoring",
+      "subtype": null,
+      "exposure": 672072.99,
+      "rules": [
+        "nan"
+      ],
+      "flagReason": "model"
+    },
+    {
+      "id": "MID0001482",
+      "name": "Onyx Taqueria Philadelphia",
+      "corp": "Onyx Premier Trading",
+      "city": "Philadelphia",
+      "country": "US",
+      "declaredMcc": "5812",
+      "mccGroup": "Retail F&B",
+      "score": 100.0,
+      "tier": "Critical",
+      "family": "mcc_miscoding",
+      "familyLabel": "MCC Miscoding",
+      "subtype": "Gambling",
+      "exposure": 500276.71,
+      "rules": [
+        "descriptor_churn_rule"
+      ],
+      "flagReason": "model + rule"
+    },
+    {
+      "id": "MID0000425",
+      "name": "Global General Store Miami",
+      "corp": "Global Stellar Pte Ltd",
+      "city": "Miami",
+      "country": "US",
+      "declaredMcc": "5999",
+      "mccGroup": "Retail Other",
+      "score": 100.0,
+      "tier": "Critical",
+      "family": "mcc_miscoding",
+      "familyLabel": "MCC Miscoding",
+      "subtype": "Gambling",
+      "exposure": 436648.77,
+      "rules": [
+        "undeclared_quasi_cash_rule",
+        "issuer_prohibition_rule"
+      ],
+      "flagReason": "model + rule"
+    },
+    {
+      "id": "MID0000448",
+      "name": "Quantum Works Houston",
+      "corp": "Quantum Orbit NV",
+      "city": "Houston",
+      "country": "US",
+      "declaredMcc": "5944",
+      "mccGroup": "Jewelry",
+      "score": 100.0,
+      "tier": "Critical",
+      "family": "cash",
+      "familyLabel": "Cash Disbursement",
+      "subtype": null,
+      "exposure": 400563.13,
+      "rules": [
+        "undeclared_quasi_cash_rule",
+        "issuer_prohibition_rule"
+      ],
+      "flagReason": "model + rule"
+    }
+  ],
+  "trend": [
+    {
+      "date": "2025-07",
+      "volume": 6901756.19,
+      "flaggedVolume": 2870956.72
+    },
+    {
+      "date": "2025-08",
+      "volume": 7838431.73,
+      "flaggedVolume": 3185212.53
+    },
+    {
+      "date": "2025-09",
+      "volume": 7632503.11,
+      "flaggedVolume": 3105927.32
+    },
+    {
+      "date": "2025-10",
+      "volume": 7828605.96,
+      "flaggedVolume": 3189591.21
+    },
+    {
+      "date": "2025-11",
+      "volume": 7645912.82,
+      "flaggedVolume": 3198191.82
+    },
+    {
+      "date": "2025-12",
+      "volume": 7842315.64,
+      "flaggedVolume": 3239238.33
+    },
+    {
+      "date": "2026-01",
+      "volume": 7910570.18,
+      "flaggedVolume": 3214062.48
+    },
+    {
+      "date": "2026-02",
+      "volume": 7170108.83,
+      "flaggedVolume": 2975292.79
+    },
+    {
+      "date": "2026-03",
+      "volume": 7858181.13,
+      "flaggedVolume": 3203910.98
+    },
+    {
+      "date": "2026-04",
+      "volume": 7688072.52,
+      "flaggedVolume": 3157704.46
+    },
+    {
+      "date": "2026-05",
+      "volume": 7919954.52,
+      "flaggedVolume": 3212623.79
+    },
+    {
+      "date": "2026-06",
+      "volume": 7441572.91,
+      "flaggedVolume": 3053954.03
+    }
+  ],
+  "meta": {
+    "source": "MCC Miscoding synthetic dataset v2",
+    "note": "All entities synthetic. Overview figures are model outputs; precision/recall are measured against planted labels."
+  }
+}

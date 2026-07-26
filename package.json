@@ -1,0 +1,40 @@
+{
+  "name": "integrity-intelligence-command-center",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Integrity Intelligence Command Center — detecting MCC miscoding, merchant laundering, and category-code abuse through data, ML, graph intelligence, and AI.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate:data": "python3 scripts/generate_synthetic_data.py",
+    "train:models": "python3 scripts/train_integrity_models.py"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.33.1-dev57.0",
+    "apache-arrow": "^21.2.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.417.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0",
+    "recharts": "^2.12.7",
+    "zustand": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.40",
+    "tailwindcss": "^3.4.7",
+    "typescript": "^5.5.4",
+    "vite": "^5.3.5",
+    "vitest": "^2.0.5"
+  }
+}
