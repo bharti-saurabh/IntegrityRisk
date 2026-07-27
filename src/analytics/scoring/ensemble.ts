@@ -55,6 +55,31 @@ function descriptorNlpScore(f: MerchantFeatures): number {
   );
 }
 
+// Card-present-favorable retail bands that qualify for low interchange. A
+// merchant boarded here but settling via keyed/fallback, cross-border entry is
+// downgrading its interchange qualification — interchange abuse.
+const CP_RETAIL_BANDS = new Set(["5411", "5812", "5541", "5499", "5814"]);
+
+/**
+ * Interchange-abuse signal. Deliberately ORTHOGONAL to the miscoding composite:
+ * it fires only when the line of business is honest (low mccDivergence — the
+ * content model is blind) yet transactions are keyed/fallback under a qualified
+ * card-present band. Returns 0 for every merchant that isn't this pattern, so it
+ * never perturbs the existing five typologies' scores.
+ */
+export function interchangeAbuseSignal(declaredMcc: string, f: MerchantFeatures): number {
+  if (!CP_RETAIL_BANDS.has(declaredMcc)) return 0;
+  if (f.mccDivergence > 0.28) return 0; // high divergence => miscoding, not interchange abuse
+  const downgrade = Math.min(1, (f.manualEntryRatio + f.fallbackRatio) / 0.4);
+  if (downgrade < 0.5) return 0;
+  const s =
+    100 *
+    (0.6 * downgrade +
+      0.25 * Math.min(1, f.crossBorderRatio / 0.3) +
+      0.15 * Math.min(1, f.avgTicket / 300));
+  return clamp(s);
+}
+
 function mccMismatchScore(mcc: MccPrediction, f: MerchantFeatures): number {
   const base: Record<RiskTier, number> = {
     critical: 90,
@@ -88,7 +113,7 @@ export function computeScores(
   const mismatch = mccMismatchScore(mcc, f);
   const change = clamp(f.changePointScore * 100);
   const w = ENSEMBLE_WEIGHTS;
-  const final = clamp(
+  const baseFinal = clamp(
     w.rule * rule +
       w.supervised * supervised +
       w.anomaly * anomaly +
@@ -97,6 +122,11 @@ export function computeScores(
       w.mccMismatch * mismatch +
       w.behavioralChange * change,
   );
+  // Interchange abuse is caught by a dedicated signal the content composite is
+  // blind to. When (and only when) that signal fires, it dominates the score;
+  // otherwise baseFinal is returned unchanged, so no other merchant moves.
+  const interchange = interchangeAbuseSignal(mcc.declaredMcc, f);
+  const final = interchange >= 45 ? clamp(0.3 * baseFinal + 0.7 * interchange) : baseFinal;
   return {
     ruleScore: round(rule, 1),
     supervisedScore: round(supervised, 1),
@@ -199,8 +229,11 @@ export function computeTypologyScores(
     100 * (0.4 * f.roundDollarRatio + 0.3 * Math.min(1, f.walletLoadRatio * 1.5) + 0.3 * Math.min(1, f.refundAfterPurchaseRatio * 1.5)) +
       0.5 * ruleByTypology("CASH_DISBURSEMENT"),
   );
+  // Rule-dominated, orthogonal to the composite (see interchangeAbuseSignal).
+  const abuseScore = clamp(interchangeAbuseSignal(mcc.declaredMcc, f) + 0.4 * ruleByTypology("MCC_ABUSE"));
   return {
     MCC_MISCODING: round(mccScore, 1),
+    MCC_ABUSE: round(abuseScore, 1),
     SPLIT_TICKETING: round(splitScore, 1),
     FACTORING: round(factoringScore, 1),
     FAKE_DESCRIPTOR: round(descriptorScore, 1),

@@ -100,6 +100,9 @@ export interface AgentStreamPanelProps {
   /** Optional follow-up Q&A. Omit to hide the ask box (e.g. thin cohort rows). */
   quickPrompts?: { id: string; label: string }[];
   onAsk?: (promptId: string, freeText?: string) => string;
+  /** Optional case write-back: files the completed investigation to the queue
+   *  so it surfaces on the Command Center. Omit to hide the action. */
+  caseAction?: { filed: boolean; onFile: () => void };
   footerNote?: string;
 }
 
@@ -233,6 +236,26 @@ export function AgentStreamPanel(props: AgentStreamPanelProps) {
           </div>
         ))}
       </div>
+
+      {props.caseAction ? (
+        <div className="border-t border-border p-3">
+          {props.caseAction.filed ? (
+            <div className="flex items-center gap-2 rounded-lg border border-ok/30 bg-ok/[0.06] px-3 py-2 text-[11px] text-ink-2">
+              <Icon name="Check" size={14} className="shrink-0 text-ok" />
+              <span><b className="text-ink">Filed to the case queue.</b> It now shows on the Command Center under “Cases you filed”.</span>
+            </div>
+          ) : (
+            <button
+              disabled={!done}
+              onClick={props.caseAction.onFile}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-cyan/40 bg-cyan/10 px-3 py-2 text-[12px] font-semibold text-cyan transition-colors hover:bg-cyan/15 disabled:opacity-40"
+            >
+              <Icon name="Briefcase" size={14} /> File to case queue
+              <span className="text-[10px] font-normal text-ink-3">— surfaces on the Command Center</span>
+            </button>
+          )}
+        </div>
+      ) : null}
 
       {canAsk ? (
         <div className="border-t border-border p-3">

@@ -16,6 +16,7 @@ const QUEUES = ["MCC Integrity", "Laundering & Factoring", "Descriptor Abuse", "
 function queueFor(t: Typology): string {
   switch (t) {
     case "MCC_MISCODING":
+    case "MCC_ABUSE":
       return QUEUES[0];
     case "FACTORING":
       return QUEUES[1];
@@ -31,11 +32,13 @@ function queueFor(t: Typology): string {
 export function recommendedActionFor(t: Typology, tier: string): RecommendedAction {
   if (tier === "critical") {
     if (t === "MCC_MISCODING") return "correct-mcc";
+    if (t === "MCC_ABUSE") return "correct-mcc";
     if (t === "FACTORING") return "escalate-network-integrity";
     if (t === "CASH_DISBURSEMENT") return "suspend-txn-types";
     if (t === "FAKE_DESCRIPTOR") return "merchant-outreach";
     return "enhanced-due-diligence";
   }
+  if (t === "MCC_ABUSE") return "request-info";
   if (t === "MCC_MISCODING") return "request-info";
   if (t === "FACTORING") return "review-facilitator";
   if (t === "CASH_DISBURSEMENT") return "heightened-monitoring";
@@ -48,6 +51,8 @@ function hypothesisFor(r: MerchantRiskRecord): string {
   const m = r.merchant;
   if (t === "MCC_MISCODING")
     return `Declared as ${r.mcc.declaredLabel} but behavior matches ${r.mcc.predictedLabel} (${Math.round(r.mcc.confidence * 100)}% confidence). Likely miscoded to obtain lower-risk treatment.`;
+  if (t === "MCC_ABUSE")
+    return `${m.tradeName}'s line of business matches its declared ${r.mcc.declaredLabel}, but a high share of keyed/fallback, cross-border settlement is qualifying at a lower interchange band than the transactions warrant.`;
   if (t === "SPLIT_TICKETING")
     return `${m.tradeName} appears to divide purchases into near-threshold clusters on shared cards/devices.`;
   if (t === "FACTORING")

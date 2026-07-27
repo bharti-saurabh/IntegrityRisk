@@ -68,6 +68,7 @@ export const TIER_BG: Record<RiskTier, string> = {
 
 export const TYPOLOGY_COLOR: Record<Exclude<Typology, "CLEAN">, string> = {
   MCC_MISCODING: "#2563eb",
+  MCC_ABUSE: "#9333ea",
   SPLIT_TICKETING: "#d97706",
   FACTORING: "#7c3aed",
   FAKE_DESCRIPTOR: "#e11d48",

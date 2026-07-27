@@ -97,7 +97,7 @@ export function computeModelMetrics(
   const { precision, recall, f1 } = prf(c);
 
   // Per-typology precision/recall (predicted primary vs ground-truth typology).
-  const typologies: Typology[] = ["MCC_MISCODING", "SPLIT_TICKETING", "FACTORING", "FAKE_DESCRIPTOR", "CASH_DISBURSEMENT"];
+  const typologies: Typology[] = ["MCC_MISCODING", "MCC_ABUSE", "SPLIT_TICKETING", "FACTORING", "FAKE_DESCRIPTOR", "CASH_DISBURSEMENT"];
   const byTypology = typologies.map((typ) => {
     let tp = 0,
       fp = 0,

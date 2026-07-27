@@ -754,7 +754,7 @@ function renderCell(v: unknown): string {
 // declared→predicted MCC divergence, and drills into the investigation workspace.
 
 type RiskSortKey = "risk" | "volume" | "divergence" | "txns";
-const RT_TYPOS: (Typology | "ALL")[] = ["ALL", "MCC_MISCODING", "SPLIT_TICKETING", "FACTORING", "FAKE_DESCRIPTOR", "CASH_DISBURSEMENT", "CLEAN"];
+const RT_TYPOS: (Typology | "ALL")[] = ["ALL", "MCC_MISCODING", "MCC_ABUSE", "SPLIT_TICKETING", "FACTORING", "FAKE_DESCRIPTOR", "CASH_DISBURSEMENT", "CLEAN"];
 const RT_TIERS: (RiskTier | "ALL")[] = ["ALL", "critical", "high", "elevated", "watch", "clear"];
 
 function RiskTableMode() {

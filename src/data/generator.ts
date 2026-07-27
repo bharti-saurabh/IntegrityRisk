@@ -80,8 +80,16 @@ function makeDescriptor(rng: Rng, tradeName: string): string {
   return rng.bool(0.7) ? stem : `${stem} ${rng.pick(GENERIC_DESC)}`;
 }
 
-function entryModeFor(rng: Rng, cnp: boolean): EntryMode {
+function entryModeFor(rng: Rng, cnp: boolean, manualBoost = 0): EntryMode {
   if (cnp) return "ecom";
+  if (manualBoost > 0) {
+    // Interchange downgrade: shift card-present volume into keyed / fallback
+    // entry, which does not qualify for the low interchange the merchant claims.
+    return rng.weighted<EntryMode>(
+      ["chip", "contactless", "swipe", "manual", "fallback"],
+      [0.55 * (1 - manualBoost), 0.3 * (1 - manualBoost), 0.08, 0.04 + 0.55 * manualBoost, 0.03 + 0.45 * manualBoost],
+    );
+  }
   return rng.weighted<EntryMode>(
     ["chip", "contactless", "swipe", "manual", "fallback"],
     [0.55, 0.3, 0.08, 0.04, 0.03],
@@ -239,15 +247,22 @@ export function generateDataset(cfg: GenConfig): GeneratedDataset {
     let typology: Typology = "CLEAN";
     if (abusive) {
       typology = rng.weighted<Typology>(
-        ["MCC_MISCODING", "SPLIT_TICKETING", "FACTORING", "FAKE_DESCRIPTOR", "CASH_DISBURSEMENT"],
-        [0.34, 0.16, 0.18, 0.14, 0.18],
+        ["MCC_MISCODING", "MCC_ABUSE", "SPLIT_TICKETING", "FACTORING", "FAKE_DESCRIPTOR", "CASH_DISBURSEMENT"],
+        [0.3, 0.12, 0.15, 0.16, 0.13, 0.14],
       );
       // low-risk declared MCC hiding higher-risk actual behavior
       declaredMcc = rng.pick(["5411", "5812", "5499", "5999", "5734", "8999"]);
       if (typology === "MCC_MISCODING")
         actualMcc = rng.pick(["7995", "6051", "5813", "5967", "7273", "7372"]);
       else if (typology === "CASH_DISBURSEMENT") actualMcc = "6051";
-      else actualMcc = declaredMcc;
+      else if (typology === "MCC_ABUSE") {
+        // Interchange abuse: the line of business is honest (actual == declared,
+        // so content-divergence stays low and the miscoding composite is blind),
+        // but the merchant is boarded in a qualified card-present retail band it
+        // games via keyed/fallback, cross-border settlement.
+        declaredMcc = rng.pick(["5411", "5812", "5541", "5499", "5814"]);
+        actualMcc = declaredMcc;
+      } else actualMcc = declaredMcc;
     } else {
       declaredMcc = rng.pick(MCC_TAXONOMY).code;
       actualMcc = declaredMcc;
@@ -433,7 +448,7 @@ function makeTxn(
     declaredMcc: m.declaredMcc,
     merchantDescriptor: descPool.length > 1 ? rng.pick(descPool) : m.descriptor,
     authorizationStatus: declined ? "declined" : "approved",
-    entryMode: entryModeFor(rng, cnp),
+    entryMode: entryModeFor(rng, cnp, p.manualEntryBoost),
     cardPresent: !cnp,
     ecommerce: cnp,
     recurring: rng.bool(0.08),

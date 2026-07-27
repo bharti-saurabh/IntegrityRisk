@@ -156,6 +156,58 @@ export const ANATOMY: AnatomyModule[] = [
     regulatoryHooks: ["Visa GBPP", "Mastercard BRAM/BAM", "BSA / AML", "MATCH (TMF)"],
   },
   {
+    typ: "MCC_ABUSE",
+    alias: "Interchange Manipulation / Rate Downgrade",
+    oneLiner: "The line of business is honest, but transactions are qualified into a cheaper interchange band than they warrant.",
+    definition:
+      "Distinct from miscoding: the merchant's declared category matches what it actually sells, so the content model that catches miscoding is blind here. The abuse is in the *interchange qualification* — keyed/fallback entry, cross-border settlement, or missing data submitted under a low-rate card-present retail band the transactions don't qualify for. It leaks interchange revenue and misrepresents settlement risk to the network.",
+    variants: [
+      {
+        name: "Keyed / fallback downgrade",
+        declaredExample: "5411 Grocery (qualified CP)",
+        actualExample: "Keyed / fallback settlement",
+        tell: "A high share of manual-key or fallback entry under a band that assumes chip/contactless card-present acceptance.",
+      },
+      {
+        name: "Cross-border qualification gap",
+        tell: "Material cross-border settlement volume routed as domestic-qualified, inconsistent with the declared interchange band.",
+      },
+      {
+        name: "Large-ticket band mismatch",
+        tell: "Average tickets well above the declared retail band's norm while claiming its qualified rate.",
+      },
+    ],
+    identificationSignals: [
+      { label: "Keyed / fallback entry ratio", feature: "manualEntryRatio" },
+      { label: "Fallback entry ratio", feature: "fallbackRatio" },
+      { label: "Cross-border settlement ratio", feature: "crossBorderRatio" },
+      { label: "Content divergence (LOW — separates from miscoding)", feature: "mccDivergence" },
+    ],
+    validationLadder: [
+      {
+        tier: "signal",
+        method: "Interchange-qualification re-derivation",
+        detail:
+          "Re-score each settlement against the interchange tier its entry mode, geography and data completeness actually qualify for, and quantify the gap against the declared band — while confirming content-divergence is low (i.e. not miscoding).",
+        inPlatform: true,
+      },
+      {
+        tier: "corroboration",
+        method: "Settlement & pricing reconciliation",
+        detail:
+          "Reconcile the merchant's interchange qualification history and pricing tier with the acquirer's board record to confirm systematic downgrade rather than incidental keyed volume.",
+        inPlatform: false,
+      },
+      HUMAN,
+    ],
+    implications: [
+      { area: "Financial", text: "Direct interchange-revenue leakage and mispriced settlement risk for the acquirer and network." },
+      { area: "Regulatory", text: "Network interchange-integrity and pricing-integrity rules; potential assessments on re-qualification." },
+      { area: "Operational", text: "Rule-routed, not model-routed — the content composite is blind, so a dedicated interchange signal is required." },
+    ],
+    regulatoryHooks: ["Visa/MC interchange qualification rules", "Pricing integrity", "Settlement compliance"],
+  },
+  {
     typ: "SPLIT_TICKETING",
     alias: "Structuring / Threshold Avoidance",
     oneLiner: "One purchase is broken into several smaller charges to slip under a control threshold.",

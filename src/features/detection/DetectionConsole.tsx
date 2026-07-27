@@ -16,9 +16,10 @@ import {
   type CategorySignal,
 } from "@/data/miscodingCategories";
 import type { TypologyConfig, DetectionModel } from "@/data/typologies";
-import { TIER_HEX, type OverviewTier } from "@/data/overview";
+import { TIER_HEX, FAMILY_META, type OverviewTier, type FamilyKey } from "@/data/overview";
 import { subjectFromExplorer, buildInvestigation } from "@/features/ai-copilot/agentStream";
 import { AgentStreamPanel } from "@/features/ai-copilot/AgentStreamPanel";
+import { useAppStore } from "@/stores/appStore";
 
 // ---------------------------------------------------------------------------
 // Reusable detection-model console. Every integrity typology renders through
@@ -125,9 +126,25 @@ function cohortAnswer(promptId: string, m: ExplorerMerchant, model: DetectionMod
       return `Declared: MCC ${m.declared_mcc} — ${m.mcc_group} (${cfg.declaredKind}). Observed behavior resembles ${model.behavesLike}. Flag basis: ${m.flag_reason}${m.rule_names && m.rule_names !== "None" ? ` (rules: ${m.rule_names})` : ""}.`;
     case "remediation":
       return `Route to ${model.owner}. Request a ${model.subtype} attestation and business-model evidence; if unsubstantiated, apply the ${model.priority} handling path. Exposure at stake: ${fmtCurrency(m.gross_sales_usd)} gross across ${fmtNumber(m.txn_count)} transactions.`;
+    case "exposure":
+      return `${m.merchant_name} carries ${fmtCurrency(m.gross_sales_usd)} gross across ${fmtNumber(m.txn_count)} transactions on ${fmtNumber(m.unique_cards)} unique cards. It sits in the ${m.risk_tier} tier at ${m.integrity_risk_score.toFixed(1)}/100 — this is the value at stake if the ${model.short} suspicion is confirmed.`;
     default:
-      return `${m.merchant_name}: suspected ${model.short}, declared as ${m.mcc_group}.`;
+      return `${m.merchant_name}: suspected ${model.short}, declared as ${m.mcc_group} (MCC ${m.declared_mcc}), scored ${m.integrity_risk_score.toFixed(1)}/100 (${m.risk_tier}). Ask about the signals, declared-vs-behavior, exposure, or remediation.`;
   }
+}
+
+// Keyword-route a free-text question to the closest grounded answer. Ordered so
+// the more specific intents win before the catch-all "why". Falls through to a
+// generic orientation answer (the switch default) when nothing matches.
+function routeCohortQuestion(qRaw: string): string {
+  const q = qRaw.toLowerCase();
+  const has = (...ks: string[]) => ks.some((k) => q.includes(k));
+  if (has("signal", "variable", "feature", "metric", "elevated", "sigma", "z-score", "z score", "deviat", "which stat")) return "signals";
+  if (has("remediat", "next step", "what do", "what should", "action", "route", "owner", "team", "who handles", "who owns", "resolve", "fix it", "handle")) return "remediation";
+  if (has("exposure", "how much", "dollar", "how many transaction", "volume", "gross", "sales", "value at stake", "size")) return "exposure";
+  if (has("declared", "mcc", "code", "should be", "actually", "real category", "vs behav", "versus")) return "declared";
+  // "why", "flag", "reason", "explain", "suspect" and anything unmatched.
+  return "why";
 }
 
 const COHORT_PROMPTS = [
@@ -141,6 +158,8 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   const { category: routeParam } = useParams(); // URL selects the identification model
   const navigate = useNavigate();
   const { merchants, error } = useExplorerMerchants();
+  const fileCase = useAppStore((s) => s.fileCase);
+  const filedCases = useAppStore((s) => s.filedCases);
 
   const modelByKey = useMemo(() => {
     const map: Record<string, DetectionModel> = {};
@@ -153,6 +172,9 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mode, setMode] = useState<"evidence" | "agent">("evidence");
   const [runId, setRunId] = useState(0);
+  // Local review line — where an analyst draws the "work this now" cut. Kept out
+  // of the global store on purpose so it can't perturb Observatory / ImpactSimulator.
+  const [reviewLine, setReviewLine] = useState(0);
 
   // Reset to this family's first model whenever we switch consoles.
   useEffect(() => {
@@ -188,6 +210,7 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   useEffect(() => {
     setSelectedId(cohort[0]?.merchant_id ?? null);
     setMode("evidence");
+    setReviewLine(0);
   }, [modelKey, cohort]);
 
   const selected = cohort.find((m) => m.merchant_id === selectedId) ?? cohort[0] ?? null;
@@ -198,6 +221,13 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
     const modelFlagged = cohort.filter((m) => m.flag_reason.includes("model")).length;
     return { exposure, avg: avg(cohort.map((m) => m.integrity_risk_score)), acute, modelFlagged };
   }, [cohort]);
+
+  // Review-line scope: merchants at or above the line are "in scope to work now".
+  const scope = useMemo(() => {
+    const inScope = cohort.filter((m) => m.integrity_risk_score >= reviewLine);
+    const scopeExposure = inScope.reduce((s, m) => s + m.gross_sales_usd, 0);
+    return { count: inScope.length, exposure: scopeExposure, below: cohort.length - inScope.length };
+  }, [cohort, reviewLine]);
 
   const stats = useMemo(
     () => (merchants && selected ? computeStats(merchants, selected, model) : []),
@@ -271,13 +301,67 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
         <StatTile label="Critical / High" value={fmtNumber(summary.acute)} sub={`${summary.modelFlagged} model-flagged`} accent="violet" icon={<Icon name="ShieldAlert" size={16} />} />
       </div>
 
+      {/* ---- Review line --------------------------------------------------- */}
+      <Card className="mt-4 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-[240px] flex-1">
+            <div className="flex items-center gap-2">
+              <SectionLabel>Review line</SectionLabel>
+              <span className="text-[11px] text-ink-3">drag to set where you start working</span>
+            </div>
+            <p className="mt-1 text-[13px] text-ink-2">
+              Merchants scoring at or above the line are in scope to work now; those below stay visible but dim out of the queue. Local to this console — it doesn't move the portfolio threshold.
+            </p>
+          </div>
+          <div className="flex items-center gap-5 text-right tnum">
+            <div>
+              <div className="text-lg font-bold text-ink">
+                {scope.count}<span className="text-sm font-medium text-ink-3">/{cohort.length}</span>
+              </div>
+              <div className="text-[11px] text-ink-3">in scope ≥ {reviewLine}</div>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-amber">{fmtCompact(scope.exposure)}</div>
+              <div className="text-[11px] text-ink-3">exposure in scope</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center gap-3">
+          <span className="text-[11px] text-ink-3">0</span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={reviewLine}
+            onChange={(e) => setReviewLine(Number(e.target.value))}
+            aria-label="Review line score"
+            className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-surface-2"
+            style={{ accentColor: "#22d3ee" }}
+          />
+          <span className="text-[11px] text-ink-3">100</span>
+          <span className="w-9 text-right text-sm font-bold tnum text-cyan">{reviewLine}</span>
+        </div>
+
+        <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-surface-2">
+          <div className="h-full bg-cyan transition-all" style={{ width: `${(scope.count / Math.max(1, cohort.length)) * 100}%` }} />
+        </div>
+        <div className="mt-1.5 flex justify-between text-[11px] text-ink-3">
+          <span><b className="text-ink-2">{scope.count}</b> above the line</span>
+          <span><b className="text-ink-2">{scope.below}</b> dimmed below</span>
+        </div>
+      </Card>
+
       {/* ---- Master / detail ---------------------------------------------- */}
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(320px,400px)_1fr]">
         {/* Cohort queue */}
         <Card className="flex max-h-[calc(100vh-130px)] flex-col p-0">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <SectionLabel>Remediation queue</SectionLabel>
-            <span className="text-[11px] text-ink-3">{cohort.length} merchants · by risk</span>
+            <span className="text-[11px] text-ink-3">
+              {reviewLine > 0 ? `${scope.count} in scope · ${scope.below} dimmed` : `${cohort.length} merchants · by risk`}
+            </span>
           </div>
           <div className="min-w-0 flex-1 overflow-y-auto">
             {cohort.length === 0 ? (
@@ -285,12 +369,13 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
             ) : (
               cohort.map((m) => {
                 const active = m.merchant_id === selected?.merchant_id;
+                const below = reviewLine > 0 && m.integrity_risk_score < reviewLine;
                 const elevatedCount = model.signals.filter((s) => isElevated(s, m[s.key] as number)).length;
                 return (
                   <button
                     key={m.merchant_id}
                     onClick={() => { setSelectedId(m.merchant_id); setMode("evidence"); }}
-                    className={`flex w-full items-center gap-3 border-b border-border/50 px-4 py-2.5 text-left transition-colors ${active ? "bg-cyan/[0.06]" : "hover:bg-surface-2/60"}`}
+                    className={`flex w-full items-center gap-3 border-b border-border/50 px-4 py-2.5 text-left transition-all ${active ? "bg-cyan/[0.06]" : "hover:bg-surface-2/60"} ${below ? "opacity-40 hover:opacity-100" : ""}`}
                   >
                     <TierDot tier={m.risk_tier} />
                     <div className="min-w-0 flex-1">
@@ -334,7 +419,24 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
                     confidenceLabel={subject.synthesis.confidenceLabel}
                     scoreUnit="score"
                     quickPrompts={COHORT_PROMPTS}
-                    onAsk={(promptId, freeText) => cohortAnswer(freeText ? "why" : promptId, selected, model, config)}
+                    onAsk={(promptId, freeText) => cohortAnswer(freeText ? routeCohortQuestion(freeText) : promptId, selected, model, config)}
+                    caseAction={{
+                      filed: filedCases.some((c) => c.merchantId === selected.merchant_id),
+                      onFile: () =>
+                        fileCase({
+                          merchantId: selected.merchant_id,
+                          merchantName: selected.merchant_name,
+                          familyLabel: config.title.split("—")[0].trim(),
+                          familyColor: FAMILY_META[config.family as FamilyKey]?.color ?? "#2563eb",
+                          suspectedLabel: model.behavesLike,
+                          score: selected.integrity_risk_score,
+                          disposition: subject.synthesis.disposition,
+                          recommended: subject.synthesis.recommended,
+                          confidence: subject.synthesis.confidence,
+                          href: `${config.route}/${model.key}`,
+                          plane: "B",
+                        }),
+                    }}
                     footerNote={`${model.priority} · ${model.owner} · Decision-support only — a named human signs off.`}
                   />
                 </div>

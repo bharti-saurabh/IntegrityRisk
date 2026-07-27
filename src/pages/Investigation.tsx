@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { RiskRing } from "@/components/ui/RiskRing";
 import { fmtCurrency, fmtPct, fmtNumber, fmtDateTime, maskCard } from "@/utils/format";
 import { TYPOLOGY_LABELS } from "@/types/domain";
+import { TYPOLOGY_COLOR } from "@/features/cases/actions";
 import { generateBrief, answerPrompt, COPILOT_PROMPTS } from "@/features/ai-copilot/narrative";
 import { buildInvestigation, subjectFromRecord } from "@/features/ai-copilot/agentStream";
 import { AgentStreamPanel } from "@/features/ai-copilot/AgentStreamPanel";
@@ -32,6 +33,8 @@ export default function Investigation() {
   const selectedId = useAppStore((s) => s.selectedMerchantId);
   const getTransactions = useAppStore((s) => s.getTransactions);
   const getCases = useAppStore((s) => s.getCases);
+  const fileCase = useAppStore((s) => s.fileCase);
+  const filedCases = useAppStore((s) => s.filedCases);
 
   const activeId = merchantId ?? selectedId ?? records[0]?.merchant.merchantId;
   const record = records.find((r) => r.merchant.merchantId === activeId);
@@ -208,6 +211,26 @@ export default function Investigation() {
             onAsk={(promptId, freeText) =>
               answerPrompt(freeText ? routePrompt(freeText) : promptId, record, transactions)
             }
+            caseAction={{
+              filed: filedCases.some((c) => c.merchantId === m.merchantId),
+              onFile: () =>
+                fileCase({
+                  merchantId: m.merchantId,
+                  merchantName: m.tradeName,
+                  familyLabel: TYPOLOGY_LABELS[record.primaryTypology],
+                  familyColor:
+                    record.primaryTypology === "CLEAN"
+                      ? "#2563eb"
+                      : TYPOLOGY_COLOR[record.primaryTypology],
+                  suspectedLabel: top.label,
+                  score: record.scores.finalRiskScore,
+                  disposition: subject.synthesis.disposition,
+                  recommended: subject.synthesis.recommended,
+                  confidence: subject.synthesis.confidence,
+                  href: `/investigate/${m.merchantId}`,
+                  plane: "A",
+                }),
+            }}
             footerNote={`Leading typology: ${TYPOLOGY_LABELS[record.primaryTypology]} · Decision-support only — not a compliance determination.`}
           />
         </div>

@@ -9,6 +9,7 @@ import type {
   Disposition,
   RecommendedAction,
   AuditEntry,
+  FiledCase,
 } from "@/types/domain";
 import type { EngineResult } from "@/workers/protocol";
 import { DEFAULT_GEN_CONFIG, type GenConfig } from "@/data/generator";
@@ -31,6 +32,7 @@ interface PersistedState {
   persona: Persona;
   threshold: number;
   casePatches: Record<string, CasePatch>;
+  filedCases: FiledCase[];
   ruleOverrides: Record<string, { enabled: boolean }>;
   demoStep: number;
   seed: string;
@@ -60,6 +62,8 @@ interface AppState extends PersistedState {
   getCase: (caseId: string) => InvestigationCase | undefined;
   patchCase: (caseId: string, patch: CasePatch, action: string, actor?: string) => void;
   addNote: (caseId: string, text: string, author?: string) => void;
+  fileCase: (fc: Omit<FiledCase, "id" | "filedAt">) => void;
+  clearFiledCases: () => void;
   setDemoStep: (n: number) => void;
   resetDemo: () => void;
 }
@@ -87,6 +91,7 @@ export const useAppStore = create<AppState>()(
       persona: "executive",
       threshold: 62,
       casePatches: {},
+      filedCases: [],
       ruleOverrides: {},
       demoStep: 0,
       seed: String(DEFAULT_GEN_CONFIG.seed),
@@ -180,6 +185,17 @@ export const useAppStore = create<AppState>()(
         get().patchCase(caseId, { notes: [note] }, `Note added`, author);
       },
 
+      // Write-back from a completed investigation. Dedupe by merchant (a re-file
+      // refreshes the disposition), newest first, capped so the exec panel stays
+      // legible.
+      fileCase: (fc) => {
+        const now = Date.now();
+        const entry: FiledCase = { ...fc, id: `fc-${now}`, filedAt: now };
+        const rest = get().filedCases.filter((c) => c.merchantId !== fc.merchantId);
+        set({ filedCases: [entry, ...rest].slice(0, 50) });
+      },
+      clearFiledCases: () => set({ filedCases: [] }),
+
       setDemoStep: (n) => set({ demoStep: n }),
       resetDemo: () => set({ demoStep: 0 }),
     }),
@@ -191,6 +207,7 @@ export const useAppStore = create<AppState>()(
         persona: s.persona,
         threshold: s.threshold,
         casePatches: s.casePatches,
+        filedCases: s.filedCases,
         ruleOverrides: s.ruleOverrides,
         demoStep: s.demoStep,
         seed: s.seed,

@@ -35,8 +35,8 @@ const STEPS: TourStep[] = [
     route: `/investigate/${FLAGSHIP.merchantId}`,
   },
   {
-    title: "Follow the money (graph)",
-    body: "The factoring explorer renders the entity graph: shared settlement accounts, devices, IPs, and known-bad adjacency that expose merchant laundering rings.",
+    title: "Follow the money (factoring)",
+    body: "Factoring models pull the cohort of registered outlets settling for undisclosed sub-merchants — surfaced by shared settlement accounts, devices, and known-bad adjacency. Each row lands in the owning team's remediation queue with the variables that flagged it.",
     route: "/factoring",
   },
   {

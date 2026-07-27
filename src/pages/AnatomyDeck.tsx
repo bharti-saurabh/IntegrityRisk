@@ -56,6 +56,9 @@ const ROUTE_META: Record<"model" | "rule" | "both", { label: string; color: stri
   both: { label: "Model + rule", color: "#7c3aed", note: "the model and a rule agreed" },
 };
 
+// Cinema mode: seconds each scene holds before auto-advancing (kiosk playback).
+const CINEMA_MS = 6500;
+
 const SCENE_KEYS = ["hero", "cover", "stream", "deviation", "signature", "score", "verdict"] as const;
 type SceneKey = typeof SCENE_KEYS[number];
 const SCENE_RIBBON: Record<SceneKey, string> = {
@@ -863,6 +866,7 @@ export default function AnatomyDeck() {
   const [scene, setScene] = useState(0);
   const [pulse, setPulse] = useState(0);
   const [tray, setTray] = useState(false);
+  const [cinema, setCinema] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
 
   const fam = families[famIdx];
@@ -877,6 +881,20 @@ export default function AnatomyDeck() {
     if (scene < lastScene) goScene(scene + 1);
     else if (famIdx < lastFam) goFam(famIdx + 1, 0);
   }, [scene, lastScene, famIdx, lastFam, goScene, goFam]);
+
+  const atEnd = famIdx === lastFam && scene === lastScene;
+
+  // Cinema playback: hold each scene for CINEMA_MS then advance, looping back to
+  // the first chapter at the end. Keyed on scene/famIdx so the countdown resets
+  // on every advance — manual or automatic.
+  useEffect(() => {
+    if (!cinema || view !== "deck") return;
+    const t = setTimeout(() => {
+      if (atEnd) goFam(0, 0);
+      else next();
+    }, CINEMA_MS);
+    return () => clearTimeout(t);
+  }, [cinema, view, scene, famIdx, atEnd, next, goFam]);
   const prev = useCallback(() => {
     if (scene > 0) goScene(scene - 1);
     else if (famIdx > 0) goFam(famIdx - 1, lastScene);
@@ -892,7 +910,8 @@ export default function AnatomyDeck() {
       const k = e.key;
       if ((k === " " || k === "Enter") && (tag === "BUTTON" || tag === "A")) return;
       if (k === "?" || k === "i") { e.preventDefault(); setTray((t) => !t); return; }
-      if (k === "Escape") { e.preventDefault(); if (tray) setTray(false); else setView("home"); return; }
+      if (k === "p" || k === "P") { e.preventDefault(); setCinema((c) => !c); return; }
+      if (k === "Escape") { e.preventDefault(); if (cinema) setCinema(false); else if (tray) setTray(false); else setView("home"); return; }
       if (k === "Tab") { e.preventDefault(); goFam(e.shiftKey ? famIdx - 1 : famIdx + 1, 0); return; }
       if ([" ", "ArrowRight", "ArrowDown", "PageDown", "Enter"].includes(k)) { e.preventDefault(); next(); }
       else if (["ArrowLeft", "ArrowUp", "PageUp", "Backspace"].includes(k)) { e.preventDefault(); prev(); }
@@ -902,20 +921,24 @@ export default function AnatomyDeck() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [view, tray, famIdx, next, prev, goFam, goScene, lastScene]);
+  }, [view, tray, cinema, famIdx, next, prev, goFam, goScene, lastScene]);
 
   if (view === "home") {
     return <HomeGallery onPick={(i) => { setFamIdx(i); setScene(0); setPulse((p) => p + 1); setView("deck"); }} onTour={() => { setFamIdx(0); setScene(0); setPulse((p) => p + 1); setView("deck"); }} />;
   }
 
   const key = SCENE_KEYS[scene];
-  const atEnd = famIdx === lastFam && scene === lastScene;
 
   return (
     <div className="flex min-h-[calc(100vh-7rem)] flex-col">
+      <style>{`
+        @keyframes anatomyCinemaFill { from { width: 0% } to { width: 100% } }
+        .anatomy-cinema-bar { width: 0%; animation-name: anatomyCinemaFill; animation-timing-function: linear; animation-fill-mode: forwards; }
+        @media (prefers-reduced-motion: reduce) { .anatomy-cinema-bar { animation: none; width: 100%; } }
+      `}</style>
       {/* family tabs (chapters) */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        <button type="button" onClick={() => setView("home")} className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-ink-3 hover:bg-surface-2" title="All typologies">
+        <button type="button" onClick={() => { setCinema(false); setView("home"); }} className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-ink-3 hover:bg-surface-2" title="All typologies">
           <Icon name="LayoutDashboard" size={14} /> All
         </button>
         <span className="text-ink-3">·</span>
@@ -938,6 +961,17 @@ export default function AnatomyDeck() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setCinema((c) => !c)}
+            className="flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors"
+            style={cinema
+              ? { backgroundColor: tint(fam.color, 0.12), color: fam.color, borderColor: tint(fam.color, 0.4) }
+              : { color: "#64748b", borderColor: "var(--border, #dbe2ec)" }}
+            title="Auto-play the deck (press P)"
+          >
+            <Icon name={cinema ? "Pause" : "Play"} size={14} /> {cinema ? "Playing" : "Cinema"}
+          </button>
           <button type="button" onClick={() => setTray(true)} className="flex items-center gap-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-ink-2 hover:bg-surface-2" title="Explain this typology (press ? )">
             <Icon name="Info" size={14} /> Explain
           </button>
@@ -953,6 +987,11 @@ export default function AnatomyDeck() {
       {/* stage */}
       <div className="relative mt-3 flex-1 overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
         <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: `radial-gradient(700px 400px at 100% 0%, ${tint(fam.color, 0.05)}, transparent 60%)` }} />
+        {cinema ? (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-1 bg-surface-2">
+            <div key={`${famIdx}-${scene}-${pulse}`} className="anatomy-cinema-bar h-full" style={{ background: fam.color, animationDuration: `${CINEMA_MS}ms` }} />
+          </div>
+        ) : null}
         <div ref={stageRef} key={`${famIdx}-${scene}-${pulse}`} className="relative h-full overflow-y-auto px-5 py-6 sm:px-8">
           {renderScene(key, fam, pulse)}
         </div>
@@ -961,7 +1000,7 @@ export default function AnatomyDeck() {
       {/* footer */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div className="hidden items-center gap-1 text-[11px] text-ink-3 md:flex">
-          <Kbd>Space</Kbd> next · <Kbd>←</Kbd> back · <Kbd>Tab</Kbd> next typology · <Kbd>1–6</Kbd> jump · <Kbd>?</Kbd> explain
+          <Kbd>Space</Kbd> next · <Kbd>←</Kbd> back · <Kbd>Tab</Kbd> next typology · <Kbd>1–6</Kbd> jump · <Kbd>P</Kbd> cinema · <Kbd>?</Kbd> explain
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={prev}><Icon name="ArrowLeft" size={15} /> Back</Button>
@@ -971,8 +1010,8 @@ export default function AnatomyDeck() {
             </Button>
           ) : (
             <>
-              <Button variant="ghost" onClick={() => setView("home")}><Icon name="RotateCcw" size={15} /> All typologies</Button>
-              <Button variant="primary" onClick={() => nav(fam.route)}>Open studio <Icon name="ArrowRight" size={15} /></Button>
+              <Button variant="ghost" onClick={() => { setCinema(false); setView("home"); }}><Icon name="RotateCcw" size={15} /> All typologies</Button>
+              <Button variant="primary" onClick={() => { setCinema(false); nav(fam.route); }}>Open studio <Icon name="ArrowRight" size={15} /></Button>
             </>
           )}
         </div>

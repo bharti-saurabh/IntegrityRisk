@@ -9,6 +9,8 @@ import { Icon } from "@/components/ui/Icon";
 import { CHART, ChartTooltip } from "@/components/charts/kit";
 import { fmtCurrency, fmtCompact, fmtNumber, fmtPct } from "@/utils/format";
 import { exportJson } from "@/utils/exports";
+import { useAppStore } from "@/stores/appStore";
+import type { FiledCase } from "@/types/domain";
 import {
   overview, FAMILY_META, TIER_ORDER, TIER_HEX, PRIORITY_TIER_HEX,
   type Family, type OverviewTier, type PriorityMerchant,
@@ -161,9 +163,95 @@ function FamilyTaxonomy({ fam, onOpenModel }: { fam: Family; onOpenModel: (key: 
   );
 }
 
+function timeAgo(ts: number, now: number): string {
+  const s = Math.max(0, Math.round((now - ts) / 1000));
+  if (s < 45) return "just now";
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+}
+
+/** The cross-tab write-back: cases the analyst filed from AI investigations land
+ *  here, linking the investigation desk to the executive view. Starts empty and
+ *  grows live as the user works — the "what changed" delta. */
+function FiledCasesPanel({ cases, onClear, onOpen }: {
+  cases: FiledCase[]; onClear: () => void; onOpen: (href: string) => void;
+}) {
+  const now = Date.now();
+  const fams = new Map<string, { color: string; n: number }>();
+  for (const c of cases) {
+    const e = fams.get(c.familyLabel) ?? { color: c.familyColor, n: 0 };
+    e.n += 1;
+    fams.set(c.familyLabel, e);
+  }
+
+  return (
+    <section className="mt-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <SectionLabel>Cases you filed · from the investigation desk</SectionLabel>
+        {cases.length > 0 ? (
+          <button onClick={onClear} className="inline-flex items-center gap-1 text-[11px] text-ink-3 hover:text-ink-2">
+            <Icon name="X" size={12} /> Clear
+          </button>
+        ) : null}
+      </div>
+
+      {cases.length === 0 ? (
+        <div className="mt-2 flex items-center gap-2.5 rounded-xl border border-dashed border-border bg-surface-2/30 px-4 py-3 text-[11.5px] text-ink-3">
+          <Icon name="Briefcase" size={15} className="shrink-0 text-ink-3" />
+          <span>Run an AI investigation and hit <b className="text-ink-2">File to case queue</b> — the outcome lands here, connecting the analyst's desk to this executive view.</span>
+        </div>
+      ) : (
+        <Card className="mt-2 overflow-hidden">
+          <div className="flex flex-wrap items-center gap-2 border-b border-border bg-surface-2/40 px-4 py-2.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan/10 px-2.5 py-0.5 text-[11px] font-bold text-cyan">
+              <Icon name="Sparkles" size={12} /> {cases.length} filed this session
+            </span>
+            {[...fams.entries()].map(([label, e]) => (
+              <span key={label} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2 py-0.5 text-[10.5px] text-ink-2">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: e.color }} /> {label} {e.n}
+              </span>
+            ))}
+          </div>
+          <div>
+            {cases.slice(0, 5).map((c, i) => (
+              <button
+                key={c.id}
+                onClick={() => onOpen(c.href)}
+                className="grid w-full grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 border-b border-border-soft px-4 py-2.5 text-left last:border-b-0 hover:bg-surface-2/60"
+              >
+                <span className="grid h-8 w-8 place-items-center rounded-[9px] text-[13px] font-bold text-white tnum" style={{ background: c.familyColor }}>
+                  {Math.round(c.score)}
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-[13px] font-semibold text-ink">{c.merchantName}</span>
+                    {i === 0 ? <span className="shrink-0 rounded-full bg-cyan/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-cyan">New</span> : null}
+                  </div>
+                  <div className="truncate text-[11px] text-ink-3">
+                    behaves like {c.suspectedLabel} · <span className="text-ink-2">{c.disposition}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="hidden text-right text-[10.5px] text-ink-3 sm:block">{timeAgo(c.filedAt, now)}</span>
+                  <Icon name="ChevronRight" size={14} className="text-ink-3" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </Card>
+      )}
+    </section>
+  );
+}
+
 export default function ExecutiveCommandCenter() {
   const navigate = useNavigate();
   const { portfolio, detection, families, priority, trend, meta } = overview;
+  const filedCases = useAppStore((s) => s.filedCases);
+  const clearFiledCases = useAppStore((s) => s.clearFiledCases);
 
   const tierData = overview.tiers;
   const totalAlerts = families.reduce((s, f) => s + f.alerts, 0);
@@ -185,6 +273,8 @@ export default function ExecutiveCommandCenter() {
           </>
         }
       />
+
+      <FiledCasesPanel cases={filedCases} onClear={clearFiledCases} onOpen={(href) => navigate(href)} />
 
       {/* ══════════ Headline coverage + trend ══════════ */}
       <section>

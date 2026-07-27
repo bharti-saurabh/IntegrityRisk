@@ -125,6 +125,7 @@ export function computeAggregates(
   };
   const typologyDistribution: Record<Exclude<Typology, "CLEAN">, number> = {
     MCC_MISCODING: 0,
+    MCC_ABUSE: 0,
     SPLIT_TICKETING: 0,
     FACTORING: 0,
     FAKE_DESCRIPTOR: 0,

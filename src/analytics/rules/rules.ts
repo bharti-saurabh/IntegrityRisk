@@ -156,6 +156,34 @@ export const DEFAULT_RULES: Rule[] = [
     enabled: true,
   },
   {
+    id: "RULE-ABUSE-001",
+    name: "Interchange downgrade: keyed/fallback entry under a qualified card-present MCC",
+    typology: "MCC_ABUSE",
+    severity: "HIGH",
+    conditions: [
+      { feature: "declaredMcc", operator: "in", value: ["5411", "5812", "5541", "5499", "5814"] },
+      { feature: "manualEntryRatio", operator: ">", value: 0.18 },
+    ],
+    score: 24,
+    explanationTemplate:
+      "{{manualEntryPct}}% keyed / fallback entry under {{declaredMccLabel}} — settled at a lower interchange band than the entry characteristics qualify for.",
+    enabled: true,
+  },
+  {
+    id: "RULE-ABUSE-002",
+    name: "Cross-border keyed settlement inconsistent with declared band",
+    typology: "MCC_ABUSE",
+    severity: "MEDIUM",
+    conditions: [
+      { feature: "crossBorderRatio", operator: ">", value: 0.2 },
+      { feature: "fallbackRatio", operator: ">", value: 0.12 },
+    ],
+    score: 16,
+    explanationTemplate:
+      "{{crossBorderPct}}% cross-border with {{fallbackPct}}% fallback entry — settlement geography and entry mode inconsistent with the declared interchange qualification.",
+    enabled: true,
+  },
+  {
     id: "RULE-GEN-001",
     name: "High cross-border card-not-present migration",
     typology: "MCC_MISCODING",
@@ -219,6 +247,8 @@ function renderTemplate(tpl: string, m: MerchantProfile, f: MerchantFeatures): s
     thresholdProximityPct: pct(f.thresholdProximityRatio),
     rapidRepeatPct: pct(f.rapidRepeatRatio),
     crossBorderPct: pct(f.crossBorderRatio),
+    manualEntryPct: pct(f.manualEntryRatio + f.fallbackRatio),
+    fallbackPct: pct(f.fallbackRatio),
     notRecognizedPct: pct(f.notRecognizedDisputeRate),
     descriptorNamePct: pct(f.descriptorNameSimilarity),
     descriptorCount: String(f.descriptorCount),

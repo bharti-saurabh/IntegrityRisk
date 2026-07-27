@@ -50,9 +50,9 @@ export const RESPONSE_LANES: ResponseLaneDef[] = [
     owner: "Monitoring Operations",
     action: "Tighten thresholds",
     rationale:
-      "Structuring around authorization limits is a control-calibration failure — the fix is a threshold change, not an enforcement action.",
+      "Structuring around authorization limits and interchange-qualification downgrades are both control-calibration failures — the fix is a threshold / qualification change and pricing recovery, not an enforcement action.",
     color: "#0e7490",
-    typologies: ["SPLIT_TICKETING"],
+    typologies: ["SPLIT_TICKETING", "MCC_ABUSE"],
     verb: { critical: "Restrict", standard: "Monitor" },
   },
   {

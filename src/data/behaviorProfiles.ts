@@ -23,6 +23,9 @@ export interface BehaviorProfile {
   uniqueCardShare: number;
   descriptorPoolSize: number;
   highRiskCustomerAffinity: number; // 0..1 preference for high-risk card pool
+  /** 0..1 share of card-present volume forced into keyed/fallback entry
+   * (interchange-downgrade signature). 0 for normal merchants. */
+  manualEntryBoost: number;
   productKeywords: string[];
 }
 
@@ -56,6 +59,7 @@ export function baseProfile(mcc: string): BehaviorProfile {
     uniqueCardShare: def.parentCategory.includes("Digital") ? 0.82 : 0.55,
     descriptorPoolSize: 1,
     highRiskCustomerAffinity: highRisk ? 0.55 : 0.12,
+    manualEntryBoost: 0,
     productKeywords: def.expectedKeywords,
   };
 }
@@ -75,6 +79,15 @@ export function applyTypologyShaping(
       out.refundAfterProb = 0.35;
       out.cashEquivRatio = Math.max(out.cashEquivRatio, 0.4);
       out.uniqueCardShare = 0.35;
+      break;
+    case "MCC_ABUSE":
+      // Honest line of business (keep CNP/night/ticket near the declared retail
+      // norm so content-divergence stays low), but settle via keyed/fallback,
+      // cross-border entry that doesn't qualify for the claimed interchange band.
+      out.manualEntryBoost = 0.55;
+      out.crossBorderRatio = Math.max(out.crossBorderRatio, 0.28);
+      out.disputeRate = Math.min(out.disputeRate, 0.012);
+      out.roundDollarProb = Math.min(out.roundDollarProb, 0.06);
       break;
     case "SPLIT_TICKETING":
       out.dailyTxns = 5.5;

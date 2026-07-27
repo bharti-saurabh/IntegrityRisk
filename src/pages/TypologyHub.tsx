@@ -13,7 +13,8 @@ import {
   type ValidationTier,
 } from "@/data/typologyAnatomy";
 
-// The Hub is the portfolio router across the five rule-based detection modules:
+// The Hub is the portfolio router across the detection modules (MCC miscoding is
+// model-routed; the rest are rule-routed):
 // exposure at a glance, the merchants to look at, and where to go next — the
 // detection module for hands-on work, or the Anatomy deck to learn the abuse.
 // The "what it is / how it presents" teaching now lives entirely in /anatomy;
@@ -21,6 +22,7 @@ import {
 // validation ladder (signal → corroboration → confirmation) and regulatory hooks.
 const MODULES: { typ: Exclude<Typology, "CLEAN">; route: string; anatomyKey: string; icon: string; blurb: string }[] = [
   { typ: "MCC_MISCODING", route: "/mcc", anatomyKey: "mcc_miscoding", icon: "ScanSearch", blurb: "One detection model per prohibited/restricted category (P1–P3). Each returns the cohort of merchants behaving like it but declared under a benign MCC." },
+  { typ: "MCC_ABUSE", route: "/mcc-abuse", anatomyKey: "mcc_abuse", icon: "Receipt", blurb: "Honest line of business, but transactions qualified into a cheaper interchange band than warranted — rule-routed via keyed/fallback, cross-border settlement (the content model is blind here)." },
   { typ: "SPLIT_TICKETING", route: "/split", anatomyKey: "split_ticketing", icon: "Split", blurb: "Purchases deliberately split below monitoring thresholds to evade controls." },
   { typ: "FACTORING", route: "/factoring", anatomyKey: "factoring", icon: "Share2", blurb: "One merchant processing for undisclosed others via shared settlement / devices." },
   { typ: "FAKE_DESCRIPTOR", route: "/descriptors", anatomyKey: "descriptor", icon: "Type", blurb: "Deceptive or brand-mimicking descriptors driving 'not recognized' disputes." },
@@ -58,7 +60,7 @@ export default function TypologyHub() {
       <PageHeader
         icon="Layers"
         title="Typology Hub"
-        subtitle="The five rule-based detection modules — portfolio exposure, the merchants to look at, and where to go next"
+        subtitle="Detection modules — portfolio exposure, the merchants to look at, and where to go next"
         actions={
           <Button variant="ghost" onClick={() => navigate("/anatomy")}>
             <Icon name="Fingerprint" size={15} /> Walk the anatomy
@@ -70,7 +72,7 @@ export default function TypologyHub() {
       <Card className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3">
         <div className="flex items-center gap-2 text-[12px] text-ink-2">
           <span className="grid h-6 w-6 place-items-center rounded-md bg-cyan/10 text-cyan"><Icon name="Route" size={13} /></span>
-          <span className="font-semibold text-ink">{fmtNumber(totalAlerts)} alerts</span> across five detection modules
+          <span className="font-semibold text-ink">{fmtNumber(totalAlerts)} alerts</span> across the detection modules
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-ink-3">
           <Icon name="ArrowRight" size={12} className="text-cyan" /> <span className="font-semibold text-cyan">Open module</span> to work a typology hands-on
