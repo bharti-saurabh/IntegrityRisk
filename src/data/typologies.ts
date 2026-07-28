@@ -127,18 +127,18 @@ export const SURCHARGE_CONFIG: TypologyConfig = {
   title: "Card-Surcharge Abuse — Fee-integrity models",
   icon: "BadgePercent",
   subtitle:
-    "Detects merchants adding a card surcharge that breaks the brand rules — over the cost-of-acceptance cap, on prohibited debit/prepaid, or without point-of-sale disclosure. Pick a model to pull the cohort whose surcharge shows up as unexpected-fee disputes and reversals.",
+    "Detects merchants adding a card surcharge that breaks the brand and statutory rules — over the jurisdiction's cost-of-acceptance cap, on prohibited debit/prepaid, in a ban jurisdiction, or without point-of-sale disclosure. Pick a model to pull the cohort and read each merchant's compliance matrix against its local regime.",
   accent: "violet",
   cohortSuffix: "over-surcharging",
-  behaveVerb: "surcharge cards like",
-  declaredKind: "a compliant no-surcharge merchant",
+  behaveVerb: "surcharge in a way that",
+  declaredKind: "a no-surcharge attestation",
   models: [
     { key: "surcharge_over_cap", subtype: "Over-cap surcharge", short: "Over-cap", priority: "P2", owner: "Fee-integrity / brand-rules review",
-      behavesLike: "a merchant surcharging above the cost-of-acceptance cap", signals: [SURCH_RATE, SURCH_PCT, CB] },
+      behavesLike: "exceeds the cost-of-acceptance cap", signals: [SURCH_RATE, SURCH_PCT, CB] },
     { key: "surcharge_prohibited", subtype: "Prohibited debit/prepaid", short: "Debit/prepaid", priority: "P1", owner: "Fee-integrity / brand-rules review",
-      behavesLike: "a merchant surcharging debit & prepaid where it is prohibited", signals: [SURCH_PCT, CB, REFUND] },
+      behavesLike: "hits prohibited debit & prepaid cards", signals: [SURCH_PCT, CB, REFUND] },
     { key: "surcharge_undisclosed", subtype: "Undisclosed surcharge", short: "Undisclosed", priority: "P2", owner: "Fee-integrity / brand-rules review",
-      behavesLike: "a merchant adding a surcharge with no point-of-sale disclosure", signals: [SURCH_RATE, CB, REFUND] },
+      behavesLike: "carries no point-of-sale disclosure", signals: [SURCH_RATE, CB, REFUND] },
   ],
 };
 

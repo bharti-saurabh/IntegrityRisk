@@ -16,6 +16,7 @@ import {
   type CategorySignal,
 } from "@/data/miscodingCategories";
 import type { TypologyConfig, DetectionModel } from "@/data/typologies";
+import { assessSurcharge, type SurchargeAssessment } from "@/data/surchargeCompliance";
 import { TIER_HEX, TIER_ORDER, FAMILY_META, type OverviewTier, type FamilyKey } from "@/data/overview";
 import { subjectFromExplorer, buildInvestigation } from "@/features/ai-copilot/agentStream";
 import { AgentStreamPanel } from "@/features/ai-copilot/AgentStreamPanel";
@@ -436,7 +437,11 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
                         <span className="truncate text-[13px] font-semibold text-ink">{m.merchant_name}</span>
                         {cased ? <Icon name="Check" size={12} className="shrink-0 text-ok" /> : null}
                       </div>
-                      <div className="truncate text-[11px] text-ink-3">declared {m.declared_mcc} · {m.mcc_group}</div>
+                      <div className="truncate text-[11px] text-ink-3">
+                        {config.family === "surcharge"
+                          ? `${m.merchant_city}, ${m.merchant_country} · ${(m.surcharge_rate_bps / 100).toFixed(1)}% surcharge`
+                          : `declared ${m.declared_mcc} · ${m.mcc_group}`}
+                      </div>
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-sm font-bold tnum" style={{ color: TIER_HEX[m.risk_tier] }}>{m.integrity_risk_score.toFixed(0)}</span>
@@ -513,6 +518,7 @@ function EvidencePanel({ merchant: m, model: c, config, stats, onInvestigate }: 
   merchant: ExplorerMerchant; model: DetectionModel; config: TypologyConfig; stats: SignalStat[]; onInvestigate: () => void;
 }) {
   const beyond = stats.filter((s) => s.z >= 3);
+  const surcharge = config.family === "surcharge" ? assessSurcharge(m) : null;
   return (
     <Card className="p-0" glow={m.risk_tier === "Critical" ? "critical" : null}>
       {/* header */}
@@ -533,48 +539,54 @@ function EvidencePanel({ merchant: m, model: c, config, stats, onInvestigate }: 
         </div>
       </div>
 
-      {/* thesis */}
-      <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
-        <div className="rounded-lg border border-border bg-surface-2/50 p-3">
-          <div className="text-[10px] uppercase tracking-wide text-ink-3">Declared as</div>
-          <div className="mt-1 text-sm font-semibold text-ink">{m.mcc_group}</div>
-          <div className="text-[11px] text-ink-3">MCC {m.declared_mcc} · {config.declaredKind}</div>
-        </div>
-        <Icon name="ArrowRight" size={18} className="mx-auto hidden text-ink-3 sm:block" />
-        <div className="rounded-lg border p-3" style={{ borderColor: `${PRIORITY_HEX[c.priority]}44`, background: `${PRIORITY_HEX[c.priority]}0d` }}>
-          <div className="text-[10px] uppercase tracking-wide" style={{ color: PRIORITY_HEX[c.priority] }}>Behaves like ({c.priority})</div>
-          <div className="mt-1 text-sm font-semibold text-ink">{c.short}</div>
-          <div className="text-[11px] text-ink-3">{c.behavesLike}</div>
-        </div>
-      </div>
-
-      {/* deviation from declared-MCC peers */}
-      <div className="px-4 pb-2">
-        <div className="flex items-center justify-between">
-          <SectionLabel>Deviation from declared-MCC peers</SectionLabel>
-          <span className="text-[10px] text-ink-3">observed vs μ ± 3σ of legit {m.mcc_group}</span>
-        </div>
-
-        <div className="mt-2 grid gap-3 lg:grid-cols-[minmax(0,300px)_1fr] lg:items-center">
-          <DeviationRadar stats={stats} model={c} />
-          <div className="space-y-2">
-            {stats.map((st) => (
-              <DeviationBar key={String(st.sig.key)} stat={st} />
-            ))}
+      {surcharge ? (
+        <SurchargeCompliance a={surcharge} />
+      ) : (
+        <>
+          {/* thesis */}
+          <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
+            <div className="rounded-lg border border-border bg-surface-2/50 p-3">
+              <div className="text-[10px] uppercase tracking-wide text-ink-3">Declared as</div>
+              <div className="mt-1 text-sm font-semibold text-ink">{m.mcc_group}</div>
+              <div className="text-[11px] text-ink-3">MCC {m.declared_mcc} · {config.declaredKind}</div>
+            </div>
+            <Icon name="ArrowRight" size={18} className="mx-auto hidden text-ink-3 sm:block" />
+            <div className="rounded-lg border p-3" style={{ borderColor: `${PRIORITY_HEX[c.priority]}44`, background: `${PRIORITY_HEX[c.priority]}0d` }}>
+              <div className="text-[10px] uppercase tracking-wide" style={{ color: PRIORITY_HEX[c.priority] }}>Behaves like ({c.priority})</div>
+              <div className="mt-1 text-sm font-semibold text-ink">{c.short}</div>
+              <div className="text-[11px] text-ink-3">{c.behavesLike}</div>
+            </div>
           </div>
-        </div>
 
-        <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-surface-2/40 px-3 py-1.5 text-[11px] text-ink-2">
-          <Icon name={beyond.length ? "AlertTriangle" : "ShieldCheck"} size={13} className={beyond.length ? "text-critical" : "text-ok"} />
-          {beyond.length ? (
-            <span><b className="text-critical">{beyond.length}</b> signal{beyond.length === 1 ? "" : "s"} beyond 3σ of the {m.mcc_group} norm: {beyond.map((s) => s.sig.label).join(", ")}.</span>
-          ) : (
-            <span>No single signal exceeds 3σ — the flag is composite across {stats.length} variables.</span>
-          )}
-        </div>
+          {/* deviation from declared-MCC peers */}
+          <div className="px-4 pb-2">
+            <div className="flex items-center justify-between">
+              <SectionLabel>Deviation from declared-MCC peers</SectionLabel>
+              <span className="text-[10px] text-ink-3">observed vs μ ± 3σ of legit {m.mcc_group}</span>
+            </div>
 
-        <PeerDistribution stats={stats} group={m.mcc_group} />
-      </div>
+            <div className="mt-2 grid gap-3 lg:grid-cols-[minmax(0,300px)_1fr] lg:items-center">
+              <DeviationRadar stats={stats} model={c} />
+              <div className="space-y-2">
+                {stats.map((st) => (
+                  <DeviationBar key={String(st.sig.key)} stat={st} />
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-surface-2/40 px-3 py-1.5 text-[11px] text-ink-2">
+              <Icon name={beyond.length ? "AlertTriangle" : "ShieldCheck"} size={13} className={beyond.length ? "text-critical" : "text-ok"} />
+              {beyond.length ? (
+                <span><b className="text-critical">{beyond.length}</b> signal{beyond.length === 1 ? "" : "s"} beyond 3σ of the {m.mcc_group} norm: {beyond.map((s) => s.sig.label).join(", ")}.</span>
+              ) : (
+                <span>No single signal exceeds 3σ — the flag is composite across {stats.length} variables.</span>
+              )}
+            </div>
+
+            <PeerDistribution stats={stats} group={m.mcc_group} />
+          </div>
+        </>
+      )}
 
       {/* basis + exposure */}
       <div className="grid gap-3 p-4 sm:grid-cols-2">
@@ -608,6 +620,107 @@ function EvidencePanel({ merchant: m, model: c, config, stats, onInvestigate }: 
         </Button>
       </div>
     </Card>
+  );
+}
+
+// ---- surcharge compliance (fee-integrity family only) ---------------------
+// Replaces the peer-deviation lens with the analyst's rule-based read: a verdict
+// (status + primary violation category + statutory basis), the risk & compliance
+// matrix, transaction/web evidence, and a 2–3 step action plan. All figures are
+// deterministic synthetic — directional decision-support, not ground truth.
+
+const STATUS_ICON: Record<SurchargeAssessment["status"], string> = {
+  COMPLIANT: "ShieldCheck",
+  "POTENTIAL VIOLATION": "AlertTriangle",
+  "SEVERE VIOLATION": "ShieldAlert",
+  "INSUFFICIENT DATA": "Info",
+};
+
+function StatusPill({ status }: { status: "pass" | "fail" | "info" }) {
+  if (status === "info") return <span className="text-[11px] text-ink-3">—</span>;
+  const fail = status === "fail";
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${fail ? "bg-critical/15 text-critical" : "bg-ok/15 text-ok"}`}>
+      <Icon name={fail ? "X" : "Check"} size={10} /> {fail ? "FAIL" : "PASS"}
+    </span>
+  );
+}
+
+function SurchargeCompliance({ a }: { a: SurchargeAssessment }) {
+  const regimeLabel =
+    a.jurisdiction.regime === "ban" ? "Ban jurisdiction"
+    : a.jurisdiction.regime === "capped" ? "Capped jurisdiction"
+    : "Cost-of-acceptance";
+  return (
+    <div className="space-y-4 p-4">
+      {/* verdict */}
+      <div className="rounded-xl border p-3" style={{ borderColor: `${a.statusHex}55`, background: `${a.statusHex}0d` }}>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold text-white" style={{ background: a.statusHex }}>
+            <Icon name={STATUS_ICON[a.status]} size={13} /> {a.status}
+          </span>
+          <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: a.statusHex }}>{regimeLabel} · {a.jurisdiction.region}</span>
+        </div>
+        <div className="mt-1.5 text-sm font-semibold text-ink">{a.primaryViolation}</div>
+        <div className="mt-1 flex items-start gap-1.5 text-[11px] text-ink-3">
+          <Icon name="Scale" size={12} className="mt-0.5 shrink-0" /> {a.jurisdiction.basis}
+        </div>
+      </div>
+
+      {/* risk & compliance matrix */}
+      <div>
+        <SectionLabel>Risk &amp; compliance matrix</SectionLabel>
+        <div className="mt-2 overflow-x-auto rounded-lg border border-border">
+          <table className="w-full min-w-[440px] text-[12px]">
+            <thead>
+              <tr className="bg-surface-2/60 text-left text-[10px] uppercase tracking-wide text-ink-3">
+                <th className="px-3 py-2 font-medium">Parameter</th>
+                <th className="px-3 py-2 font-medium">Detected value</th>
+                <th className="px-3 py-2 font-medium">Statutory limit</th>
+                <th className="px-3 py-2 text-center font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {a.matrix.map((r) => (
+                <tr key={r.param} className="border-t border-border/60">
+                  <td className="px-3 py-2">
+                    <span className="flex items-center gap-1.5 font-medium text-ink-2"><Icon name={r.icon} size={13} className="text-ink-3" /> {r.param}</span>
+                  </td>
+                  <td className="px-3 py-2 text-ink">{r.detected}</td>
+                  <td className="px-3 py-2 text-ink-3">{r.allowed}</td>
+                  <td className="px-3 py-2 text-center"><StatusPill status={r.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* evidence breakdown */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="rounded-lg border border-border bg-surface-2/50 p-3">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-ink-3"><Icon name="Table2" size={12} /> Transaction-data analysis</div>
+          <p className="mt-1 text-[12px] leading-relaxed text-ink-2">{a.transactionNote}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-surface-2/50 p-3">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-ink-3"><Icon name="Globe" size={12} /> Web-intelligence insight</div>
+          <p className="mt-1 text-[12px] leading-relaxed text-ink-2">{a.webNote}</p>
+        </div>
+      </div>
+
+      {/* action plan */}
+      <div>
+        <SectionLabel>Investigative action plan</SectionLabel>
+        <ol className="mt-2 space-y-1.5">
+          {a.actions.map((act, i) => (
+            <li key={i} className="flex items-start gap-2 text-[12px] text-ink-2">
+              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-cyan/15 text-[9px] font-bold text-cyan tnum">{i + 1}</span>
+              {act}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
   );
 }
 

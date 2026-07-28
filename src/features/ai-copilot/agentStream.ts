@@ -2,6 +2,7 @@ import type { MerchantRiskRecord, Transaction } from "@/types/domain";
 import type { InvestigationBrief } from "./narrative";
 import type { ExplorerMerchant } from "@/features/explorer/types";
 import type { MiscodingCategory } from "@/data/miscodingCategories";
+import { assessSurcharge } from "@/data/surchargeCompliance";
 import { fmtPct, fmtCurrency } from "@/utils/format";
 import { MCC_BY_CODE } from "@/data/mccTaxonomy";
 
@@ -497,12 +498,24 @@ export function subjectFromExplorer(m: ExplorerMerchant, category: MiscodingCate
       nDescriptors: m.n_distinct_descriptors,
     },
     rules: m.rule_names && m.rule_names !== "None" ? m.rule_names.split(/\s*[,;|]\s*/).filter(Boolean) : [],
-    synthesis: {
-      hypothesis: `Behavioral profile matches ${category.behavesLike}; declared under ${m.mcc_group}. This is the ${category.subtype} miscoding pattern.`,
-      recommended: `Route to ${category.owner} for ${category.subtype} attestation.`,
-      disposition,
-      confidence: Math.min(0.99, score / 100),
-      confidenceLabel: score >= 80 ? "high" : score >= 55 ? "moderate" : "tentative",
-    },
+    synthesis:
+      m.family === "surcharge"
+        ? (() => {
+            const a = assessSurcharge(m);
+            return {
+              hypothesis: `${a.status} in ${a.jurisdiction.region} (${a.jurisdiction.regime} regime). Primary category: ${a.primaryViolation}. Basis: ${a.jurisdiction.basis}.`,
+              recommended: a.actions[0] ?? `Route to ${category.owner} for fee-integrity review.`,
+              disposition,
+              confidence: Math.min(0.99, score / 100),
+              confidenceLabel: score >= 80 ? "high" : score >= 55 ? "moderate" : "tentative",
+            };
+          })()
+        : {
+            hypothesis: `Behavioral profile matches ${category.behavesLike}; declared under ${m.mcc_group}. This is the ${category.subtype} miscoding pattern.`,
+            recommended: `Route to ${category.owner} for ${category.subtype} attestation.`,
+            disposition,
+            confidence: Math.min(0.99, score / 100),
+            confidenceLabel: score >= 80 ? "high" : score >= 55 ? "moderate" : "tentative",
+          },
   };
 }
