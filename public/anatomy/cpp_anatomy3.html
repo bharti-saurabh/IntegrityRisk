@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anatomy of CPP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F7F5; --panel:#FFFFFF; --ink:#14181D; --muted:#5C6570; --faint:#8B939C;
+  --line:#E2E5E1; --leaf:#2F7D51; --leaf-bg:#EDF5EF; --amber:#C06E12; --amber-bg:#FBF3E6;
+  --oxide:#B3271E; --oxide-bg:#F9ECEA; --net:#2456D6; --net-bg:#EBF0FC;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:var(--paper);color:var(--ink);
+  font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font-family:'IBM Plex Mono',monospace}
+
+/* ---------- ambient background ---------- */
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.blob{position:absolute;border-radius:50%;filter:blur(110px);opacity:.55;will-change:transform}
+#blobA{width:55vw;height:55vw;top:-18vw;left:-14vw;background:#DCE8E1}
+#blobB{width:48vw;height:48vw;bottom:-16vw;right:-12vw;background:#E3E9F5}
+#blobC{width:38vw;height:38vw;top:30vh;left:55vw;background:#F3ECDF;opacity:.4}
+#grid{position:absolute;inset:0;background-image:radial-gradient(rgba(20,24,29,.05) 1px,transparent 1.4px);background-size:28px 28px}
+#ghost{position:absolute;right:-3vw;bottom:-7vh;font-family:'IBM Plex Mono',monospace;font-weight:600;
+  font-size:26vw;line-height:1;color:rgba(20,24,29,.05);letter-spacing:-.02em;user-select:none;opacity:0}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(20,24,29,.07))}
+.token{position:absolute;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;
+  color:rgba(20,24,29,.14);white-space:nowrap}
+
+/* ---------- chrome ---------- */
+#progressWrap{position:fixed;left:0;right:0;bottom:0;height:3px;z-index:50}
+#progressBar{height:100%;width:0;background:var(--ink);transition:width .5s cubic-bezier(.6,0,.2,1)}
+#hint{position:fixed;right:28px;bottom:20px;z-index:50;color:var(--faint);font-size:13px;display:flex;gap:8px;align-items:center}
+#hint kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;border:1px solid var(--line);background:var(--panel);
+  border-radius:6px;padding:3px 10px;color:var(--muted);box-shadow:0 1px 0 var(--line)}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.scene{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:5vh 6vw;visibility:hidden;opacity:0}
+.headline{font-size:clamp(26px,3.4vw,44px);font-weight:700;letter-spacing:-.02em;text-align:center}
+
+/* ---------- sA : cold open ---------- */
+#sA .cold{font-size:clamp(30px,4.6vw,58px);font-weight:700;letter-spacing:-.02em;text-align:center;line-height:1.15;opacity:0}
+#sA .cold2{margin-top:14px}
+#sA .cold2 em{font-style:normal;color:var(--oxide)}
+
+/* ---------- sB : the seeds ---------- */
+#srcRow{display:flex;gap:18px;margin-top:4.5vh;flex-wrap:wrap;justify-content:center}
+.srcCard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 24px;width:240px;opacity:0}
+.srcCard .st{font-weight:700;font-size:16.5px}
+.srcCard .ss{font-size:12.5px;color:var(--muted);margin-top:4px}
+.srcCard .sm{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--oxide);margin-top:12px;letter-spacing:.06em}
+#seedWrap{margin-top:4vh;display:flex;flex-direction:column;align-items:center;gap:14px;opacity:0}
+#seedSvg{width:min(560px,88vw);height:150px}
+#seedCountRow{font-size:15px;color:var(--muted)}
+#seedCountRow .mono{font-weight:600;font-size:22px;color:var(--oxide)}
+
+/* ---------- sC : the thread ---------- */
+#fanSvg{width:min(940px,92vw);height:auto;margin-top:3vh}
+#sCcap{margin-top:2.5vh;font-size:16px;color:var(--muted);opacity:0}
+
+/* ---------- sD : the mechanic ---------- */
+#sD .stage{display:flex;gap:5vw;align-items:center;justify-content:center;margin-top:3.5vh;flex-wrap:wrap}
+#poolCard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;width:270px;opacity:0}
+#poolCard .pt{font-weight:700;font-size:16px}
+#poolCard .ps{font-size:12.5px;color:var(--muted);margin-top:4px}
+#poolDots{display:flex;flex-wrap:wrap;gap:5px;margin-top:14px}
+#poolDots i{width:8px;height:8px;border-radius:50%;background:#D9A29D;display:block}
+#poolCard .pn{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--oxide);margin-top:12px}
+#cands{display:flex;flex-direction:column;gap:12px;width:min(420px,88vw)}
+.cand{background:var(--panel);border:1.4px solid var(--line);border-radius:12px;padding:14px 18px;opacity:0;position:relative}
+.cand .cname{font-weight:600;font-size:14.5px;display:flex;justify-content:space-between;align-items:center}
+.cand .pct{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--muted)}
+.meter{position:relative;height:9px;background:#EEF0EE;border-radius:6px;margin-top:10px;overflow:visible}
+.meter .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:#AAB3BC;border-radius:6px}
+.meter .th{position:absolute;left:80%;top:-4px;bottom:-4px;width:2px;background:var(--oxide);opacity:.5}
+.cand.hot .fill{background:var(--oxide)}
+.cand.hot.flag{border-color:var(--oxide);background:#FFFBFA;box-shadow:0 10px 30px rgba(179,39,30,.12)}
+.cand .fbadge{position:absolute;top:-9px;right:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;
+  letter-spacing:.1em;background:var(--oxide);color:#fff;border-radius:5px;padding:3px 8px;opacity:0}
+#thLbl{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--oxide);text-align:right;width:min(420px,88vw);opacity:0;margin-top:2px}
+#sDbig{margin-top:4vh;font-size:clamp(19px,2.3vw,28px);font-weight:700;letter-spacing:-.01em;text-align:center;max-width:900px;opacity:0}
+#sDrule{margin-top:2.2vh;display:flex;flex-direction:column;gap:8px;align-items:center;opacity:0}
+#sDrule .rc{font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.08em;color:var(--oxide);
+  border:1.5px solid var(--oxide);background:var(--oxide-bg);border-radius:8px;padding:8px 16px}
+#sDrule .hh{font-size:13px;color:var(--muted)}
+
+/* ---------- sE : the recursion ---------- */
+#waveSvg{width:min(880px,92vw);height:auto;margin-top:1vh}
+#iterBox{position:absolute;top:10vh;right:8vw;text-align:right;opacity:0}
+#iterBox .il{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;color:var(--faint);text-transform:uppercase}
+#iterBox .in{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:30px;color:var(--oxide)}
+#iterBox .ic{font-size:13px;color:var(--muted)}
+#sEbig{margin-top:1.5vh;font-size:clamp(20px,2.5vw,30px);font-weight:700;letter-spacing:-.01em;opacity:0}
+
+/* ---------- sF : verification ---------- */
+#gateSvg{width:min(920px,92vw);height:auto;margin-top:3vh}
+#sFbig{margin-top:2.5vh;font-size:clamp(20px,2.5vw,30px);font-weight:700;letter-spacing:-.01em;opacity:0}
+
+/* ---------- sG : the model ---------- */
+#sG .stage{display:flex;gap:4vw;align-items:center;justify-content:center;margin-top:3vh;flex-wrap:wrap}
+#labelBlock{background:var(--panel);border:1.4px solid var(--line);border-radius:14px;padding:22px 26px;width:270px;opacity:0}
+#labelBlock .ln{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:26px;color:var(--oxide)}
+#labelBlock .ll{font-size:13px;color:var(--muted);margin-top:3px}
+#mchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+#mchips span{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;border:1px solid var(--line);
+  border-radius:6px;padding:5px 10px;color:var(--muted);background:var(--paper)}
+#trainBar{height:7px;background:#EEF0EE;border-radius:5px;margin-top:16px;overflow:hidden}
+#trainBar i{display:block;height:100%;width:0;background:var(--net);border-radius:5px}
+#trainLbl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;color:var(--net);margin-top:8px;opacity:0}
+#mapCol{display:flex;flex-direction:column;align-items:center;gap:12px;opacity:0}
+#worldMap2{display:block}
+#mapLegend{font-size:12.5px;color:var(--muted);display:flex;gap:18px;align-items:center;opacity:0}
+#mapLegend .dotF{width:9px;height:9px;border-radius:50%;background:var(--oxide);display:inline-block;margin-right:6px;vertical-align:middle}
+#mapLegend .dotR{width:9px;height:9px;border-radius:50%;border:2px solid var(--oxide);display:inline-block;margin-right:6px;vertical-align:middle}
+#sGbig{margin-top:3vh;font-size:clamp(21px,2.7vw,34px);font-weight:800;letter-spacing:-.015em;text-align:center;opacity:0}
+#sGbig .b2{color:var(--net)}
+
+/* ---------- sH : funnel + end ---------- */
+#funnel{display:flex;gap:16px;align-items:stretch;justify-content:center;margin-top:5vh;flex-wrap:wrap}
+.fcard{background:var(--panel);border:1.4px solid var(--line);border-radius:14px;padding:20px 22px;width:212px;opacity:0}
+.fcard .fe{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.fcard .ft{font-weight:700;font-size:17px;margin-top:8px}
+.fcard .fn{font-family:'IBM Plex Mono',monospace;font-size:13px;margin-top:6px;color:var(--oxide);font-weight:600}
+.farrow{align-self:center;color:var(--faint);font-size:22px;opacity:0}
+.fcard:last-child .fn{color:var(--net)}
+#endCard{z-index:30;background:transparent}
+#endCard .wordmark{font-size:clamp(40px,6vw,74px);font-weight:800;letter-spacing:-.03em;opacity:0}
+#endCard .wordmark::after{content:"";display:inline-block;width:.18em;height:.18em;background:var(--net);border-radius:3px;margin-left:.12em}
+#endCard .tag{font-size:clamp(17px,2vw,24px);color:var(--muted);margin-top:2vh;opacity:0}
+#endCard .caps{display:flex;gap:14px;margin-top:5vh;flex-wrap:wrap;justify-content:center}
+#endCard .cap{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px 20px;font-size:14px;font-weight:500;opacity:0}
+#endCard .replay{margin-top:6vh;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--faint);opacity:0}
+
+/* svg shared */
+.wnode{fill:var(--oxide)}
+.wedge{stroke:#E3B7B2;stroke-width:1}
+.wring{fill:none;stroke:var(--line);stroke-width:1.2;stroke-dasharray:4 5}
+
+@media (max-width:900px){
+  #sD .stage,#sG .stage{flex-direction:column;gap:3vh}
+  #iterBox{position:static;text-align:center;margin-top:1vh}
+  .scene{padding:4vh 5vw}
+}
+</style>
+</head>
+<body>
+
+<div id="bg">
+  <div class="blob" id="blobA"></div>
+  <div class="blob" id="blobB"></div>
+  <div class="blob" id="blobC"></div>
+  <div id="grid"></div>
+  <div id="ghost">CPP</div>
+  <div id="vig"></div>
+</div>
+
+<div id="progressWrap"><div id="progressBar"></div></div>
+<div id="hint"><span>press</span> <kbd>space</kbd></div>
+
+<!-- sA : cold open -->
+<section class="scene" id="sA">
+  <div class="cold cold1">Launderers cover their tracks.</div>
+  <div class="cold cold2">Their <em>customers</em> leave footprints everywhere.</div>
+</section>
+
+<!-- sB : the seeds -->
+<section class="scene" id="sB">
+  <div class="headline" id="sBh" style="opacity:0">The first few hundred were handed to us.</div>
+  <div id="srcRow">
+    <div class="srcCard"><div class="st">Dark web scanning</div><div class="ss">marketplaces, forums, payment mentions</div><div class="sm">&rarr; confirmed merchants</div></div>
+    <div class="srcCard"><div class="st">Law enforcement</div><div class="ss">agency partnerships and referrals</div><div class="sm">&rarr; confirmed merchants</div></div>
+    <div class="srcCard"><div class="st">Customer complaints</div><div class="ss">disputes, reports, undelivered goods</div><div class="sm">&rarr; confirmed merchants</div></div>
+  </div>
+  <div id="seedWrap">
+    <svg id="seedSvg" viewBox="0 0 560 150"></svg>
+    <div id="seedCountRow"><span class="mono" id="seedCount">0</span> &nbsp;confirmed laundering merchants &middot; per category</div>
+  </div>
+</section>
+
+<!-- sC : the thread -->
+<section class="scene" id="sC">
+  <div class="headline" id="sCh" style="opacity:0">Every one of them has customers.</div>
+  <svg id="fanSvg" viewBox="0 0 940 430"></svg>
+  <div id="sCcap">And every customer has a purchase history that doesn&rsquo;t stop here.</div>
+</section>
+
+<!-- sD : the mechanic -->
+<section class="scene" id="sD">
+  <div class="headline" id="sDh" style="opacity:0">Follow the customers. Watch where they concentrate.</div>
+  <div class="stage">
+    <div id="poolCard">
+      <div class="pt">Tainted customer pool</div>
+      <div class="ps">everyone who purchased from a confirmed launderer</div>
+      <div id="poolDots"></div>
+      <div class="pn">38,000 cardholders</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div id="cands">
+        <div class="cand" id="cA"><div class="cname"><span>Arcadia Gifts &amp; Novelty</span><span class="pct">0%</span></div><div class="meter"><i class="fill"></i><b class="th"></b></div></div>
+        <div class="cand" id="cB"><div class="cname"><span>Nimbus Digital Services</span><span class="pct">0%</span></div><div class="meter"><i class="fill"></i><b class="th"></b></div></div>
+        <div class="cand" id="cC"><div class="cname"><span>Crestview Supplies</span><span class="pct">0%</span></div><div class="meter"><i class="fill"></i><b class="th"></b></div></div>
+        <div class="cand hot" id="cD"><div class="fbadge">FLAGGED</div><div class="cname"><span>Velo Wellness Mart</span><span class="pct">0%</span></div><div class="meter"><i class="fill"></i><b class="th"></b></div></div>
+      </div>
+      <div id="thLbl">threshold &middot; 80%+</div>
+    </div>
+  </div>
+  <div id="sDbig">When 4 in 5 of your customers shop at launderers, you&rsquo;re probably not selling gifts.</div>
+  <div id="sDrule">
+    <div class="rc">flag if &ge; 80%+ of customers &isin; tainted pool</div>
+    <div class="hh">The breach-investigation playbook, pointed at laundering.</div>
+  </div>
+</section>
+
+<!-- sE : the recursion -->
+<section class="scene" id="sE">
+  <div class="headline" id="sEh" style="opacity:0">Then do it again. With the ones you just found.</div>
+  <div id="iterBox">
+    <div class="il">iteration</div>
+    <div class="in" id="iterN">1</div>
+    <div class="ic"><span class="mono" id="iterC">300</span> merchants</div>
+  </div>
+  <svg id="waveSvg" viewBox="0 0 880 540"></svg>
+  <div id="sEbig">A few hundred became a few thousand.</div>
+</section>
+
+<!-- sF : verification -->
+<section class="scene" id="sF">
+  <div class="headline" id="sFh" style="opacity:0">Before a suspect becomes a label, someone goes and looks.</div>
+  <svg id="gateSvg" viewBox="0 0 920 500">
+    <text x="70" y="80" class="glbl" style="font-family:'IBM Plex Mono',monospace;font-size:12px;fill:#5C6570" opacity="0" id="gl1">4,200 candidates</text>
+    <g id="gateBox" opacity="0">
+      <rect x="380" y="140" width="180" height="180" rx="16" fill="#FFFFFF" stroke="#E2E5E1" stroke-width="1.4"/>
+      <text x="470" y="215" text-anchor="middle" style="font-family:'Schibsted Grotesk',sans-serif;font-size:17px;font-weight:700;fill:#14181D">Online</text>
+      <text x="470" y="238" text-anchor="middle" style="font-family:'Schibsted Grotesk',sans-serif;font-size:17px;font-weight:700;fill:#14181D">investigation</text>
+      <text x="470" y="264" text-anchor="middle" style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;fill:#8B939C" letter-spacing="1">STOREFRONT &middot; WEB &middot; FULFILMENT</text>
+    </g>
+    <text x="850" y="80" text-anchor="end" style="font-family:'IBM Plex Mono',monospace;font-size:12px;fill:#B3271E;font-weight:600" opacity="0" id="gl2">2,900 verified labels</text>
+    <text x="470" y="470" text-anchor="middle" style="font-family:'IBM Plex Mono',monospace;font-size:12px;fill:#8B939C" opacity="0" id="gl3">1,300 cleared &middot; false positives out</text>
+    <g id="gateDots"></g>
+  </svg>
+  <div id="sFbig">2,900 merchants, each one checked by a person.</div>
+</section>
+
+<!-- sG : the model -->
+<section class="scene" id="sG">
+  <div class="headline" id="sGh" style="opacity:0">A few thousand labels is enough to teach a machine.</div>
+  <div class="stage">
+    <div id="labelBlock">
+      <div class="ln">2,900</div>
+      <div class="ll">verified laundering merchants, as training labels</div>
+      <div id="mchips"><span>XGBoost</span><span>GBM</span><span>look-alike scoring</span></div>
+      <div id="trainBar"><i></i></div>
+      <div id="trainLbl">TRAINING&hellip;</div>
+    </div>
+    <div id="mapCol">
+      <canvas id="worldMap2"></canvas>
+      <div id="mapLegend"><span><span class="dotF"></span>behaves like the labeled set</span><span><span class="dotR"></span>no customer link to any seed</span></div>
+    </div>
+  </div>
+  <div id="sGbig"><span class="b1">CPP finds the connected.</span> <span class="b2">The model finds the similar.</span></div>
+</section>
+
+<!-- sH : funnel -->
+<section class="scene" id="sH">
+  <div class="headline" id="sHh" style="opacity:0">Four steps from intelligence to network scale.</div>
+  <div id="funnel">
+    <div class="fcard"><div class="fe">01 &middot; intelligence</div><div class="ft">Confirmed seeds</div><div class="fn">hundreds</div></div>
+    <div class="farrow">&rarr;</div>
+    <div class="fcard"><div class="fe">02 &middot; cpp</div><div class="ft">Customer concentration</div><div class="fn">thousands</div></div>
+    <div class="farrow">&rarr;</div>
+    <div class="fcard"><div class="fe">03 &middot; investigation</div><div class="ft">Verified labels</div><div class="fn">2,900</div></div>
+    <div class="farrow">&rarr;</div>
+    <div class="fcard"><div class="fe">04 &middot; models</div><div class="ft">Look-alike detection</div><div class="fn">network-wide</div></div>
+  </div>
+</section>
+
+<!-- end card -->
+<section class="scene" id="endCard">
+  <div class="wordmark">Straive</div>
+  <div class="tag">Start with a few hundred known. Catch everything that behaves like them.</div>
+  <div class="caps">
+    <div class="cap">Intelligence-sourced seed sets</div>
+    <div class="cap">CPP graph expansion</div>
+    <div class="cap">Verified labels, look-alike models</div>
+  </div>
+  <div class="replay">press space to replay</div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduced) gsap.globalTimeline.timeScale(6);
+gsap.defaults({ease:'power3.out'});
+const $ = s => document.querySelector(s);
+
+/* ---------- ambient background ---------- */
+(function(){
+  const bg = $('#bg');
+  const words = ['CUST 88412 · 6 MERCHANTS','CONC 0.86 · FLAG','SEED 0117 · DARKWEB','ITER 3 · +1,240',
+    'GRAPH EDGE · SHARED PAN','LEA REFERRAL · CASE 4471','COMPLAINT · NON-DELIVERY','LABEL · VERIFIED',
+    'XGB · AUC 0.94','SCORE 0.91 · REVIEW','CUST 20931 · 4 MERCHANTS','CONC 0.12 · PASS'];
+  for (let i = 0; i < 12; i++){
+    const t = document.createElement('div');
+    t.className = 'token'; t.textContent = words[i % words.length];
+    t.style.left = (4 + Math.random() * 90) + '%'; t.style.top = '105%';
+    bg.appendChild(t);
+    gsap.to(t, {y: -(innerHeight * 1.35), duration: 50 + Math.random() * 40, repeat: -1, ease: 'none', delay: -Math.random() * 70});
+  }
+  gsap.to('#blobA', {x:'7vw',  y:'5vh',  duration:26, yoyo:true, repeat:-1, ease:'sine.inOut'});
+  gsap.to('#blobB', {x:'-6vw', y:'-4vh', duration:31, yoyo:true, repeat:-1, ease:'sine.inOut'});
+  gsap.to('#blobC', {x:'-8vw', y:'6vh',  duration:23, yoyo:true, repeat:-1, ease:'sine.inOut'});
+})();
+
+const BG = {
+  neutral:{a:'#DCE8E1', b:'#E3E9F5', c:'#F3ECDF', ghost:0},
+  intel:  {a:'#F3E4D3', b:'#F0E2DD', c:'#ECE7F3', ghost:.35},
+  graph:  {a:'#D6E1F5', b:'#E4EAF7', c:'#EDF1F8', ghost:.4},
+  spread: {a:'#F2D8D3', b:'#EFE2E0', c:'#F6E3DC', ghost:.45},
+  verify: {a:'#D3E9DA', b:'#E7F0E9', c:'#F1EBD9', ghost:.35},
+  model:  {a:'#D5E0F6', b:'#DEF0E8', c:'#EAEDF6', ghost:.4},
+  brand:  {a:'#DAE4F8', b:'#E8EDF6', c:'#F1F0EA', ghost:0}
+};
+function bgTo(n){
+  const s = BG[n];
+  gsap.to('#blobA', {backgroundColor:s.a, duration:1.6, ease:'sine.inOut'});
+  gsap.to('#blobB', {backgroundColor:s.b, duration:1.6, ease:'sine.inOut'});
+  gsap.to('#blobC', {backgroundColor:s.c, duration:1.6, ease:'sine.inOut'});
+  gsap.to('#ghost', {opacity:s.ghost, duration:1.4});
+}
+function countTo(el, target, dur, suffix){
+  const o = {v: 0};
+  return gsap.to(o, {v: target, duration: dur, ease: 'power1.out',
+    onUpdate: () => { el.textContent = Math.floor(o.v).toLocaleString('en-US') + (suffix || ''); }});
+}
+
+/* ---------- sB : seed cluster ---------- */
+(function(){
+  const svg = $('#seedSvg'), NS = 'http://www.w3.org/2000/svg';
+  for (let i = 0; i < 56; i++){
+    const c = document.createElementNS(NS, 'circle');
+    const a = Math.random() * Math.PI * 2, r = Math.pow(Math.random(), .6);
+    c.setAttribute('cx', 280 + Math.cos(a) * r * 250);
+    c.setAttribute('cy', 75 + Math.sin(a) * r * 58);
+    c.setAttribute('r', 4);
+    c.setAttribute('fill', '#B3271E');
+    c.setAttribute('opacity', '0');
+    svg.appendChild(c);
+  }
+})();
+
+/* ---------- sC : fan ---------- */
+(function(){
+  const svg = $('#fanSvg'), NS = 'http://www.w3.org/2000/svg';
+  const cx = 190, cy = 215;
+  for (let i = 0; i < 14; i++){
+    const a = -1.05 + (i / 13) * 2.1;
+    const x = cx + Math.cos(a) * 560, y = cy + Math.sin(a) * 175;
+    const l = document.createElementNS(NS, 'line');
+    l.setAttribute('x1', cx); l.setAttribute('y1', cy);
+    l.setAttribute('x2', x);  l.setAttribute('y2', y);
+    l.setAttribute('stroke', '#D8DCE0'); l.setAttribute('stroke-width', '1.1');
+    l.setAttribute('class', 'fanEdge'); l.setAttribute('opacity', '0');
+    svg.appendChild(l);
+    const d = document.createElementNS(NS, 'circle');
+    d.setAttribute('cx', x); d.setAttribute('cy', y); d.setAttribute('r', 6);
+    d.setAttribute('fill', '#9AA2AB'); d.setAttribute('class', 'fanCust'); d.setAttribute('opacity', '0');
+    svg.appendChild(d);
+  }
+  const seed = document.createElementNS(NS, 'circle');
+  seed.setAttribute('cx', cx); seed.setAttribute('cy', cy); seed.setAttribute('r', 15);
+  seed.setAttribute('fill', '#B3271E'); seed.setAttribute('id', 'fanSeed'); seed.setAttribute('opacity', '0');
+  svg.appendChild(seed);
+  const t = document.createElementNS(NS, 'text');
+  t.setAttribute('x', cx); t.setAttribute('y', cy + 44); t.setAttribute('text-anchor', 'middle');
+  t.setAttribute('style', "font-family:'IBM Plex Mono',monospace;font-size:11px;fill:#B3271E;letter-spacing:1px");
+  t.setAttribute('id', 'fanLbl'); t.setAttribute('opacity', '0');
+  t.textContent = 'CONFIRMED LAUNDERER';
+  svg.appendChild(t);
+})();
+
+/* ---------- sD : pool dots ---------- */
+(function(){
+  const pd = $('#poolDots');
+  for (let i = 0; i < 60; i++) pd.appendChild(document.createElement('i'));
+})();
+
+/* ---------- sE : waves ---------- */
+const WAVES = [[16, 95], [24, 165], [30, 220], [34, 262]];
+(function(){
+  const svg = $('#waveSvg'), NS = 'http://www.w3.org/2000/svg';
+  const cx = 440, cy = 270;
+  WAVES.forEach((w, wi) => {
+    const ring = document.createElementNS(NS, 'circle');
+    ring.setAttribute('cx', cx); ring.setAttribute('cy', cy); ring.setAttribute('r', w[1]);
+    ring.setAttribute('class', 'wring'); ring.setAttribute('id', 'ring' + wi); ring.setAttribute('opacity', '0');
+    svg.appendChild(ring);
+  });
+  const core = document.createElementNS(NS, 'g'); core.setAttribute('id', 'waveCore'); core.setAttribute('opacity', '0');
+  for (let i = 0; i < 14; i++){
+    const c = document.createElementNS(NS, 'circle');
+    const a = Math.random() * 7, r = Math.random() * 44;
+    c.setAttribute('cx', cx + Math.cos(a) * r); c.setAttribute('cy', cy + Math.sin(a) * r);
+    c.setAttribute('r', 4.4); c.setAttribute('class', 'wnode');
+    core.appendChild(c);
+  }
+  svg.appendChild(core);
+  let petalDone = false;
+  WAVES.forEach((w, wi) => {
+    const g = document.createElementNS(NS, 'g'); g.setAttribute('id', 'wave' + wi); g.setAttribute('opacity', '0');
+    for (let i = 0; i < w[0]; i++){
+      const a = (i / w[0]) * Math.PI * 2 + wi * .4 + (Math.random() - .5) * .18;
+      const r = w[1] + (Math.random() - .5) * 26;
+      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r * .92;
+      const e = document.createElementNS(NS, 'line');
+      const ir = wi === 0 ? 30 : WAVES[wi - 1][1];
+      e.setAttribute('x1', cx + Math.cos(a) * ir * .92); e.setAttribute('y1', cy + Math.sin(a) * ir * .85);
+      e.setAttribute('x2', x); e.setAttribute('y2', y);
+      e.setAttribute('class', 'wedge'); g.appendChild(e);
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', wi > 1 ? 3.2 : 4);
+      c.setAttribute('class', 'wnode'); g.appendChild(c);
+      if (wi === 1 && !petalDone && Math.cos(a) > .55 && Math.sin(a) < 0){
+        petalDone = true;
+        const tl2 = document.createElementNS(NS, 'line');
+        tl2.setAttribute('x1', x + 8); tl2.setAttribute('y1', y - 8);
+        tl2.setAttribute('x2', x + 52); tl2.setAttribute('y2', y - 40);
+        tl2.setAttribute('stroke', '#B3271E'); tl2.setAttribute('stroke-width', '1');
+        tl2.setAttribute('id', 'petalLine'); tl2.setAttribute('opacity', '0');
+        svg.appendChild(tl2);
+        const tx = document.createElementNS(NS, 'text');
+        tx.setAttribute('x', x + 58); tx.setAttribute('y', y - 46);
+        tx.setAttribute('style', "font-family:'IBM Plex Mono',monospace;font-size:11.5px;fill:#B3271E;font-weight:600");
+        tx.setAttribute('id', 'petalTag'); tx.setAttribute('opacity', '0');
+        tx.textContent = 'Petal & Stem · MCC 5992';
+        svg.appendChild(tx);
+        const sx = document.createElementNS(NS, 'text');
+        sx.setAttribute('x', x + 58); sx.setAttribute('y', y - 31);
+        sx.setAttribute('style', "font-family:'IBM Plex Mono',monospace;font-size:10px;fill:#5C6570");
+        sx.setAttribute('id', 'petalSub'); sx.setAttribute('opacity', '0');
+        sx.textContent = 'the graph got here first';
+        svg.appendChild(sx);
+      }
+    }
+    svg.appendChild(g);
+  });
+})();
+
+/* ---------- sF : gate dots ---------- */
+(function(){
+  const g = $('#gateDots'), NS = 'http://www.w3.org/2000/svg';
+  for (let i = 0; i < 18; i++){
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', 50 + (i % 2) * 26 + Math.random() * 10);
+    c.setAttribute('cy', 150 + (i % 9) * 19 + Math.random() * 8);
+    c.setAttribute('r', 5.5); c.setAttribute('fill', '#B3271E');
+    c.setAttribute('class', i % 3 === 2 ? 'gd drop' : 'gd pass');
+    c.setAttribute('opacity', '0');
+    g.appendChild(c);
+  }
+})();
+
+/* ---------- sG : world map with sweep ---------- */
+const Sweep = (() => {
+  const ROWS = {
+    2:[[25,28]], 3:[[24,29],[50,58]], 4:[[11,20],[24,28],[46,64]],
+    5:[[8,22],[25,27],[36,39],[42,67]], 6:[[2,6],[7,23],[36,40],[41,68]],
+    7:[[1,6],[7,24],[32,33],[36,40],[41,67]], 8:[[6,24],[32,34],[35,42],[42,66]],
+    9:[[6,23],[34,44],[44,64]], 10:[[6,22],[34,42],[42,62],[64,65]],
+    11:[[6,21],[33,36],[40,44],[44,60],[63,64]],
+    12:[[7,19],[33,42],[42,46],[48,52],[52,60],[63,63]],
+    13:[[8,14],[17,18],[32,44],[43,46],[48,52],[54,60]],
+    14:[[9,13],[32,44],[43,46],[48,51],[54,58]],
+    15:[[11,14],[32,44],[48,50],[54,58],[59,60]],
+    16:[[12,15],[33,44],[49,49],[55,58]], 17:[[13,17],[33,45],[54,60]],
+    18:[[13,19],[34,44],[54,63]], 19:[[14,21],[35,43],[56,62]],
+    20:[[14,21],[35,42]], 21:[[13,20],[35,41]], 22:[[14,19],[35,40],[56,63]],
+    23:[[13,18],[35,39],[55,64]], 24:[[13,17],[35,38],[55,64]],
+    25:[[13,16],[35,37],[56,62]], 26:[[13,15],[58,61],[66,67]],
+    27:[[13,14],[66,67]], 28:[[13,14]], 29:[[13,13]]
+  };
+  let canvas, ctx, off, W, H, dpr = 1, land = [], found = [], scanX = -1, running = false, last = 0;
+  function build(){
+    canvas = $('#worldMap2');
+    dpr = window.devicePixelRatio || 1;
+    W = Math.min(620, innerWidth * .82); H = W * .43;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    const cell = W / 72;
+    land = [];
+    for (const row in ROWS){
+      ROWS[row].forEach(([a, b]) => {
+        for (let c = a; c <= b; c++){
+          if (Math.random() < .84) land.push({x:(c + .5) * cell, y:(+row + .5) * cell});
+        }
+      });
+    }
+    off = document.createElement('canvas');
+    off.width = canvas.width; off.height = canvas.height;
+    const octx = off.getContext('2d');
+    octx.scale(dpr, dpr);
+    octx.fillStyle = '#C6CDD4';
+    land.forEach(p => { octx.beginPath(); octx.arc(p.x, p.y, cell * .2, 0, 7); octx.fill(); });
+    /* pre-pick found merchants: 11 filled + 3 ringed (no customer link) */
+    found = [];
+    for (let i = 0; i < 14; i++){
+      const p = land[(Math.random() * land.length) | 0];
+      found.push({x:p.x, y:p.y, ring: i > 10, t: -1});
+    }
+    ctx = canvas.getContext('2d');
+    draw(0);
+  }
+  function draw(dt){
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(off, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (scanX >= 0 && scanX <= W + 40){
+      const g = ctx.createLinearGradient(scanX - 46, 0, scanX, 0);
+      g.addColorStop(0, 'rgba(36,86,214,0)'); g.addColorStop(1, 'rgba(36,86,214,.16)');
+      ctx.fillStyle = g; ctx.fillRect(scanX - 46, 0, 46, H);
+      ctx.strokeStyle = 'rgba(36,86,214,.7)'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(scanX, 0); ctx.lineTo(scanX, H); ctx.stroke();
+    }
+    found.forEach(f => {
+      if (f.t < 0) return;
+      f.t += dt;
+      const k = Math.min(f.t / .5, 1);
+      const r = 3 + (1 - k) * 6;
+      if (f.ring){
+        ctx.beginPath(); ctx.arc(f.x, f.y, 4.6, 0, 7);
+        ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(179,39,30,' + (.35 + .65 * k) + ')'; ctx.stroke();
+      } else {
+        ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, 7);
+        ctx.fillStyle = 'rgba(179,39,30,' + (.35 + .65 * k) + ')'; ctx.fill();
+      }
+    });
+  }
+  function frame(ts){
+    if (!running) return;
+    const dt = last ? Math.min((ts - last) / 1000, .1) : 0; last = ts;
+    draw(dt);
+    requestAnimationFrame(frame);
+  }
+  return {
+    init(){ if (!canvas) build(); },
+    sweep(){
+      this.init();
+      running = true; last = 0; requestAnimationFrame(frame);
+      const o = {x: -20};
+      gsap.to(o, {x: W + 30, duration: 3.2, ease: 'power1.inOut',
+        onUpdate: () => {
+          scanX = o.x;
+          found.forEach(f => { if (f.t < 0 && f.x < scanX) f.t = 0; });
+        },
+        onComplete: () => { scanX = -1; gsap.delayedCall(1.2, () => { running = false; draw(0); }); }
+      });
+    }
+  };
+})();
+
+/* ---------- scene driver ---------- */
+let current = null;
+function enter(tl, id, dur = .6){
+  if (current) tl.to(current, {autoAlpha:0, duration:.45, ease:'power2.in'}, 0);
+  tl.fromTo(id, {autoAlpha:0}, {autoAlpha:1, duration:dur}, current ? .35 : 0);
+  current = id;
+  return tl;
+}
+
+function fillCand(id, pct, dur){
+  const tl = gsap.timeline();
+  tl.to(id + ' .fill', {width: pct + '%', duration: dur, ease: 'power2.inOut'}, 0);
+  const o = {v: 0};
+  tl.to(o, {v: pct, duration: dur, ease: 'power2.inOut',
+    onUpdate: () => { document.querySelector(id + ' .pct').textContent = Math.round(o.v) + '%'; }}, 0);
+  return tl;
+}
+
+const steps = [
+
+/* 1 — cold open line 1 */
+() => {
+  const tl = gsap.timeline();
+  enter(tl, '#sA');
+  tl.fromTo('#sA .cold1', {autoAlpha:0, y:24}, {autoAlpha:1, y:0, duration:1});
+  return tl;
+},
+
+/* 2 — line 2 */
+() => gsap.timeline()
+  .to('#sA .cold1', {autoAlpha:.28, y:-10, duration:.7})
+  .fromTo('#sA .cold2', {autoAlpha:0, y:24}, {autoAlpha:1, y:0, duration:.9}, '-=.35'),
+
+/* 3 — the three sources */
+() => {
+  bgTo('intel');
+  const tl = gsap.timeline();
+  enter(tl, '#sB');
+  tl.fromTo('#sBh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#srcRow .srcCard', {autoAlpha:0, y:26}, {autoAlpha:1, y:0, duration:.6, stagger:.22}, '-=.2');
+  return tl;
+},
+
+/* 4 — seeds pour in */
+() => {
+  const tl = gsap.timeline();
+  tl.fromTo('#seedWrap', {autoAlpha:0}, {autoAlpha:1, duration:.4})
+    .fromTo('#seedSvg circle', {autoAlpha:0, scale:0, transformOrigin:'center'},
+      {autoAlpha:1, scale:1, duration:.4, stagger:{each:.028, from:'random'}, ease:'back.out(2)'})
+    .add(countTo($('#seedCount'), 300, 1.8, '+'), '-=1.4');
+  return tl;
+},
+
+/* 5 — the thread */
+() => {
+  bgTo('graph');
+  const tl = gsap.timeline();
+  enter(tl, '#sC');
+  tl.fromTo('#sCh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#fanSeed', {autoAlpha:0, scale:0, transformOrigin:'center'}, {autoAlpha:1, scale:1, duration:.6, ease:'back.out(2)'}, '-=.2')
+    .fromTo('#fanLbl', {autoAlpha:0}, {autoAlpha:1, duration:.5}, '-=.2')
+    .fromTo('.fanEdge', {autoAlpha:0}, {autoAlpha:1, duration:.45, stagger:.06})
+    .fromTo('.fanCust', {autoAlpha:0, scale:0, transformOrigin:'center'},
+      {autoAlpha:1, scale:1, duration:.4, stagger:.06, ease:'back.out(2)'}, '-=.9')
+    .fromTo('#sCcap', {autoAlpha:0, y:12}, {autoAlpha:1, y:0, duration:.7});
+  return tl;
+},
+
+/* 6 — pool + candidates appear */
+() => {
+  const tl = gsap.timeline();
+  enter(tl, '#sD');
+  tl.fromTo('#sDh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#poolCard', {autoAlpha:0, x:-26}, {autoAlpha:1, x:0, duration:.7}, '-=.25')
+    .fromTo('#poolDots i', {autoAlpha:0, scale:0}, {autoAlpha:1, scale:1, duration:.3, stagger:{each:.008, from:'random'}}, '-=.4')
+    .fromTo('#cands .cand', {autoAlpha:0, x:26}, {autoAlpha:1, x:0, duration:.5, stagger:.13})
+    .fromTo('#thLbl', {autoAlpha:0}, {autoAlpha:1, duration:.5});
+  return tl;
+},
+
+/* 7 — meters run, one crosses the line */
+() => {
+  const tl = gsap.timeline();
+  tl.add(fillCand('#cA', 12, .9))
+    .add(fillCand('#cB', 31, 1.0), '-=.5')
+    .add(fillCand('#cC', 8, .8), '-=.5')
+    .to('#cA, #cB, #cC', {opacity:.38, duration:.6}, '+=.2')
+    .add(fillCand('#cD', 86, 2.4))
+    .to('#cD .th', {opacity:1, scaleY:1.5, duration:.25, yoyo:true, repeat:3}, '-=.7')
+    .call(() => document.getElementById('cD').classList.add('flag'))
+    .fromTo('#cD .fbadge', {autoAlpha:0, y:6}, {autoAlpha:1, y:0, duration:.4, ease:'back.out(2)'})
+    .fromTo('#sDbig', {autoAlpha:0, y:18}, {autoAlpha:1, y:0, duration:.8});
+  return tl;
+},
+
+/* 8 — the rule, and its heritage */
+() => gsap.timeline()
+  .fromTo('#sDrule', {autoAlpha:0, y:14}, {autoAlpha:1, y:0, duration:.7}),
+
+/* 9 — recursion scene enters */
+() => {
+  bgTo('spread');
+  const tl = gsap.timeline();
+  enter(tl, '#sE');
+  tl.fromTo('#sEh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#waveCore', {autoAlpha:0, scale:.4, transformOrigin:'center'}, {autoAlpha:1, scale:1, duration:.7, ease:'back.out(1.6)'}, '-=.2')
+    .fromTo('#iterBox', {autoAlpha:0, y:10}, {autoAlpha:1, y:0, duration:.6}, '-=.3');
+  return tl;
+},
+
+/* 10 — iteration 1 */
+() => {
+  const tl = gsap.timeline();
+  tl.call(() => { $('#iterN').textContent = '1'; })
+    .fromTo('#ring0', {autoAlpha:0}, {autoAlpha:1, duration:.4})
+    .fromTo('#wave0', {autoAlpha:0, scale:.85, transformOrigin:'440px 270px'}, {autoAlpha:1, scale:1, duration:.8})
+    .add(countTo($('#iterC'), 900, 1.0), '-=.6');
+  return tl;
+},
+
+/* 11 — iteration 2, Petal & Stem lights up */
+() => {
+  const tl = gsap.timeline();
+  tl.call(() => { $('#iterN').textContent = '2'; })
+    .fromTo('#ring1', {autoAlpha:0}, {autoAlpha:1, duration:.4})
+    .fromTo('#wave1', {autoAlpha:0, scale:.88, transformOrigin:'440px 270px'}, {autoAlpha:1, scale:1, duration:.8})
+    .add(countTo($('#iterC'), 2100, 1.0), '-=.6')
+    .fromTo('#petalLine', {autoAlpha:0}, {autoAlpha:1, duration:.4}, '+=.2')
+    .fromTo('#petalTag', {autoAlpha:0, y:6}, {autoAlpha:1, y:0, duration:.5}, '-=.2')
+    .fromTo('#petalSub', {autoAlpha:0}, {autoAlpha:1, duration:.5}, '-=.1');
+  return tl;
+},
+
+/* 12 — iterations 3 and 4 */
+() => {
+  const tl = gsap.timeline();
+  tl.call(() => { $('#iterN').textContent = '3'; })
+    .fromTo('#ring2', {autoAlpha:0}, {autoAlpha:1, duration:.35})
+    .fromTo('#wave2', {autoAlpha:0, scale:.9, transformOrigin:'440px 270px'}, {autoAlpha:1, scale:1, duration:.7})
+    .add(countTo($('#iterC'), 3300, .8), '-=.5')
+    .call(() => { $('#iterN').textContent = '4'; }, null, '+=.3')
+    .fromTo('#ring3', {autoAlpha:0}, {autoAlpha:1, duration:.35})
+    .fromTo('#wave3', {autoAlpha:0, scale:.92, transformOrigin:'440px 270px'}, {autoAlpha:1, scale:1, duration:.7})
+    .add(countTo($('#iterC'), 4200, .9, '+'), '-=.5')
+    .fromTo('#sEbig', {autoAlpha:0, y:16}, {autoAlpha:1, y:0, duration:.8});
+  return tl;
+},
+
+/* 13 — the gate */
+() => {
+  bgTo('verify');
+  const tl = gsap.timeline();
+  enter(tl, '#sF');
+  tl.fromTo('#sFh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#gateBox', {autoAlpha:0, y:16}, {autoAlpha:1, y:0, duration:.7}, '-=.25')
+    .fromTo('#gl1', {autoAlpha:0}, {autoAlpha:1, duration:.5}, '-=.3')
+    .fromTo('.gd', {autoAlpha:0}, {autoAlpha:1, duration:.3, stagger:.05});
+  return tl;
+},
+
+/* 14 — verified vs cleared */
+() => {
+  const tl = gsap.timeline();
+  const dots = gsap.utils.toArray('.gd');
+  let p = 0, dr = 0;
+  tl.to('#gateBox rect', {stroke:'#2456D6', duration:.4}, 0);
+  dots.forEach((d, i) => {
+    const t0 = i * .14;
+    /* flow in and get absorbed at the gate's left edge */
+    tl.to(d, {attr:{cx:368}, duration:.55, ease:'power1.in'}, t0)
+      .to(d, {autoAlpha:0, duration:.12}, t0 + .5);
+    if (d.classList.contains('pass')){
+      /* re-emerge on the right as a verified label */
+      const y = 152 + (p++) * 14;
+      tl.set(d, {attr:{cx:572, cy:y}}, t0 + .78)
+        .to(d, {autoAlpha:1, duration:.15}, t0 + .8)
+        .to(d, {attr:{cx:828}, duration:.7, ease:'power1.out'}, t0 + .84);
+    } else {
+      /* drop out below the gate, cleared */
+      const x = 428 + (dr % 3) * 32, y = 410 + Math.floor(dr / 3) * 22; dr++;
+      tl.set(d, {attr:{cx:x, cy:330}, fill:'#B9C0C8'}, t0 + .78)
+        .to(d, {autoAlpha:.85, duration:.15}, t0 + .8)
+        .to(d, {attr:{cy:y}, duration:.55, ease:'power2.in'}, t0 + .84);
+    }
+  });
+  tl.fromTo('#gl3', {autoAlpha:0}, {autoAlpha:1, duration:.5}, 1.8)
+    .fromTo('#gl2', {autoAlpha:0}, {autoAlpha:1, duration:.5}, 2.4)
+    .to('#gateBox rect', {stroke:'#E2E5E1', duration:.5})
+    .fromTo('#sFbig', {autoAlpha:0, y:16}, {autoAlpha:1, y:0, duration:.8});
+  return tl;
+},
+
+/* 15 — labels train the model */
+() => {
+  bgTo('model');
+  const tl = gsap.timeline();
+  enter(tl, '#sG');
+  tl.fromTo('#sGh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#labelBlock', {autoAlpha:0, x:-26}, {autoAlpha:1, x:0, duration:.7}, '-=.25')
+    .fromTo('#mchips span', {autoAlpha:0, y:10}, {autoAlpha:1, y:0, duration:.4, stagger:.12})
+    .fromTo('#trainLbl', {autoAlpha:0}, {autoAlpha:1, duration:.3})
+    .to('#trainBar i', {width:'100%', duration:1.6, ease:'power1.inOut'})
+    .call(() => { $('#trainLbl').textContent = 'TRAINED · AUC 0.94'; });
+  return tl;
+},
+
+/* 16 — the ocean returns */
+() => {
+  const tl = gsap.timeline();
+  tl.call(() => Sweep.init())
+    .fromTo('#mapCol', {autoAlpha:0, y:20}, {autoAlpha:1, y:0, duration:.8});
+  return tl;
+},
+
+/* 17 — the sweep */
+() => {
+  const tl = gsap.timeline();
+  tl.call(() => Sweep.sweep())
+    .fromTo('#mapLegend', {autoAlpha:0}, {autoAlpha:1, duration:.6}, '+=2.4')
+    .fromTo('#sGbig', {autoAlpha:0, y:18}, {autoAlpha:1, y:0, duration:.8}, '+=.4');
+  return tl;
+},
+
+/* 18 — the funnel */
+() => {
+  const tl = gsap.timeline();
+  enter(tl, '#sH');
+  tl.fromTo('#sHh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#funnel .fcard', {autoAlpha:0, y:24}, {autoAlpha:1, y:0, duration:.55, stagger:.22}, '-=.2')
+    .fromTo('#funnel .farrow', {autoAlpha:0}, {autoAlpha:1, duration:.4, stagger:.22}, '-=1.4');
+  return tl;
+},
+
+/* 19 — Straive */
+() => {
+  bgTo('brand');
+  const tl = gsap.timeline();
+  enter(tl, '#endCard');
+  tl.fromTo('#endCard .wordmark', {autoAlpha:0, y:26}, {autoAlpha:1, y:0, duration:.9})
+    .fromTo('#endCard .tag', {autoAlpha:0, y:16}, {autoAlpha:1, y:0, duration:.7}, '-=.4')
+    .fromTo('#endCard .cap', {autoAlpha:0, y:14}, {autoAlpha:1, y:0, duration:.5, stagger:.14}, '-=.2')
+    .fromTo('#endCard .replay', {autoAlpha:0}, {autoAlpha:1, duration:.6}, '+=.3');
+  return tl;
+}
+];
+
+/* ---------- driver ---------- */
+let idx = 0, activeTl = null, started = false;
+function updateBar(){ $('#progressBar').style.width = (idx / steps.length * 100) + '%'; }
+function next(){
+  if (activeTl && activeTl.isActive()){ activeTl.progress(1); return; }
+  if (idx >= steps.length){ location.reload(); return; }
+  if (!started){ started = true; gsap.to('#hint', {autoAlpha:.4, duration:.5}); }
+  activeTl = steps[idx++]();
+  updateBar();
+}
+addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'ArrowRight' || e.code === 'Enter'){ e.preventDefault(); next(); }
+});
+addEventListener('click', next);
+addEventListener('touchend', e => { e.preventDefault(); next(); }, {passive:false});
+next();
+</script>
+</body>
+</html>

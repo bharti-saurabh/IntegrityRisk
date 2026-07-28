@@ -7,21 +7,15 @@ import { ErrorBoundary } from "@/app/ErrorBoundary";
 
 const Executive = lazy(() => import("@/pages/ExecutiveCommandCenter"));
 const Explorer = lazy(() => import("@/pages/DataExplorer"));
-const Typologies = lazy(() => import("@/pages/TypologyHub"));
 const MccStudio = lazy(() => import("@/pages/MccStudio"));
 const MccAbuse = lazy(() => import("@/pages/MccAbuse"));
 const SplitLab = lazy(() => import("@/pages/SplitTicketingLab"));
-const Factoring = lazy(() => import("@/pages/FactoringExplorer"));
 const Surcharge = lazy(() => import("@/pages/SurchargeConsole"));
 const Cash = lazy(() => import("@/pages/CashDisbursement"));
 const Investigation = lazy(() => import("@/pages/Investigation"));
-const Cases = lazy(() => import("@/pages/CaseQueue"));
-const Observatory = lazy(() => import("@/pages/ModelObservatory"));
 const ModelStore = lazy(() => import("@/pages/ModelStore"));
 const Anatomy = lazy(() => import("@/pages/AnatomyDeck"));
-const Simulator = lazy(() => import("@/pages/ImpactSimulator"));
 const RulesPage = lazy(() => import("@/pages/RulesEngine"));
-const Architecture = lazy(() => import("@/pages/Architecture"));
 
 function PageFallback() {
   return (
@@ -51,15 +45,17 @@ export function App() {
               {/* Merchant Universe folded into Data Explorer's Risk-table view. */}
               <Route path="/universe" element={<Navigate to="/explorer" replace />} />
               <Route path="/explorer" element={<Explorer />} />
-              <Route path="/typologies" element={<Typologies />} />
+              {/* Typology Hub retired — anatomies live on the Anatomy tab. */}
+              <Route path="/typologies" element={<Navigate to="/anatomy" replace />} />
               <Route path="/mcc" element={<MccStudio />} />
               <Route path="/mcc/:category" element={<MccStudio />} />
               <Route path="/mcc-abuse" element={<MccAbuse />} />
               <Route path="/mcc-abuse/:category" element={<MccAbuse />} />
               <Route path="/split" element={<SplitLab />} />
               <Route path="/split/:category" element={<SplitLab />} />
-              <Route path="/factoring" element={<Factoring />} />
-              <Route path="/factoring/:category" element={<Factoring />} />
+              {/* Factoring retired as its own tab — its cohort is covered under MCC Miscoding. */}
+              <Route path="/factoring" element={<Navigate to="/mcc" replace />} />
+              <Route path="/factoring/:category" element={<Navigate to="/mcc" replace />} />
               <Route path="/surcharge" element={<Surcharge />} />
               <Route path="/surcharge/:category" element={<Surcharge />} />
               {/* legacy path → surcharge (renamed from Descriptor Intelligence) */}
@@ -69,13 +65,14 @@ export function App() {
               <Route path="/cash/:category" element={<Cash />} />
               <Route path="/investigate" element={<Investigation />} />
               <Route path="/investigate/:merchantId" element={<Investigation />} />
-              <Route path="/cases" element={<Cases />} />
               <Route path="/anatomy" element={<Anatomy />} />
               <Route path="/models" element={<ModelStore />} />
-              <Route path="/observatory" element={<Observatory />} />
-              <Route path="/simulator" element={<Simulator />} />
               <Route path="/rules" element={<RulesPage />} />
-              <Route path="/architecture" element={<Architecture />} />
+              {/* Retired tabs — fall through to the Command Center. */}
+              <Route path="/cases" element={<Navigate to="/" replace />} />
+              <Route path="/observatory" element={<Navigate to="/" replace />} />
+              <Route path="/simulator" element={<Navigate to="/" replace />} />
+              <Route path="/architecture" element={<Navigate to="/" replace />} />
               <Route path="*" element={<Executive />} />
             </Routes>
           </Suspense>

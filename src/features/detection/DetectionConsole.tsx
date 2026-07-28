@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Tooltip, Legend,
 } from "recharts";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card, SectionLabel, Button, EmptyState, StatTile } from "@/components/ui/primitives";
+import { Card, SectionLabel, Button, EmptyState } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { CHART } from "@/components/charts/kit";
 import { fmtCurrency, fmtCompact, fmtNumber } from "@/utils/format";
@@ -16,7 +16,7 @@ import {
   type CategorySignal,
 } from "@/data/miscodingCategories";
 import type { TypologyConfig, DetectionModel } from "@/data/typologies";
-import { TIER_HEX, FAMILY_META, type OverviewTier, type FamilyKey } from "@/data/overview";
+import { TIER_HEX, TIER_ORDER, FAMILY_META, type OverviewTier, type FamilyKey } from "@/data/overview";
 import { subjectFromExplorer, buildInvestigation } from "@/features/ai-copilot/agentStream";
 import { AgentStreamPanel } from "@/features/ai-copilot/AgentStreamPanel";
 import { useAppStore } from "@/stores/appStore";
@@ -172,9 +172,14 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mode, setMode] = useState<"evidence" | "agent">("evidence");
   const [runId, setRunId] = useState(0);
-  // Local review line — where an analyst draws the "work this now" cut. Kept out
-  // of the global store on purpose so it can't perturb Observatory / ImpactSimulator.
-  const [reviewLine, setReviewLine] = useState(0);
+  // Local queue filters — how an analyst narrows the remediation list to what
+  // they'll actually work. Kept out of the global store so they can't perturb
+  // other consoles or the portfolio view.
+  const [query, setQuery] = useState("");
+  const [tierFilter, setTierFilter] = useState<OverviewTier | "all">("all");
+  const [minSignals, setMinSignals] = useState(0);
+  const [hideCased, setHideCased] = useState(false);
+  const [sortBy, setSortBy] = useState<"risk" | "exposure" | "signals">("risk");
 
   // Reset to this family's first model whenever we switch consoles.
   useEffect(() => {
@@ -206,11 +211,15 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
     [merchants, config.family, modelKey],
   );
 
-  // Reset selection when the model (and therefore the cohort) changes.
+  // Reset selection + filters when the model (and therefore the cohort) changes.
   useEffect(() => {
     setSelectedId(cohort[0]?.merchant_id ?? null);
     setMode("evidence");
-    setReviewLine(0);
+    setQuery("");
+    setTierFilter("all");
+    setMinSignals(0);
+    setHideCased(false);
+    setSortBy("risk");
   }, [modelKey, cohort]);
 
   const selected = cohort.find((m) => m.merchant_id === selectedId) ?? cohort[0] ?? null;
@@ -222,12 +231,37 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
     return { exposure, avg: avg(cohort.map((m) => m.integrity_risk_score)), acute, modelFlagged };
   }, [cohort]);
 
-  // Review-line scope: merchants at or above the line are "in scope to work now".
-  const scope = useMemo(() => {
-    const inScope = cohort.filter((m) => m.integrity_risk_score >= reviewLine);
-    const scopeExposure = inScope.reduce((s, m) => s + m.gross_sales_usd, 0);
-    return { count: inScope.length, exposure: scopeExposure, below: cohort.length - inScope.length };
-  }, [cohort, reviewLine]);
+  // How many of the model's discriminative signals are elevated for a merchant.
+  const elevatedOf = (m: ExplorerMerchant) => model.signals.filter((s) => isElevated(s, m[s.key] as number)).length;
+
+  // Tiers actually present in this cohort, in severity order — drives the chips.
+  const presentTiers = useMemo(
+    () => TIER_ORDER.filter((t) => cohort.some((m) => m.risk_tier === t)),
+    [cohort],
+  );
+
+  // Filtered + sorted queue. Selection stays on the raw cohort, so a merchant
+  // filtered out of the list is still viewable if it was already open.
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = cohort.filter((m) => {
+      if (tierFilter !== "all" && m.risk_tier !== tierFilter) return false;
+      if (minSignals > 0 && elevatedOf(m) < minSignals) return false;
+      if (hideCased && filedCases.some((c) => c.merchantId === m.merchant_id)) return false;
+      if (q && !(
+        m.merchant_name.toLowerCase().includes(q) ||
+        m.merchant_id.toLowerCase().includes(q) ||
+        m.mcc_group.toLowerCase().includes(q)
+      )) return false;
+      return true;
+    });
+    if (sortBy === "exposure") return [...list].sort((a, b) => b.gross_sales_usd - a.gross_sales_usd);
+    if (sortBy === "signals") return [...list].sort((a, b) => elevatedOf(b) - elevatedOf(a) || b.integrity_risk_score - a.integrity_risk_score);
+    return list; // cohort already sorted by risk
+  }, [cohort, tierFilter, minSignals, hideCased, query, sortBy, filedCases, model]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filtersActive = query.trim() !== "" || tierFilter !== "all" || minSignals > 0 || hideCased;
+  const resetFilters = () => { setQuery(""); setTierFilter("all"); setMinSignals(0); setHideCased(false); };
 
   const stats = useMemo(
     () => (merchants && selected ? computeStats(merchants, selected, model) : []),
@@ -243,10 +277,10 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
     <div>
       <PageHeader icon={config.icon} title={config.title} subtitle={config.subtitle} />
 
-      {/* ---- Model selector ------------------------------------------------ */}
-      <Card className="p-4">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="min-w-[280px] flex-1">
+      {/* ---- Control: model selector + cohort metrics in one compact band -- */}
+      <Card className="overflow-hidden p-0">
+        <div className="flex flex-col gap-3 p-4 lg:flex-row lg:items-end lg:gap-4">
+          <div className="min-w-[260px] flex-1">
             <SectionLabel>Identification model</SectionLabel>
             <div className="relative mt-1.5">
               <select
@@ -271,7 +305,7 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
           <div className="flex flex-col gap-1.5">
             <SectionLabel>Priority</SectionLabel>
             <span
-              className="inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold"
+              className="inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold"
               style={{ color: PRIORITY_HEX[model.priority], borderColor: `${PRIORITY_HEX[model.priority]}55`, background: `${PRIORITY_HEX[model.priority]}12` }}
             >
               {model.priority} · {PRIORITY_LABEL[model.priority]}
@@ -286,100 +320,122 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
           </div>
         </div>
 
-        <div className="mt-3 rounded-lg border border-cyan/20 bg-cyan/[0.04] px-3 py-2 text-[13px] text-ink-2">
-          Model output: <b className="text-ink">{cohort.length}</b> merchant{cohort.length === 1 ? "" : "s"} {config.behaveVerb}{" "}
-          <b className="text-ink">{model.behavesLike}</b> but are declared under {config.declaredKind}. Discriminative signals:{" "}
+        <div className="border-t border-border bg-cyan/[0.03] px-4 py-2.5 text-[13px] text-ink-2">
+          <span className="font-semibold text-ink-3">Model output — </span>
+          <b className="text-ink">{cohort.length}</b> merchant{cohort.length === 1 ? "" : "s"} {config.behaveVerb}{" "}
+          <b className="text-ink">{model.behavesLike}</b> but are declared under {config.declaredKind}. Signals:{" "}
           {model.signals.map((s) => s.label).join(" · ")}.
         </div>
-      </Card>
 
-      {/* ---- Cohort summary ------------------------------------------------ */}
-      <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTile label="Cohort size" value={fmtNumber(cohort.length)} sub={`suspected & ${config.cohortSuffix}`} accent="cyan" icon={<Icon name="Layers" size={16} />} />
-        <StatTile label="Exposure at stake" value={fmtCompact(summary.exposure)} sub="gross sales in cohort" accent="amber" icon={<Icon name="TrendingUp" size={16} />} />
-        <StatTile label="Avg integrity risk" value={summary.avg.toFixed(1)} sub="0–100 model score" accent="critical" icon={<Icon name="Gauge" size={16} />} />
-        <StatTile label="Critical / High" value={fmtNumber(summary.acute)} sub={`${summary.modelFlagged} model-flagged`} accent="violet" icon={<Icon name="ShieldAlert" size={16} />} />
-      </div>
-
-      {/* ---- Review line --------------------------------------------------- */}
-      <Card className="mt-4 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-[240px] flex-1">
-            <div className="flex items-center gap-2">
-              <SectionLabel>Review line</SectionLabel>
-              <span className="text-[11px] text-ink-3">drag to set where you start working</span>
-            </div>
-            <p className="mt-1 text-[13px] text-ink-2">
-              Merchants scoring at or above the line are in scope to work now; those below stay visible but dim out of the queue. Local to this console — it doesn't move the portfolio threshold.
-            </p>
-          </div>
-          <div className="flex items-center gap-5 text-right tnum">
-            <div>
-              <div className="text-lg font-bold text-ink">
-                {scope.count}<span className="text-sm font-medium text-ink-3">/{cohort.length}</span>
-              </div>
-              <div className="text-[11px] text-ink-3">in scope ≥ {reviewLine}</div>
-            </div>
-            <div>
-              <div className="text-lg font-bold text-amber">{fmtCompact(scope.exposure)}</div>
-              <div className="text-[11px] text-ink-3">exposure in scope</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-3 flex items-center gap-3">
-          <span className="text-[11px] text-ink-3">0</span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={reviewLine}
-            onChange={(e) => setReviewLine(Number(e.target.value))}
-            aria-label="Review line score"
-            className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-surface-2"
-            style={{ accentColor: "#22d3ee" }}
-          />
-          <span className="text-[11px] text-ink-3">100</span>
-          <span className="w-9 text-right text-sm font-bold tnum text-cyan">{reviewLine}</span>
-        </div>
-
-        <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-surface-2">
-          <div className="h-full bg-cyan transition-all" style={{ width: `${(scope.count / Math.max(1, cohort.length)) * 100}%` }} />
-        </div>
-        <div className="mt-1.5 flex justify-between text-[11px] text-ink-3">
-          <span><b className="text-ink-2">{scope.count}</b> above the line</span>
-          <span><b className="text-ink-2">{scope.below}</b> dimmed below</span>
+        <div className="grid grid-cols-2 gap-px border-t border-border bg-border sm:grid-cols-4">
+          <MetricCell label="Cohort size" value={fmtNumber(cohort.length)} sub={`suspected & ${config.cohortSuffix}`} tone="text-cyan" icon="Layers" />
+          <MetricCell label="Exposure at stake" value={fmtCompact(summary.exposure)} sub="gross sales in cohort" tone="text-amber" icon="TrendingUp" />
+          <MetricCell label="Avg integrity risk" value={summary.avg.toFixed(1)} sub="0–100 model score" tone="text-critical" icon="Gauge" />
+          <MetricCell label="Critical / High" value={fmtNumber(summary.acute)} sub={`${summary.modelFlagged} model-flagged`} tone="text-violet" icon="ShieldAlert" />
         </div>
       </Card>
 
       {/* ---- Master / detail ---------------------------------------------- */}
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(320px,400px)_1fr]">
         {/* Cohort queue */}
-        <Card className="flex max-h-[calc(100vh-130px)] flex-col p-0">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <Card className="flex max-h-[calc(100vh-96px)] flex-col p-0">
+          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
             <SectionLabel>Remediation queue</SectionLabel>
-            <span className="text-[11px] text-ink-3">
-              {reviewLine > 0 ? `${scope.count} in scope · ${scope.below} dimmed` : `${cohort.length} merchants · by risk`}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-ink-3 tnum">
+                {visible.length === cohort.length ? `${cohort.length} merchants` : `${visible.length} of ${cohort.length}`}
+              </span>
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  aria-label="Sort queue"
+                  className="appearance-none rounded-md border border-border bg-surface-2 py-1 pl-2 pr-6 text-[11px] font-medium text-ink-2 outline-none focus:border-cyan/50"
+                >
+                  <option value="risk">Risk</option>
+                  <option value="exposure">Exposure</option>
+                  <option value="signals">Signals</option>
+                </select>
+                <Icon name="ChevronDown" size={12} className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-ink-3" />
+              </div>
+            </div>
           </div>
+
+          {/* Queue filters — narrow the list to what you'll actually work. */}
+          <div className="space-y-2 border-b border-border px-3 py-2.5">
+            <div className="relative">
+              <Icon name="Search" size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Filter by name, ID, or MCC group…"
+                className="w-full rounded-lg border border-border bg-surface-2 py-1.5 pl-8 pr-7 text-[12px] text-ink outline-none focus:border-cyan/50 placeholder:text-ink-3"
+              />
+              {query ? (
+                <button onClick={() => setQuery("")} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink">
+                  <Icon name="X" size={13} />
+                </button>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="micro-label mr-1">Tier</span>
+              <FilterChip active={tierFilter === "all"} onClick={() => setTierFilter("all")}>All</FilterChip>
+              {presentTiers.map((t) => (
+                <FilterChip key={t} active={tierFilter === t} onClick={() => setTierFilter(t)} dot={TIER_HEX[t]}>{t}</FilterChip>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1">
+              <span className="micro-label mr-1">Signals ≥</span>
+              {Array.from({ length: model.signals.length + 1 }, (_, n) => n).map((n) => (
+                <FilterChip key={n} active={minSignals === n} onClick={() => setMinSignals(n)}>{n === 0 ? "Any" : n}</FilterChip>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              <button
+                onClick={() => setHideCased((v) => !v)}
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-2 hover:text-ink"
+              >
+                <span className={`flex h-3.5 w-3.5 items-center justify-center rounded border ${hideCased ? "border-cyan bg-cyan text-white" : "border-border bg-surface-2"}`}>
+                  {hideCased ? <Icon name="Check" size={10} /> : null}
+                </span>
+                Hide filed cases
+              </button>
+              {filtersActive ? (
+                <button onClick={resetFilters} className="inline-flex items-center gap-1 text-[11px] text-ink-3 hover:text-ink">
+                  <Icon name="X" size={11} /> Clear
+                </button>
+              ) : null}
+            </div>
+          </div>
+
           <div className="min-w-0 flex-1 overflow-y-auto">
             {cohort.length === 0 ? (
               <div className="p-6 text-center text-xs text-ink-3">No merchants in this cohort.</div>
+            ) : visible.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 p-6 text-center">
+                <div className="text-xs text-ink-3">No merchants match these filters.</div>
+                <button onClick={resetFilters} className="text-[11px] font-medium text-cyan hover:underline">Clear filters</button>
+              </div>
             ) : (
-              cohort.map((m) => {
+              visible.map((m) => {
                 const active = m.merchant_id === selected?.merchant_id;
-                const below = reviewLine > 0 && m.integrity_risk_score < reviewLine;
-                const elevatedCount = model.signals.filter((s) => isElevated(s, m[s.key] as number)).length;
+                const elevatedCount = elevatedOf(m);
+                const cased = filedCases.some((c) => c.merchantId === m.merchant_id);
                 return (
                   <button
                     key={m.merchant_id}
                     onClick={() => { setSelectedId(m.merchant_id); setMode("evidence"); }}
-                    className={`flex w-full items-center gap-3 border-b border-border/50 px-4 py-2.5 text-left transition-all ${active ? "bg-cyan/[0.06]" : "hover:bg-surface-2/60"} ${below ? "opacity-40 hover:opacity-100" : ""}`}
+                    className={`flex w-full items-center gap-3 border-b border-border/50 px-4 py-2.5 text-left transition-all ${active ? "bg-cyan/[0.06]" : "hover:bg-surface-2/60"}`}
                   >
                     <TierDot tier={m.risk_tier} />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] font-semibold text-ink">{m.merchant_name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-[13px] font-semibold text-ink">{m.merchant_name}</span>
+                        {cased ? <Icon name="Check" size={12} className="shrink-0 text-ok" /> : null}
+                      </div>
                       <div className="truncate text-[11px] text-ink-3">declared {m.declared_mcc} · {m.mcc_group}</div>
                     </div>
                     <div className="flex flex-col items-end">
@@ -555,6 +611,42 @@ function EvidencePanel({ merchant: m, model: c, config, stats, onInvestigate }: 
   );
 }
 
+// Dense metric cell for the control-card summary strip — hairline-separated,
+// far tighter than a full StatTile so the whole cohort read-out costs one row.
+function MetricCell({ label, value, sub, tone, icon }: {
+  label: string; value: string; sub: string; tone: string; icon: string;
+}) {
+  return (
+    <div className="bg-surface px-4 py-3">
+      <div className="flex items-center justify-between">
+        <span className="micro-label">{label}</span>
+        <Icon name={icon} size={15} className={`opacity-60 ${tone}`} />
+      </div>
+      <div className={`mt-1 text-2xl font-bold tnum ${tone}`}>{value}</div>
+      <div className="mt-0.5 truncate text-[11px] text-ink-3 tnum">{sub}</div>
+    </div>
+  );
+}
+
+function FilterChip({ children, active, onClick, dot }: {
+  children: ReactNode; active?: boolean; onClick: () => void; dot?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${
+        active
+          ? "border-cyan/50 bg-cyan/15 text-cyan"
+          : "border-border bg-surface-2 text-ink-2 hover:border-ink-3 hover:text-ink"
+      }`}
+    >
+      {dot ? <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} /> : null}
+      {children}
+    </button>
+  );
+}
+
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border border-border bg-surface-2/50 p-3">
@@ -642,46 +734,103 @@ function fmtPercentile(p: number): string {
 
 // The actual peer distribution for the single most-deviant signal: "here's the
 // herd, here's how far outside it this merchant sits."
+// One dot per legitimate peer, stacked where they pile up (a Wilkinson dot plot).
+// For prohibited-behaviour signals the peers collapse into a tight cluster near
+// zero and this merchant sits far out on its own — the empty span between them is
+// the whole point, so we shade it as an explicit "gap no compliant peer reaches"
+// instead of leaving a blank histogram that reads as broken.
 function PeerDistribution({ stats, group }: { stats: SignalStat[]; group: string }) {
   const st = stats.reduce((a, b) => (b.z > a.z ? b : a), stats[0]);
   if (!st || st.sample.length < 4) return null;
-  const BINS = 22;
-  const hi = Math.max(st.observed, ...st.sample) * 1.04 || 1;
-  const counts = new Array(BINS).fill(0);
-  for (const v of st.sample) {
-    const idx = Math.max(0, Math.min(BINS - 1, Math.floor((v / hi) * BINS)));
-    counts[idx] += 1;
+
+  const BINS = 48;
+  const CAP = 7; // max dots drawn per column; the rest show as a "+N" tag
+  const DOT = 9; // px between stacked dots
+  const hi = Math.max(st.observed, ...st.sample) * 1.06 || 1;
+  const toPct = (v: number) => Math.max(0, Math.min(100, (v / hi) * 100));
+
+  const level = new Array(BINS).fill(0);
+  const dots: { x: number; lvl: number }[] = [];
+  const sorted = [...st.sample].sort((a, b) => a - b);
+  for (const v of sorted) {
+    const b = Math.max(0, Math.min(BINS - 1, Math.floor((v / hi) * BINS)));
+    const lvl = level[b]++;
+    if (lvl < CAP) dots.push({ x: toPct((b + 0.5) * (hi / BINS)), lvl });
   }
-  const maxCount = Math.max(...counts, 1);
-  const obsPct = Math.max(0, Math.min(100, (st.observed / hi) * 100));
-  const meanPct = Math.max(0, Math.min(100, (st.mean / hi) * 100));
-  const ceilPct = Math.max(0, Math.min(100, (st.ceiling / hi) * 100));
+  const overflow: { x: number; n: number }[] = [];
+  level.forEach((n, b) => { if (n > CAP) overflow.push({ x: toPct((b + 0.5) * (hi / BINS)), n: n - CAP }); });
+
+  const meanPct = toPct(st.mean);
+  const ceilPct = toPct(st.ceiling);
+  const obsPct = toPct(st.observed);
+  const peerMaxPct = toPct(Math.max(...st.sample));
+  const showGap = obsPct - peerMaxPct > 6;
+
   return (
     <div className="mt-3 rounded-lg border border-border bg-surface-2/40 p-3">
       <div className="flex items-center justify-between">
         <div className="text-[11px] font-semibold text-ink-2">Peer distribution · <span className="text-ink-3">{st.sig.label}</span></div>
         <span className="text-[10px] text-ink-3">{st.sample.length} legit {group} merchants</span>
       </div>
-      <div className="relative mt-3 h-20">
-        <div className="absolute inset-0 flex items-end gap-px">
-          {counts.map((c, i) => (
-            <div key={i} className="flex-1 rounded-t-sm bg-ink-3/25" style={{ height: `${(c / maxCount) * 100}%` }} />
-          ))}
+
+      <div className="relative mt-6 h-24">
+        {/* gap between the peer herd and this merchant */}
+        {showGap ? (
+          <div
+            className="absolute inset-y-0 border-x border-dashed border-high/25 bg-high/[0.035]"
+            style={{ left: `${peerMaxPct}%`, width: `${obsPct - peerMaxPct}%` }}
+          >
+            <span className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[9px] font-medium text-high/70">
+              no compliant peer reaches here
+            </span>
+          </div>
+        ) : null}
+
+        {/* μ and 3σ reference lines */}
+        <div className="absolute inset-y-0 w-px bg-ink-3/50" style={{ left: `${meanPct}%` }}>
+          <span className="absolute -top-4 left-1 whitespace-nowrap text-[9px] text-ink-3">μ {formatSignal(st.sig, st.mean)}</span>
         </div>
         <div className="absolute inset-y-0 w-px bg-amber/60" style={{ left: `${ceilPct}%` }}>
-          <span className="absolute -top-0.5 left-1 whitespace-nowrap text-[8px] font-semibold text-amber">3σ</span>
+          <span className="absolute -top-4 left-1 whitespace-nowrap text-[9px] font-semibold text-amber">3σ</span>
         </div>
-        <div className="absolute inset-y-0 w-px bg-ink-3/60" style={{ left: `${meanPct}%` }}>
-          <span className="absolute -top-0.5 left-1 whitespace-nowrap text-[8px] text-ink-3">μ</span>
-        </div>
-        <div className="absolute inset-y-0 w-0.5 bg-high" style={{ left: `calc(${obsPct}% - 1px)` }}>
-          <div className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-high ring-2 ring-surface" />
+
+        {/* peer dots */}
+        {dots.map((d, i) => (
+          <span
+            key={i}
+            className="absolute h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-ink-3/50"
+            style={{ left: `${d.x}%`, bottom: `${4 + d.lvl * DOT}px` }}
+          />
+        ))}
+        {overflow.map((o, i) => (
+          <span
+            key={`o${i}`}
+            className="absolute -translate-x-1/2 text-[9px] font-semibold text-ink-3"
+            style={{ left: `${o.x}%`, bottom: `${6 + CAP * DOT}px` }}
+          >
+            +{o.n}
+          </span>
+        ))}
+
+        {/* this merchant */}
+        <div className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-high" style={{ left: `${obsPct}%` }}>
+          <div className="absolute -bottom-1 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-high ring-2 ring-surface" />
         </div>
       </div>
-      <div className="mt-2 flex items-center gap-1.5 text-[10.5px] text-ink-2">
-        <span className="inline-block h-2 w-2 rounded-full bg-high" />
-        This merchant reports <b className="text-critical">{formatSignal(st.sig, st.observed)}</b> — beyond the{" "}
-        <b>{fmtPercentile(st.pct)}</b> percentile of {group} peers (μ {formatSignal(st.sig, st.mean)}).
+
+      {/* axis endpoints */}
+      <div className="mt-1 flex justify-between border-t border-border pt-1 text-[9px] text-ink-3 tnum">
+        <span>{formatSignal(st.sig, 0)}</span>
+        <span>{formatSignal(st.sig, hi)}</span>
+      </div>
+
+      <div className="mt-2 flex items-start gap-1.5 text-[10.5px] text-ink-2">
+        <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-high" />
+        <span>
+          Legit {group} peers cluster at μ <b>{formatSignal(st.sig, st.mean)}</b>; this merchant reports{" "}
+          <b className="text-critical">{formatSignal(st.sig, st.observed)}</b> — beyond the{" "}
+          <b>{fmtPercentile(st.pct)}</b> percentile of the herd.
+        </span>
       </div>
     </div>
   );

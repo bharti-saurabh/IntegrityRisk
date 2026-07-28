@@ -20,9 +20,9 @@ const STEPS: TourStep[] = [
     route: "/",
   },
   {
-    title: "Scan the merchant book",
-    body: "Open the Data Explorer's Risk table: every merchant scored 0–100 by a 7-signal ensemble. Sort, filter by typology, and drill into the highest-risk entities. Nothing here is hardcoded — filters recalculate over the real records.",
-    route: "/explorer?view=risk",
+    title: "See it on your data",
+    body: "Open the Data Explorer: the raw settlement transactions and the merchant book they roll up into, previewed row by row — then queried live in an in-browser SQL console. Nothing is hardcoded; the whole solution is built directly on this data.",
+    route: "/explorer",
   },
   {
     title: "Flagship: MCC miscoding",
@@ -35,24 +35,14 @@ const STEPS: TourStep[] = [
     route: `/investigate/${FLAGSHIP.merchantId}`,
   },
   {
-    title: "Follow the money (factoring)",
-    body: "Factoring models pull the cohort of registered outlets settling for undisclosed sub-merchants — surfaced by shared settlement accounts, devices, and known-bad adjacency. Each row lands in the owning team's remediation queue with the variables that flagged it.",
-    route: "/factoring",
+    title: "Card surcharge abuse",
+    body: "The second live typology: merchants adding non-compliant card surcharges. Same pattern as MCC miscoding — behavioural signals surface each merchant into a ready-to-work queue with the variables that flagged it.",
+    route: "/surcharge",
   },
   {
-    title: "Work the queue",
-    body: "Alerts become cases with SLAs, dispositions, and an audit trail. Change a status or disposition — it persists to localStorage as an accountable action.",
-    route: "/cases",
-  },
-  {
-    title: "Trust the model",
-    body: "The observatory reports precision, alert volume and captured exposure against synthetic ground truth — recall/F1/AUC are deliberately omitted because the true positive universe is unknowable for a live book. The impact simulator lets you move the alert threshold and watch the precision/workload/exposure tradeoff live.",
-    route: "/observatory",
-  },
-  {
-    title: "You're ready",
-    body: "Explore any module from the sidebar, or press ⌘K to jump to any merchant. Everything you see is decision-support on synthetic data — not a final compliance determination.",
-    route: "/simulator",
+    title: "Trust the models",
+    body: "The Model Store lists every deployed detection model — one per prohibited/restricted MCC category plus card surcharge — each reporting precision, alert volume and captured exposure against synthetic ground truth. Recall/F1/AUC are deliberately omitted because the true positive universe is unknowable for a live book. Explore any module from the sidebar, or press ⌘K to jump to any merchant — everything here is decision-support on synthetic data, not a final compliance determination.",
+    route: "/models",
   },
 ];
 

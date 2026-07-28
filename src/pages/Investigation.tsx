@@ -32,7 +32,6 @@ export default function Investigation() {
   const records = useAppStore((s) => s.result!.records);
   const selectedId = useAppStore((s) => s.selectedMerchantId);
   const getTransactions = useAppStore((s) => s.getTransactions);
-  const getCases = useAppStore((s) => s.getCases);
   const fileCase = useAppStore((s) => s.fileCase);
   const filedCases = useAppStore((s) => s.filedCases);
 
@@ -41,10 +40,6 @@ export default function Investigation() {
 
   const transactions = useMemo(() => (record ? getTransactions(record.merchant.merchantId) : []), [record, getTransactions]);
   const brief = useMemo(() => (record ? generateBrief(record, transactions) : null), [record, transactions]);
-  const linkedCase = useMemo(
-    () => (record ? getCases().find((c) => c.members.some((m) => m.merchantId === record.merchant.merchantId)) : undefined),
-    [record, getCases],
-  );
 
   const subject = useMemo(
     () => (record && brief ? subjectFromRecord(record, transactions, brief) : null),
@@ -103,11 +98,6 @@ export default function Investigation() {
             <Button variant="ghost" onClick={() => setRunId((n) => n + 1)}>
               <Icon name="RotateCcw" size={15} /> Replay
             </Button>
-            {linkedCase ? (
-              <Button variant="primary" onClick={() => navigate("/cases")}>
-                <Icon name="Briefcase" size={15} /> Open case {linkedCase.caseId}
-              </Button>
-            ) : null}
             <Button variant="ghost" onClick={exportBrief}>
               <Icon name="Download" size={15} /> Export brief
             </Button>

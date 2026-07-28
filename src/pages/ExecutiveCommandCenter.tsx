@@ -267,8 +267,8 @@ export default function ExecutiveCommandCenter() {
             <Button variant="ghost" onClick={() => exportJson("integrity-overview.json", overview)}>
               <Icon name="Download" size={15} /> Export summary
             </Button>
-            <Button variant="primary" onClick={() => navigate("/explorer?view=risk")}>
-              <Icon name="Orbit" size={15} /> Merchant book
+            <Button variant="primary" onClick={() => navigate("/explorer")}>
+              <Icon name="ScanSearch" size={15} /> Explore data
             </Button>
           </>
         }

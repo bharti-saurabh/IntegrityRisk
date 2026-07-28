@@ -8,6 +8,7 @@ import {
   Target, Fingerprint, Boxes, Cpu, Scale, ArrowUpRight, ArrowDownRight,
   Receipt, Table2, Route, ChevronUp,
   Globe, Landmark, ShieldAlert, Loader2, Wifi, Minus, BadgePercent,
+  GitMerge, ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 import type { CSSProperties } from "react";
@@ -22,6 +23,7 @@ const MAP: Record<string, LucideIcon> = {
   Target, Fingerprint, Boxes, Cpu, Scale, ArrowUpRight, ArrowDownRight,
   Receipt, Table2, Route, ChevronUp,
   Globe, Landmark, ShieldAlert, Loader2, Wifi, Minus, BadgePercent,
+  GitMerge, ExternalLink,
 };
 
 export function Icon({

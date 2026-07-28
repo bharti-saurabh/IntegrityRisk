@@ -1,61 +1,84 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card, SectionLabel, StatTile, Button, Chip } from "@/components/ui/primitives";
+import { Card, SectionLabel, StatTile, Button } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
 import { fmtNumber, fmtPct, fmtCurrency } from "@/utils/format";
 import { exportJson } from "@/utils/exports";
 import { FAMILY_META, PRIORITY_TIER_HEX, type FamilyKey } from "@/data/overview";
 import {
-  registry, KIND_LABEL, STATUS_LABEL, AUX_COLOR,
-  type Model, type ContentBank, type RulePack, type Feature, type Metrics,
+  registry, KIND_LABEL, STATUS_LABEL,
+  type Model, type SubModel, type Feature, type Metrics,
 } from "@/data/models";
 
-type Entry = Model | ContentBank | RulePack;
+/* ------------------------------------------------------------------ selection
+   The store is scoped to the two live typologies: MCC Miscoding (with one
+   detector per prohibited/restricted category) and Card Surcharge. The
+   cross-typology ensemble and expert rule pack are intentionally not shown. */
 
-const CARDS: Entry[] = [
-  ...registry.models.filter((m) => m.kind === "method-detector"),
-  registry.models.find((m) => m.kind === "ensemble")!,
-  registry.contentBank,
-  registry.rulePack,
+const MCC_DETECTOR = registry.models.find((m) => m.family === "mcc_miscoding")!;
+const SURCHARGE_DETECTOR = registry.models.find((m) => m.family === "surcharge")!;
+const CATEGORY_SUBS = registry.contentBank.subModels;
+const CATEGORY_VERSION = registry.contentBank.version;
+
+type Entry =
+  | { type: "model"; id: string; model: Model }
+  | { type: "category"; id: string; sub: SubModel };
+
+const PORTFOLIO: Entry[] = [
+  { type: "model", id: MCC_DETECTOR.id, model: MCC_DETECTOR },
+  { type: "model", id: SURCHARGE_DETECTOR.id, model: SURCHARGE_DETECTOR },
+];
+const CATEGORY: Entry[] = CATEGORY_SUBS.map((s) => ({ type: "category", id: `cat-${s.key}`, sub: s }));
+const ALL: Entry[] = [...PORTFOLIO, ...CATEGORY];
+
+const TIER_LABEL: Record<"P1" | "P2" | "P3", string> = {
+  P1: "P1 · Prohibited",
+  P2: "P2 · High-risk restricted",
+  P3: "P3 · Monitored",
+};
+const TIER_MEANING: Record<"P1" | "P2" | "P3", string> = {
+  P1: "Never permitted on the platform — a confirmed match is a straight exit.",
+  P2: "Permitted only under specific licensing and controls; a match warrants review.",
+  P3: "Elevated-risk and watched for drift; a match is monitored, not auto-actioned.",
+};
+
+const GROUPS: { label: string; entries: Entry[] }[] = [
+  { label: "Portfolio detectors", entries: PORTFOLIO },
+  { label: TIER_LABEL.P1, entries: CATEGORY.filter((e) => e.type === "category" && e.sub.tier === "P1") },
+  { label: TIER_LABEL.P2, entries: CATEGORY.filter((e) => e.type === "category" && e.sub.tier === "P2") },
+  { label: TIER_LABEL.P3, entries: CATEGORY.filter((e) => e.type === "category" && e.sub.tier === "P3") },
 ];
 
-function accentOf(e: Entry): string {
-  if (e.kind === "ensemble") return AUX_COLOR.ensemble;
-  if (e.kind === "expert-rules") return AUX_COLOR.rules;
-  return FAMILY_META[e.family as FamilyKey].color;
+function entryColor(e: Entry): string {
+  if (e.type === "category") return PRIORITY_TIER_HEX[e.sub.tier as "P1" | "P2" | "P3"];
+  return FAMILY_META[e.model.family as FamilyKey].color;
 }
-function iconOf(e: Entry): string {
-  if (e.kind === "ensemble") return "Network";
-  if (e.kind === "expert-rules") return "Filter";
-  if (e.kind === "content-classifier") return "Layers";
-  return FAMILY_META[e.family as FamilyKey].icon;
+function entryIcon(e: Entry): string {
+  if (e.type === "category") return "ScanSearch";
+  return FAMILY_META[e.model.family as FamilyKey].icon;
 }
-
-const GROUPS: { label: string; kinds: Entry["kind"][] }[] = [
-  { label: "Typology detectors", kinds: ["method-detector"] },
-  { label: "Portfolio ensemble", kinds: ["ensemble"] },
-  { label: "Content bank & rules", kinds: ["content-classifier", "expert-rules"] },
-];
 
 export default function ModelStore() {
   const nav = useNavigate();
-  const [selectedId, setSelectedId] = useState<string>(CARDS[0].id);
-  const selected = CARDS.find((c) => c.id === selectedId)!;
+  const [selectedId, setSelectedId] = useState<string>(ALL[0].id);
+  const selected = ALL.find((c) => c.id === selectedId)!;
 
-  const precisionValues = registry.models
-    .map((m) => m.metrics.precision)
-    .filter((v): v is number => typeof v === "number");
-  const meanPrecision = precisionValues.reduce((a, b) => a + b, 0) / Math.max(1, precisionValues.length);
-  const capturedExposureUsd = registry.models.reduce((a, m) => a + (m.metrics.capturedExposureUsd ?? 0), 0);
-  const alertVolume = registry.models.reduce((a, m) => a + (m.metrics.alertVolume ?? 0), 0);
+  // Aggregates over the leaf detectors actually shown — the 11 category models
+  // plus the surcharge detector. The MCC composite is excluded to avoid double
+  // counting its own categories.
+  const leafMetrics: Metrics[] = [...CATEGORY_SUBS.map((s) => s.metrics), SURCHARGE_DETECTOR.metrics];
+  const meanPrecision =
+    leafMetrics.reduce((a, m) => a + m.precision, 0) / Math.max(1, leafMetrics.length);
+  const alertVolume = leafMetrics.reduce((a, m) => a + (m.alertVolume ?? 0), 0);
+  const capturedExposureUsd = leafMetrics.reduce((a, m) => a + (m.capturedExposureUsd ?? 0), 0);
 
   return (
     <div>
       <PageHeader
         icon="Boxes"
         title="Model Store"
-        subtitle="The detection models behind every typology — features, calibration, and measured performance"
+        subtitle="The detection models behind the live typologies — one per prohibited/restricted MCC category, plus card surcharge"
         actions={
           <Button variant="ghost" onClick={() => exportJson("model-registry.json", registry)}>
             <Icon name="Download" size={15} /> Export registry
@@ -64,8 +87,8 @@ export default function ModelStore() {
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Models in store" value={CARDS.length} sub="detectors · ensemble · rules" accent="cyan" icon={<Icon name="Boxes" size={16} />} />
-        <StatTile label="Mean precision" value={fmtPct(meanPrecision, 1)} sub="across detectors, at op. point" accent="ok" icon={<Icon name="Target" size={16} />} />
+        <StatTile label="Models in store" value={ALL.length} sub="category detectors + typology rollups" accent="cyan" icon={<Icon name="Boxes" size={16} />} />
+        <StatTile label="Mean precision" value={fmtPct(meanPrecision, 1)} sub="across leaf detectors, at op. point" accent="ok" icon={<Icon name="Target" size={16} />} />
         <StatTile label="Alert volume" value={fmtNumber(alertVolume)} sub="merchants sent to review" accent="violet" icon={<Icon name="Briefcase" size={16} />} />
         <StatTile label="Captured exposure" value={fmtCurrency(capturedExposureUsd, true)} sub="$ on true-positive alerts" accent="amber" icon={<Icon name="Banknote" size={16} />} />
       </div>
@@ -74,13 +97,12 @@ export default function ModelStore() {
         {/* ---- catalog list ---- */}
         <div className="space-y-4">
           {GROUPS.map((g) => {
-            const items = CARDS.filter((c) => g.kinds.includes(c.kind));
-            if (!items.length) return null;
+            if (!g.entries.length) return null;
             return (
               <div key={g.label}>
                 <SectionLabel className="mb-2">{g.label}</SectionLabel>
                 <div className="space-y-2">
-                  {items.map((e) => (
+                  {g.entries.map((e) => (
                     <CatalogRow
                       key={e.id}
                       entry={e}
@@ -96,12 +118,10 @@ export default function ModelStore() {
 
         {/* ---- detail ---- */}
         <div className="min-w-0">
-          {selected.kind === "content-classifier" ? (
-            <ContentBankDetail bank={selected as ContentBank} />
-          ) : selected.kind === "expert-rules" ? (
-            <RulePackDetail pack={selected as RulePack} onOpen={(route) => nav(route)} />
+          {selected.type === "model" ? (
+            <ModelDetail model={selected.model} onOpen={(route) => nav(route)} />
           ) : (
-            <ModelDetail model={selected as Model} onOpen={(route) => nav(route)} />
+            <CategoryDetail sub={selected.sub} onOpen={(route) => nav(route)} />
           )}
         </div>
       </div>
@@ -115,14 +135,15 @@ export default function ModelStore() {
 
 /* ------------------------------------------------------------------ catalog */
 function CatalogRow({ entry, active, onClick }: { entry: Entry; active: boolean; onClick: () => void }) {
-  const color = accentOf(entry);
-  const precision = "metrics" in entry ? entry.metrics.precision : undefined;
-  const headline =
-    entry.kind === "expert-rules"
-      ? `${(entry as RulePack).rules.length} gates`
-      : entry.kind === "content-classifier"
-        ? `${(entry as ContentBank).subModels.length} classifiers`
-        : `${(entry as Model).featureCount} features`;
+  const color = entryColor(entry);
+  const name = entry.type === "model" ? entry.model.name : entry.sub.label;
+  const version = entry.type === "model" ? entry.model.version : CATEGORY_VERSION;
+  const precision = entry.type === "model" ? entry.model.metrics.precision : entry.sub.metrics.precision;
+  const featureCount = entry.type === "model" ? entry.model.featureCount : entry.sub.featureCount;
+  const kindLine =
+    entry.type === "model"
+      ? `${KIND_LABEL[entry.model.kind]} · ${featureCount} features`
+      : `Category detector · ${featureCount} features`;
   return (
     <button
       type="button"
@@ -137,20 +158,18 @@ function CatalogRow({ entry, active, onClick }: { entry: Entry; active: boolean;
           className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
           style={{ backgroundColor: `${color}1a`, color }}
         >
-          <Icon name={iconOf(entry)} size={16} />
+          <Icon name={entryIcon(entry)} size={16} />
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-sm font-semibold text-ink">{entry.name}</span>
-            <span className="shrink-0 text-[10px] text-ink-3 tnum">v{entry.version}</span>
+            <span className="truncate text-sm font-semibold text-ink">{name}</span>
+            <span className="shrink-0 text-[10px] text-ink-3 tnum">v{version}</span>
           </div>
-          <div className="mt-0.5 text-[11px] text-ink-3">{KIND_LABEL[entry.kind]} · {headline}</div>
-          {typeof precision === "number" ? (
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span className="micro-label" style={{ color }}>Precision</span>
-              <span className="text-xs font-bold tnum" style={{ color }}>{fmtPct(precision, 0)}</span>
-            </div>
-          ) : null}
+          <div className="mt-0.5 text-[11px] text-ink-3">{kindLine}</div>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <span className="micro-label" style={{ color }}>Precision</span>
+            <span className="text-xs font-bold tnum" style={{ color }}>{fmtPct(precision, 0)}</span>
+          </div>
         </div>
       </div>
     </button>
@@ -167,8 +186,16 @@ function StatusPill({ status }: { status: keyof typeof STATUS_LABEL }) {
   );
 }
 
-function DetailHeader({ entry }: { entry: Entry }) {
-  const color = accentOf(entry);
+function DetailHeader({
+  name, version, typeLabel, icon, color, right,
+}: {
+  name: string;
+  version: string;
+  typeLabel: string;
+  icon: string;
+  color: string;
+  right?: React.ReactNode;
+}) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="flex items-start gap-3">
@@ -176,19 +203,19 @@ function DetailHeader({ entry }: { entry: Entry }) {
           className="flex h-11 w-11 items-center justify-center rounded-xl"
           style={{ backgroundColor: `${color}1a`, color }}
         >
-          <Icon name={iconOf(entry)} size={22} />
+          <Icon name={icon} size={22} />
         </span>
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-ink">{entry.name}</h2>
+            <h2 className="text-base font-bold text-ink">{name}</h2>
             <span className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-ink-3 tnum">
-              v{entry.version}
+              v{version}
             </span>
           </div>
-          <p className="mt-0.5 text-xs text-ink-2">{entry.typeLabel}</p>
+          <p className="mt-0.5 text-xs text-ink-2">{typeLabel}</p>
         </div>
       </div>
-      <StatusPill status={entry.status} />
+      {right}
     </div>
   );
 }
@@ -250,13 +277,20 @@ function metricNote(m: Metrics): string | undefined {
 
 /* --------------------------------------------------------------- model card */
 function ModelDetail({ model, onOpen }: { model: Model; onOpen: (route: string) => void }) {
-  const color = accentOf(model);
+  const color = FAMILY_META[model.family as FamilyKey].color;
   const m = model.metrics;
   const famRoute = model.family in FAMILY_META ? FAMILY_META[model.family as FamilyKey].route : null;
   return (
     <div className="space-y-4">
       <Card className="p-5">
-        <DetailHeader entry={model} />
+        <DetailHeader
+          name={model.name}
+          version={model.version}
+          typeLabel={model.typeLabel}
+          icon={FAMILY_META[model.family as FamilyKey].icon}
+          color={color}
+          right={<StatusPill status={model.status} />}
+        />
         <p className="mt-3 text-sm leading-relaxed text-ink-2">{model.summary}</p>
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-border-soft bg-surface-2 px-3 py-2">
           <Icon name="Target" size={14} className="mt-0.5 shrink-0 text-ink-3" />
@@ -350,139 +384,85 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
   );
 }
 
-/* --------------------------------------------------------- content bank card */
-function ContentBankDetail({ bank }: { bank: ContentBank }) {
-  const color = FAMILY_META.mcc_miscoding.color;
-  const [tab, setTab] = useState<"P1" | "P2" | "P3">("P1");
-  const subs = bank.subModels.filter((s) => s.tier === tab);
-  const tm = bank.tierMetrics;
+/* ------------------------------------------------------------ category card */
+function CategoryDetail({ sub, onOpen }: { sub: SubModel; onOpen: (route: string) => void }) {
+  const tier = sub.tier as "P1" | "P2" | "P3";
+  const color = PRIORITY_TIER_HEX[tier];
+  const m = sub.metrics;
+  const cat = sub.label.toLowerCase();
   return (
     <div className="space-y-4">
       <Card className="p-5">
-        <DetailHeader entry={bank} />
-        <p className="mt-3 text-sm leading-relaxed text-ink-2">{bank.summary}</p>
-        <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber/25 bg-amber/5 px-3 py-2">
-          <Icon name="Info" size={14} className="mt-0.5 shrink-0 text-amber" />
-          <p className="text-[11px] leading-relaxed text-ink-2">{bank.note}</p>
-        </div>
-      </Card>
-
-      <Card className="p-5">
-        <SectionLabel>Priority-tier detection (audited)</SectionLabel>
-        <p className="mt-1 text-[11px] text-ink-3">
-          The reliable read: precision of the P1/P2/P3 rollup against planted labels, with the alert volume each tier raises.
+        <DetailHeader
+          name={sub.label}
+          version={CATEGORY_VERSION}
+          typeLabel="MCC-miscoding category detector"
+          icon="ScanSearch"
+          color={color}
+          right={
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
+              style={{ backgroundColor: color }}
+            >
+              {TIER_LABEL[tier]}
+            </span>
+          }
+        />
+        <p className="mt-3 text-sm leading-relaxed text-ink-2">
+          Per-category detector in the MCC-miscoding bank. It scores how closely a merchant's
+          settlement fingerprint matches {cat} activity — the decline mix, refund and dispute
+          behaviour, ticket shape and cross-border pattern — independent of the benign MCC it
+          declared at onboarding.
         </p>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {(["P1", "P2", "P3"] as const).map((t) => (
-            <div key={t} className="rounded-lg border border-border-soft bg-surface-2 p-3">
-              <span
-                className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
-                style={{ backgroundColor: PRIORITY_TIER_HEX[t] }}
-              >
-                {t}
-              </span>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-xl font-bold tnum text-ink">{fmtPct(tm[t].precision, 0)}</span>
-                <span className="text-[10px] text-ink-3">precision</span>
-              </div>
-              <div className="text-[10px] text-ink-3 tnum">{fmtNumber(tm[t].alertVolume)} alerts · {fmtNumber(tm[t].tp)} confirmed</div>
-            </div>
-          ))}
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-border-soft bg-surface-2 px-3 py-2">
+          <Icon name="Target" size={14} className="mt-0.5 shrink-0 text-ink-3" />
+          <p className="text-xs text-ink-2">
+            <span className="font-semibold text-ink">Detects — </span>
+            merchants transacting like {cat} while coded under an unrelated, lower-risk category.
+          </p>
+        </div>
+        <div className="mt-2 flex items-start gap-2 rounded-lg border border-border-soft bg-surface-2 px-3 py-2">
+          <Icon name="Info" size={14} className="mt-0.5 shrink-0" style={{ color }} />
+          <p className="text-xs text-ink-2"><span className="font-semibold text-ink">{TIER_LABEL[tier]} — </span>{TIER_MEANING[tier]}</p>
         </div>
       </Card>
 
       <Card className="p-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <SectionLabel>Content classifiers ({bank.subModels.length})</SectionLabel>
-          <div className="flex gap-1.5">
-            {(["P1", "P2", "P3"] as const).map((t) => (
-              <Chip key={t} active={tab === t} onClick={() => setTab(t)}>{t}</Chip>
+        <div className="flex items-center justify-between">
+          <SectionLabel>Measured performance</SectionLabel>
+          <span className="text-[10px] text-ink-3">{metricNote(m) ?? "vs. planted content-miscoding archetypes"}</span>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint="of alerts confirmed" color={color} />
+          <MetricStat label="Alert volume" value={fmtNumber(sub.flagged)} hint="merchants flagged" />
+          <MetricStat label="Captured exposure" value={fmtCurrency(m.capturedExposureUsd, true)} hint="$ on true positives" />
+          <MetricStat label="Confirmed" value={fmtNumber(m.tp)} hint="true-positive alerts" />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-ink-3 tnum">
+          <span>TP {m.tp}</span><span>FP {m.fp}</span>
+          <span className="text-ink-3">· {sub.featureCount} features</span>
+        </div>
+        <p className="mt-2 text-[10px] text-ink-3">Low-base-rate category — precision is read against planted labels; recall is unobservable and deliberately omitted.</p>
+      </Card>
+
+      <Card className="p-5">
+        <SectionLabel>Feature importance</SectionLabel>
+        <p className="mt-1 text-[11px] text-ink-3">
+          Signed weights on peer z-scored signals. Downward arrows lower the score (protective signals).
+        </p>
+        <div className="mt-3">
+          <FeatureBars features={sub.features} color={color} />
+        </div>
+        {sub.topFeatures.length ? (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {sub.topFeatures.map((f) => (
+              <span key={f} className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] text-ink-2">{f}</span>
             ))}
           </div>
-        </div>
-        <div className="mt-3 space-y-2">
-          {subs.map((s) => (
-            <div key={s.key} className="rounded-lg border border-border-soft bg-surface px-3 py-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: PRIORITY_TIER_HEX[tab] }}
-                  />
-                  <span className="text-sm font-semibold text-ink">{s.label}</span>
-                </div>
-                <div className="flex items-center gap-3 text-[11px] tnum text-ink-3">
-                  <span>{s.featureCount} feats</span>
-                  <span>{s.flagged} alerts</span>
-                  <span className="font-bold" style={{ color }}>P {fmtPct(s.metrics.precision, 0)}</span>
-                </div>
-              </div>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {s.topFeatures.map((f) => (
-                  <span key={f} className="rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] text-ink-2">{f}</span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------- rule pack card */
-function RulePackDetail({ pack, onOpen }: { pack: RulePack; onOpen: (route: string) => void }) {
-  const color = AUX_COLOR.rules;
-  return (
-    <div className="space-y-4">
-      <Card className="p-5">
-        <DetailHeader entry={pack} />
-        <p className="mt-3 text-sm leading-relaxed text-ink-2">{pack.summary}</p>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <MetricStat label="Gates" value={String(pack.rules.length)} hint="deterministic" color={color} />
-          <MetricStat label="Total firings" value={fmtNumber(pack.totalFired)} hint="across the book" />
-          <MetricStat label="Route" value="OR" hint="model ∪ rules → queue" />
-        </div>
-      </Card>
-
-      <Card className="p-5">
-        <SectionLabel>Rule gates</SectionLabel>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[520px] text-left text-xs">
-            <thead>
-              <tr className="border-b border-border text-ink-3">
-                <th className="pb-2 font-medium">Rule</th>
-                <th className="pb-2 font-medium">Family</th>
-                <th className="pb-2 font-medium">Condition</th>
-                <th className="pb-2 text-right font-medium">Fired</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pack.rules.map((r) => {
-                const fam = r.family in FAMILY_META ? (r.family as FamilyKey) : null;
-                const fcolor = fam ? FAMILY_META[fam].color : "#64748b";
-                return (
-                  <tr
-                    key={r.name}
-                    className="border-b border-border-soft last:border-0 hover:bg-surface-2"
-                    onClick={() => fam && onOpen(FAMILY_META[fam].route)}
-                    style={{ cursor: fam ? "pointer" : "default" }}
-                  >
-                    <td className="py-2 pr-3 font-semibold text-ink">{r.name}</td>
-                    <td className="py-2 pr-3">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: fcolor }} />
-                        <span className="text-ink-2">{r.family}</span>
-                      </span>
-                    </td>
-                    <td className="py-2 pr-3"><code className="text-[11px] text-ink-2">{r.expr}</code></td>
-                    <td className="py-2 text-right font-bold tnum text-ink">{fmtNumber(r.fired)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        ) : null}
+        <Button variant="ghost" className="mt-4" onClick={() => onOpen("/mcc")}>
+          Open MCC Miscoding workbench <Icon name="ArrowRight" size={14} />
+        </Button>
       </Card>
     </div>
   );

@@ -32,7 +32,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   }, [open]);
 
   const commands = useMemo<Command[]>(() => {
-    const navCmds: Command[] = NAV_ITEMS.map((n) => ({
+    const navCmds: Command[] = NAV_ITEMS.filter((n) => !n.disabled).map((n) => ({
       id: `nav:${n.to}`,
       label: n.label,
       hint: "Navigate",

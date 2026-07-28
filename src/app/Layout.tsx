@@ -42,6 +42,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <nav className="flex-1 overflow-y-auto px-2.5 pb-4">
           {NAV_GROUPS.map((group) => {
             const items = NAV_ITEMS.filter((i) => i.group === group);
+            if (!items.length) return null;
             return (
               <div key={group} className="mb-3">
                 <div className="px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-ink-3">
@@ -49,6 +50,22 @@ export function Layout({ children }: { children: ReactNode }) {
                 </div>
                 {items.map((item) => {
                   const emphasized = item.personas?.includes(persona);
+                  if (item.disabled) {
+                    return (
+                      <div
+                        key={item.to}
+                        aria-disabled="true"
+                        title="Coming soon"
+                        className="group relative flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-ink-3/60"
+                      >
+                        <Icon name={item.icon} size={16} />
+                        <span className="flex-1">{item.label}</span>
+                        <span className="rounded-full border border-border bg-surface-2 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-ink-3">
+                          Soon
+                        </span>
+                      </div>
+                    );
+                  }
                   return (
                     <NavLink
                       key={item.to}
