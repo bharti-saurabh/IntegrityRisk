@@ -49,11 +49,11 @@ export default function ImpactSimulator() {
     return { alerts, capturedExp, missedExp, tier: tierFor(threshold) };
   }, [result.records, threshold]);
 
-  const prData = metrics.curve.map((p) => ({ threshold: p.threshold, precision: p.precision, recall: p.recall, alerts: p.alerts }));
+  const prData = metrics.curve.map((p) => ({ threshold: p.threshold, precision: p.precision, alerts: p.alerts }));
 
   return (
     <div>
-      <PageHeader icon="SlidersHorizontal" title="Impact Simulator" subtitle="Move the alert threshold and watch precision, recall, workload, and captured exposure react — live over the full portfolio" />
+      <PageHeader icon="SlidersHorizontal" title="Impact Simulator" subtitle="Move the alert threshold and watch precision, alert workload, and captured exposure react — live over the full portfolio" />
 
       <Card className="p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -81,21 +81,21 @@ export default function ImpactSimulator() {
           className="mt-4 w-full accent-cyan"
         />
         <div className="mt-1 flex justify-between text-[10px] text-ink-3">
-          <span>20 · more alerts, higher recall</span>
+          <span>20 · more alerts, more exposure captured</span>
           <span>95 · fewer alerts, higher precision</span>
         </div>
       </Card>
 
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Precision" value={fmtPct(metrics.precision, 1)} sub={`${fmtNumber(metrics.confusion.fp)} false positives`} accent="cyan" icon={<Icon name="Gauge" size={16} />} />
-        <StatTile label="Recall" value={fmtPct(metrics.recall, 1)} sub={`${fmtNumber(metrics.confusion.fn)} missed`} accent="violet" icon={<Icon name="Eye" size={16} />} />
+        <StatTile label="Confirmed alerts" value={fmtNumber(metrics.confusion.tp)} sub="true-positive merchants" accent="violet" icon={<Icon name="ShieldCheck" size={16} />} />
         <StatTile label="Alert workload" value={fmtNumber(live.alerts)} sub={`${fmtPct(live.alerts / result.records.length, 1)} of portfolio`} accent="amber" icon={<Icon name="Briefcase" size={16} />} />
         <StatTile label="Exposure captured" value={fmtCurrency(live.capturedExp, true)} sub={`${fmtCurrency(live.missedExp, true)} missed`} accent="critical" icon={<Icon name="AlertTriangle" size={16} />} />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card className="p-4">
-          <SectionLabel>Precision & recall tradeoff</SectionLabel>
+          <SectionLabel>Precision vs. threshold</SectionLabel>
           <div className="mt-3 h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={prData} margin={{ left: -12, right: 8 }}>
@@ -105,10 +105,12 @@ export default function ImpactSimulator() {
                 <Tooltip content={<ChartTooltip fmt={(v) => fmtPct(v, 1)} />} />
                 <ReferenceLine x={threshold} stroke={CHART.amber} strokeDasharray="4 4" />
                 <Line type="monotone" dataKey="precision" name="Precision" stroke={CHART.cyan} dot={false} strokeWidth={2} />
-                <Line type="monotone" dataKey="recall" name="Recall" stroke={CHART.violet} dot={false} strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </div>
+          <p className="mt-1 text-[11px] text-ink-3">
+            Precision alone — recall is omitted because the true positive universe is unobservable. Read this against the exposure/workload curve to the right.
+          </p>
         </Card>
 
         <Card className="p-4">

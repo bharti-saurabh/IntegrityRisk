@@ -10,10 +10,11 @@
   },
   "detection": {
     "precision": 0.826271186440678,
-    "recall": 0.9898477157360406,
     "tp": 195,
     "fp": 41,
     "fn": 2,
+    "alertVolume": 236,
+    "capturedExposureUsd": 12285000,
     "integrityViolations": 172,
     "interchangeAbuse": 25
   },
@@ -63,17 +64,17 @@
       "priorityTiers": [
         {
           "tier": "P1",
-          "label": "P1 \u2014 prohibited / high-harm",
+          "label": "P1 — prohibited / high-harm",
           "alerts": 60
         },
         {
           "tier": "P2",
-          "label": "P2 \u2014 restricted",
+          "label": "P2 — restricted",
           "alerts": 43
         },
         {
           "tier": "P3",
-          "label": "P3 \u2014 elevated",
+          "label": "P3 — elevated",
           "alerts": 55
         }
       ],
@@ -198,12 +199,12 @@
       "priorityTiers": [
         {
           "tier": "P1",
-          "label": "P1 \u2014 prohibited / high-harm",
+          "label": "P1 — prohibited / high-harm",
           "alerts": 2
         },
         {
           "tier": "P3",
-          "label": "P3 \u2014 elevated",
+          "label": "P3 — elevated",
           "alerts": 23
         }
       ]
@@ -249,12 +250,12 @@
       "priorityTiers": [
         {
           "tier": "P2",
-          "label": "P2 \u2014 restricted",
+          "label": "P2 — restricted",
           "alerts": 18
         },
         {
           "tier": "P3",
-          "label": "P3 \u2014 elevated",
+          "label": "P3 — elevated",
           "alerts": 2
         }
       ]
@@ -307,24 +308,24 @@
       "priorityTiers": [
         {
           "tier": "P1",
-          "label": "P1 \u2014 prohibited / high-harm",
+          "label": "P1 — prohibited / high-harm",
           "alerts": 13
         },
         {
           "tier": "P2",
-          "label": "P2 \u2014 restricted",
+          "label": "P2 — restricted",
           "alerts": 1
         },
         {
           "tier": "P3",
-          "label": "P3 \u2014 elevated",
+          "label": "P3 — elevated",
           "alerts": 3
         }
       ]
     },
     {
-      "key": "descriptor",
-      "label": "Descriptor Intelligence",
+      "key": "surcharge",
+      "label": "Card Surcharge Abuse",
       "alerts": 7,
       "exposure": 172071.05,
       "critical": 1,
@@ -339,22 +340,22 @@
       "separateClass": false,
       "subtypes": [
         {
-          "key": "nutra_subscription",
-          "label": "Nutra subscriptions",
-          "tier": "P3",
+          "key": "surcharge_over_cap",
+          "label": "Over-cap surcharge",
+          "tier": "P2",
           "alerts": 4,
           "exposure": 61716.08
         },
         {
-          "key": "telemarketing",
-          "label": "Telemarketing",
-          "tier": "P3",
+          "key": "surcharge_undisclosed",
+          "label": "Undisclosed surcharge",
+          "tier": "P2",
           "alerts": 2,
           "exposure": 108173.14
         },
         {
-          "key": "adult",
-          "label": "Adult content",
+          "key": "surcharge_prohibited",
+          "label": "Prohibited debit/prepaid",
           "tier": "P1",
           "alerts": 1,
           "exposure": 2181.83
@@ -363,12 +364,12 @@
       "priorityTiers": [
         {
           "tier": "P1",
-          "label": "P1 \u2014 prohibited / high-harm",
+          "label": "P1 — prohibited / high-harm",
           "alerts": 1
         },
         {
-          "tier": "P3",
-          "label": "P3 \u2014 elevated",
+          "tier": "P2",
+          "label": "P2 — restricted",
           "alerts": 6
         }
       ]
@@ -400,7 +401,7 @@
       "priorityTiers": [
         {
           "tier": "P1",
-          "label": "P1 \u2014 prohibited / high-harm",
+          "label": "P1 — prohibited / high-harm",
           "alerts": 9
         }
       ]
@@ -415,7 +416,7 @@
       "country": "US",
       "declaredMcc": "6012",
       "mccGroup": "Financial",
-      "score": 100.0,
+      "score": 100,
       "tier": "Critical",
       "family": "mcc_miscoding",
       "familyLabel": "MCC Miscoding",
@@ -472,14 +473,14 @@
       "country": "US",
       "declaredMcc": "5812",
       "mccGroup": "Retail F&B",
-      "score": 100.0,
+      "score": 100,
       "tier": "Critical",
       "family": "factoring",
       "familyLabel": "Factoring",
       "subtype": null,
       "exposure": 803966.3300000001,
       "rules": [
-        "descriptor_churn_rule"
+        "dispute_excursion_rule"
       ],
       "flagReason": "model + rule"
     },
@@ -498,7 +499,7 @@
       "subtype": null,
       "exposure": 882843.15,
       "rules": [
-        "descriptor_churn_rule"
+        "dispute_excursion_rule"
       ],
       "flagReason": "model + rule"
     },
@@ -510,7 +511,7 @@
       "country": "US",
       "declaredMcc": "6012",
       "mccGroup": "Financial",
-      "score": 100.0,
+      "score": 100,
       "tier": "Critical",
       "family": "mcc_miscoding",
       "familyLabel": "MCC Miscoding",
@@ -529,7 +530,7 @@
       "country": "AE",
       "declaredMcc": "7392",
       "mccGroup": "Services",
-      "score": 100.0,
+      "score": 100,
       "tier": "Critical",
       "family": "mcc_miscoding",
       "familyLabel": "MCC Miscoding",
@@ -588,14 +589,14 @@
       "country": "US",
       "declaredMcc": "5812",
       "mccGroup": "Retail F&B",
-      "score": 100.0,
+      "score": 100,
       "tier": "Critical",
       "family": "mcc_miscoding",
       "familyLabel": "MCC Miscoding",
       "subtype": "Gambling",
       "exposure": 500276.71,
       "rules": [
-        "descriptor_churn_rule"
+        "dispute_excursion_rule"
       ],
       "flagReason": "model + rule"
     },
@@ -607,7 +608,7 @@
       "country": "US",
       "declaredMcc": "5999",
       "mccGroup": "Retail Other",
-      "score": 100.0,
+      "score": 100,
       "tier": "Critical",
       "family": "mcc_miscoding",
       "familyLabel": "MCC Miscoding",
@@ -627,7 +628,7 @@
       "country": "US",
       "declaredMcc": "5944",
       "mccGroup": "Jewelry",
-      "score": 100.0,
+      "score": 100,
       "tier": "Critical",
       "family": "cash",
       "familyLabel": "Cash Disbursement",

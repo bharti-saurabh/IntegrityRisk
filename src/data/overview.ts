@@ -10,7 +10,7 @@ export type FamilyKey =
   | "mcc_abuse"
   | "split_ticketing"
   | "factoring"
-  | "descriptor"
+  | "surcharge"
   | "cash";
 
 export type OverviewTier = "Critical" | "High" | "Elevated" | "Monitor" | "Low";
@@ -25,12 +25,16 @@ export interface Portfolio {
   criticalMerchants: number;
 }
 
+// Recall is intentionally excluded — it needs the true positive universe, which is
+// unknowable for a live integrity book. Detection quality is reported as precision,
+// alert volume (tp+fp) and captured exposure $.
 export interface Detection {
   precision: number;
-  recall: number;
   tp: number;
   fp: number;
   fn: number;
+  alertVolume: number;
+  capturedExposureUsd: number;
   integrityViolations: number;
   interchangeAbuse: number;
 }
@@ -140,11 +144,11 @@ export const FAMILY_META: Record<FamilyKey, { color: string; icon: string; route
     route: "/factoring",
     blurb: "A registered outlet settling transactions on behalf of undisclosed sub-merchants.",
   },
-  descriptor: {
+  surcharge: {
     color: "#059669",
-    icon: "Type",
-    route: "/descriptors",
-    blurb: "Rotating billing descriptors to outrun chargeback and reputation monitoring.",
+    icon: "BadgePercent",
+    route: "/surcharge",
+    blurb: "A card surcharge over the brand cap, on prohibited debit/prepaid, or without disclosure — surfacing as unexpected-fee disputes.",
   },
   cash: {
     color: "#6366f1",

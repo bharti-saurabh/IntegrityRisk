@@ -17,7 +17,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/mcc-abuse", label: "MCC Abuse Models", icon: "Receipt", group: "Typologies", personas: ["analyst"] },
   { to: "/split", label: "Split-Ticketing Models", icon: "Split", group: "Typologies" },
   { to: "/factoring", label: "Factoring Models", icon: "Share2", group: "Typologies" },
-  { to: "/descriptors", label: "Descriptor Models", icon: "Type", group: "Typologies" },
+  { to: "/surcharge", label: "Card Surcharge", icon: "BadgePercent", group: "Typologies" },
   { to: "/cash", label: "Cash-Disbursement Models", icon: "Banknote", group: "Typologies" },
   { to: "/cases", label: "Case Queue", icon: "Briefcase", group: "Operations", personas: ["analyst", "operations"] },
   { to: "/models", label: "Model Store", icon: "Boxes", group: "Models", personas: ["data-scientist", "executive"] },

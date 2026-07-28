@@ -59,11 +59,11 @@ export const RESPONSE_LANES: ResponseLaneDef[] = [
     id: "CONDUCT",
     label: "Conduct & Consumer",
     owner: "Conduct Compliance",
-    action: "Descriptor & category remediation",
+    action: "Fee & category remediation",
     rationale:
-      "Miscoded categories and misleading descriptors both surface to the cardholder as a misrepresentation, driving disputes and prohibited-content exposure.",
+      "A miscoded category and an over-cap or undisclosed card surcharge both surface to the cardholder as an unexpected, unrecognized charge — driving 'not recognized' disputes and brand-rule exposure.",
     color: "#a21caf",
-    typologies: ["MCC_MISCODING", "FAKE_DESCRIPTOR"],
+    typologies: ["MCC_MISCODING", "CARD_SURCHARGE"],
     verb: { critical: "Suspend", standard: "Remediate" },
   },
 ];

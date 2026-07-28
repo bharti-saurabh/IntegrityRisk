@@ -11,7 +11,7 @@ import raw from "./anatomy.generated.json";
 
 export type FamilyKey =
   | "mcc_miscoding" | "mcc_abuse" | "split_ticketing"
-  | "factoring" | "descriptor" | "cash";
+  | "factoring" | "surcharge" | "cash";
 
 export type TellTag =
   | "night" | "round" | "cnp" | "offshore" | "declined"
@@ -143,13 +143,15 @@ export interface SigFactoring {
   pctViaSub: number;
   monthly: { month: string; volume: number }[];
 }
-export interface SigDescriptor {
-  kind: "descriptor";
-  changes: number;
-  jaccard: number;
-  distinct: number;
+export interface SigSurcharge {
+  kind: "surcharge";
+  surchargeRateBps: number; // the added fee, in bps of ticket
+  capBps: number; // brand cost-of-acceptance cap
+  overCapBps: number; // surchargeRateBps - capBps
+  pctSurcharged: number; // share of card txns carrying a surcharge
+  notRecognizedBps: number; // "not recognized" / unexpected-fee dispute rate
   chargebackBps: number;
-  descriptors: { name: string; firstSeen: string; txns: number; share: number }[];
+  tiers: { label: string; baseAvg: number; surchargeAvg: number; share: number; prohibited: boolean }[];
 }
 export interface SigCash {
   kind: "cash";
@@ -161,7 +163,7 @@ export interface SigCash {
   roundHits: { amount: number; count: number }[];
 }
 export type Signature =
-  | SigFingerprint | SigInterchange | SigSplit | SigFactoring | SigDescriptor | SigCash;
+  | SigFingerprint | SigInterchange | SigSplit | SigFactoring | SigSurcharge | SigCash;
 
 export interface FamilyVerdict {
   declaredMcc: string;

@@ -8,7 +8,7 @@ import {
   families, GLOSSARY, TELL_META,
   type AnatomyFamily, type Deviation,
   type SigFingerprint, type SigInterchange, type SigSplit,
-  type SigFactoring, type SigDescriptor, type SigCash,
+  type SigFactoring, type SigSurcharge, type SigCash,
 } from "@/data/anatomy";
 
 /* ---------------------------------------------------------------- helpers */
@@ -68,7 +68,7 @@ const SCENE_RIBBON: Record<SceneKey, string> = {
 const SIG_TITLE: Record<string, string> = {
   mcc_miscoding: "Content fingerprint", mcc_abuse: "Interchange band",
   split_ticketing: "Split-ticket bursts", factoring: "Sub-merchant fan-out",
-  descriptor: "Descriptor rotation", cash: "Amount profile",
+  surcharge: "Surcharge vs. cap", cash: "Amount profile",
 };
 function sceneTitle(key: SceneKey, fam: AnatomyFamily): string {
   return key === "signature" ? SIG_TITLE[fam.key] : SCENE_RIBBON[key];
@@ -171,15 +171,16 @@ function Motif({ fam, size = 128 }: { fam: AnatomyFamily; size?: number }) {
         </svg>
       );
     }
-    case "descriptor": // fanned name plates rotating
+    case "surcharge": // receipt with a base line + an over-cap surcharge line
       return (
         <svg {...common} aria-hidden>
-          {[[-9, 0.35], [-4.5, 0.6], [0, 1]].map(([rot, op], n) => (
-            <g key={n} transform={`rotate(${rot} 64 70)`} opacity={op} className={n === 2 ? "anat-float" : undefined}>
-              <rect x="30" y="52" width="68" height="20" rx="4" fill={tint(c, 0.13)} stroke={c} strokeWidth="1.6" />
-              <rect x="36" y="59" width={26 + n * 8} height="6" rx="3" fill={c} opacity="0.75" />
-            </g>
-          ))}
+          <rect x="40" y="34" width="48" height="60" rx="4" fill={tint(c, 0.1)} stroke={c} strokeWidth="1.8" />
+          <rect x="46" y="44" width="24" height="4" rx="2" fill={c} opacity="0.5" />
+          <rect x="46" y="54" width="36" height="4" rx="2" fill={c} opacity="0.5" />
+          {/* the added surcharge line, drawn hot */}
+          <rect x="46" y="70" width="36" height="7" rx="2" className="anat-pop" style={delay(2, 90)} fill={tint("#e11d48", 0.2)} stroke="#e11d48" strokeWidth="1.4" />
+          <circle cx="92" cy="40" r="12" className="anat-float" fill={tint("#e11d48", 0.16)} stroke="#e11d48" strokeWidth="1.6" />
+          <text x="92" y="44" textAnchor="middle" fontSize="11" fontWeight="800" fill="#e11d48">%</text>
         </svg>
       );
     case "cash": // card -> arrow -> cash stack, crossed goods
@@ -543,39 +544,60 @@ function FactoringView({ s, accent }: { s: SigFactoring; accent: string }) {
   );
 }
 
-function DescriptorView({ s, accent }: { s: SigDescriptor; accent: string }) {
-  const names = s.descriptors.slice(0, 6);
+function SurchargeView({ s, accent }: { s: SigSurcharge; accent: string }) {
+  // Bar geometry: the added surcharge, drawn against the brand cost-of-acceptance cap.
+  const scaleMax = Math.max(s.surchargeRateBps, s.capBps) * 1.25 || 1;
+  const capX = (s.capBps / scaleMax) * 100;
+  const surX = (s.surchargeRateBps / scaleMax) * 100;
   return (
     <SceneShell>
       <div className="mx-auto w-full max-w-3xl">
         <p className="anat-rise mb-4 text-center text-sm text-ink-3" style={delay(0)}>
-          The billing name customers see keeps changing — <span className="font-bold" style={{ color: accent }}>{s.changes} times</span>,
-          to words that share almost nothing, so no single name ever collects enough disputes to be monitored.
+          A card fee is added at checkout — <span className="font-bold" style={{ color: accent }}>{Math.round(s.surchargeRateBps)} bps</span> of
+          the ticket, <span className="font-bold text-critical">{Math.round(s.overCapBps)} bps over</span> the brand’s cost-of-acceptance cap —
+          so cardholders don’t recognize the charge and dispute it.
         </p>
-        <div className="anat-rise flex flex-wrap items-center justify-center gap-2" style={delay(1)}>
-          {names.map((n, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="anat-pop rounded-lg border px-3 py-1.5 text-xs font-semibold" style={{ ...delay(i, 90), borderColor: tint(accent, 0.4), backgroundColor: tint(accent, 0.07), color: "#0f172a" }}>
-                {n.name}
-              </span>
-              {i < names.length - 1 ? <Icon name="ArrowRight" size={14} className="text-ink-3" /> : null}
+
+        {/* surcharge vs. cap bar */}
+        <div className="anat-rise rounded-xl border border-border bg-surface p-4" style={delay(1)}>
+          <div className="mb-2 flex items-center justify-between text-[11px] text-ink-3">
+            <span>Surcharge applied</span><span>brand cap (cost of acceptance)</span>
+          </div>
+          <div className="relative h-8 w-full overflow-hidden rounded-lg bg-surface-2">
+            <div className="anat-grow h-full rounded-lg" style={{ width: `${surX}%`, backgroundColor: tint("#e11d48", 0.75) }} />
+            <div className="absolute inset-y-0" style={{ left: `${capX}%` }}>
+              <div className="h-full w-0.5 bg-ink-1" />
+              <span className="absolute -top-0.5 left-1 whitespace-nowrap text-[10px] font-semibold text-ink-2">cap {Math.round(s.capBps)} bps</span>
             </div>
-          ))}
+          </div>
+          <p className="mt-2 text-center text-[11px] text-ink-3">The fee runs past the cap — everything to the right of the line is what the rules don’t allow.</p>
         </div>
-        {/* schematic sawtooth: how each rename resets dispute monitoring (illustrative, not measured) */}
-        <div className="anat-rise mt-6 rounded-xl border border-border bg-surface p-4" style={delay(2)}>
-          <div className="mb-1 flex items-center justify-between text-[11px] text-ink-3"><span>Disputes per name (schematic)</span><span>monitoring threshold</span></div>
-          <svg width="100%" height="70" viewBox="0 0 320 70" preserveAspectRatio="none" aria-hidden>
-            <line x1="0" y1="18" x2="320" y2="18" stroke="#e11d48" strokeWidth="1" strokeDasharray="4 3" />
-            <path d="M0,64 L45,26 L46,64 L91,26 L92,64 L137,26 L138,64 L183,26 L184,64 L229,26 L230,64 L275,26 L276,64 L320,30"
-              className="anat-draw" style={{ ["--len" as string]: 900 }} fill="none" stroke={accent} strokeWidth="2" />
-          </svg>
-          <p className="mt-1 text-center text-[11px] text-ink-3">Each rename drops disputes back to zero — the count never crosses the line.</p>
+
+        {/* per-card-tier: base vs. surcharged, prohibited tiers flagged */}
+        <div className="anat-rise mt-4 rounded-xl border border-border bg-surface p-4" style={delay(2)}>
+          <div className="mb-2 text-[11px] font-semibold text-ink-3">Average charge by card type — base vs. with surcharge</div>
+          <div className="space-y-2">
+            {s.tiers.map((t, i) => {
+              const tmax = Math.max(...s.tiers.map((x) => x.surchargeAvg), 1);
+              return (
+                <div key={i} className="flex items-center gap-2 text-xs">
+                  <span className="w-20 shrink-0 text-ink-2">{t.label}</span>
+                  <div className="relative h-5 flex-1 rounded bg-surface-2">
+                    <div className="absolute inset-y-0 left-0 rounded bg-ink-3/40" style={{ width: `${(t.baseAvg / tmax) * 100}%` }} />
+                    <div className="anat-grow absolute inset-y-0 left-0 rounded" style={{ width: `${(t.surchargeAvg / tmax) * 100}%`, backgroundColor: t.prohibited ? tint("#e11d48", 0.35) : tint(accent, 0.3), ...delay(i, 60) }} />
+                  </div>
+                  <span className="w-12 shrink-0 text-right tnum text-ink-2">{fmtCurrency(t.surchargeAvg)}</span>
+                  {t.prohibited ? <span className="rounded bg-critical/15 px-1 text-[9px] font-semibold text-critical">PROHIBITED</span> : <span className="w-[68px]" />}
+                </div>
+              );
+            })}
+          </div>
         </div>
+
         <div className="anat-rise mt-4 grid gap-3 sm:grid-cols-3" style={delay(3)}>
-          <StatTile label="Name changes" value={fmtNumber(s.changes)} accent={accent} />
-          <StatTile label="Word overlap between names" value={fmtPct(s.jaccard, 0)} hint="0% = deliberate, not a rebrand" />
-          <StatTile label="Distinct names used" value={fmtNumber(s.distinct)} />
+          <StatTile label="Surcharge over cap" value={`${Math.round(s.overCapBps)} bps`} accent={accent} hint="anything above zero breaks the cap" />
+          <StatTile label="Card book surcharged" value={fmtPct(s.pctSurcharged, 0)} />
+          <StatTile label="“Not recognized” disputes" value={`${Math.round(s.notRecognizedBps)} bps`} hint="the fee the cardholder didn’t expect" />
         </div>
       </div>
     </SceneShell>
@@ -633,7 +655,7 @@ function SignatureScene({ fam, run }: { fam: AnatomyFamily; run: number }) {
     case "interchange": return <InterchangeView s={s} accent={fam.color} fam={fam} run={run} />;
     case "split": return <SplitView s={s} accent={fam.color} />;
     case "factoring": return <FactoringView s={s} accent={fam.color} />;
-    case "descriptor": return <DescriptorView s={s} accent={fam.color} />;
+    case "surcharge": return <SurchargeView s={s} accent={fam.color} />;
     case "cash": return <CashView s={s} accent={fam.color} />;
   }
 }

@@ -21,15 +21,16 @@ export interface Feature {
   direction: "up" | "down";
 }
 
+// Denominator metrics (recall, F1, support, AUC) are deliberately excluded: each
+// needs the true positive universe, which is unknowable for a real integrity book.
+// Model cards report only precision, alert volume (tp+fp) and captured exposure $.
 export interface Metrics {
   precision: number;
-  recall: number;
-  f1: number;
   tp: number;
   fp: number;
   fn: number;
-  support: number;
-  auc?: number | null;
+  alertVolume: number;
+  capturedExposureUsd: number;
   operatingPoint?: string;
   gtNote?: string;
 }
@@ -72,7 +73,6 @@ export interface SubModel {
   tier: "P1" | "P2" | "P3" | "—";
   features: Feature[];
   featureCount: number;
-  support: number;
   flagged: number;
   topFeatures: string[];
   metrics: Metrics;

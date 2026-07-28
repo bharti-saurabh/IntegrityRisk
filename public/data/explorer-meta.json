@@ -27,6 +27,8 @@
         "interchange_advantage_bps",
         "n_distinct_descriptors",
         "pct_txn_with_sub_merchant",
+        "surcharge_rate_bps",
+        "pct_txn_surcharged",
         "integrity_risk_score",
         "integrity_percentile",
         "exposure_weighted_score",

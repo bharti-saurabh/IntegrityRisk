@@ -247,7 +247,7 @@ export function generateDataset(cfg: GenConfig): GeneratedDataset {
     let typology: Typology = "CLEAN";
     if (abusive) {
       typology = rng.weighted<Typology>(
-        ["MCC_MISCODING", "MCC_ABUSE", "SPLIT_TICKETING", "FACTORING", "FAKE_DESCRIPTOR", "CASH_DISBURSEMENT"],
+        ["MCC_MISCODING", "MCC_ABUSE", "SPLIT_TICKETING", "FACTORING", "CARD_SURCHARGE", "CASH_DISBURSEMENT"],
         [0.3, 0.12, 0.15, 0.16, 0.13, 0.14],
       );
       // low-risk declared MCC hiding higher-risk actual behavior

@@ -60,12 +60,13 @@ describe("scoring pipeline", () => {
 
 describe("model metrics", () => {
   const metrics = computeModelMetrics(pipeline.records, 62);
-  it("achieves usable precision and separates classes (ROC-AUC) against ground truth", () => {
+  it("achieves usable precision, raises alerts and captures exposure against ground truth", () => {
     // At the default operating threshold precision is deliberately high (analyst
-    // workload is precious); recall climbs as the impact simulator lowers the bar.
+    // workload is precious). Recall/F1/AUC are intentionally not computed — the true
+    // positive universe is unknowable — so we assert only precision, alert volume and $.
     expect(metrics.precision).toBeGreaterThan(0.5);
-    expect(metrics.recall).toBeGreaterThan(0.3);
-    expect(metrics.rocAuc).toBeGreaterThan(0.75);
+    expect(metrics.alertVolume).toBeGreaterThan(0);
+    expect(metrics.capturedExposureUsd).toBeGreaterThan(0);
   });
 });
 
@@ -81,10 +82,16 @@ describe("determinism", () => {
 });
 
 describe("case seeding", () => {
-  it("creates cases from the highest-risk records", () => {
+  it("creates acquirer-level cases from the highest-risk records", () => {
     const cases = seedCases(pipeline.records);
     expect(cases.length).toBeGreaterThan(0);
     expect(cases.every((c) => c.caseId && c.merchantId && c.slaDueAt)).toBe(true);
+    // One case per acquirer (unique acquirer ids), each aggregating >=1 merchant.
+    const acqIds = cases.map((c) => c.acquirerId);
+    expect(new Set(acqIds).size).toBe(cases.length);
+    expect(cases.every((c) => c.members.length === c.merchantCount && c.merchantCount >= 1)).toBe(true);
+    // Rolled-up total equals the sum of per-merchant fines.
+    expect(cases.every((c) => c.totalFineUsd === c.members.reduce((a, m) => a + m.fineUsd, 0))).toBe(true);
   });
 });
 

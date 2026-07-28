@@ -97,9 +97,14 @@ export function applyTypologyShaping(
       out.uniqueCardShare = 0.9;
       out.crossBorderRatio = Math.max(out.crossBorderRatio, 0.25);
       break;
-    case "FAKE_DESCRIPTOR":
+    case "CARD_SURCHARGE":
+      // A card surcharge added over the cap / on prohibited debit / undisclosed
+      // surfaces as an unexpected fee → "not recognized" disputes, chargebacks and
+      // fee reversals, plus a modest lift in effective ticket from the added fee.
       out.notRecognizedShare = 0.62;
       out.disputeRate = Math.max(out.disputeRate, 0.05);
+      out.refundRate = Math.max(out.refundRate, 0.09);
+      out.ticketMu = out.ticketMu + 0.03;
       break;
     default:
       break;

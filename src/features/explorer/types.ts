@@ -23,6 +23,8 @@ export interface ExplorerMerchant {
   interchange_advantage_bps: number;
   n_distinct_descriptors: number;
   pct_txn_with_sub_merchant: number;
+  surcharge_rate_bps: number;
+  pct_txn_surcharged: number;
   integrity_risk_score: number;
   integrity_percentile: number;
   exposure_weighted_score: number;

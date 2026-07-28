@@ -1,6 +1,7 @@
 import {
   MISCODING_CATEGORIES,
   CNP, QUASI, ROUND, RECUR, XBORDER, CB, REFUND, TICKET, DESC, SUBMERCH,
+  SURCH_RATE, SURCH_PCT,
   type MiscodingCategory,
 } from "./miscodingCategories";
 
@@ -119,25 +120,25 @@ export const FACTORING_CONFIG: TypologyConfig = {
   ],
 };
 
-// ---- Descriptor misrepresentation -----------------------------------------
-export const DESCRIPTOR_CONFIG: TypologyConfig = {
-  family: "descriptor",
-  route: "/descriptors",
-  title: "Descriptor Intelligence — Misrepresentation models",
-  icon: "Type",
+// ---- Card-surcharge abuse -------------------------------------------------
+export const SURCHARGE_CONFIG: TypologyConfig = {
+  family: "surcharge",
+  route: "/surcharge",
+  title: "Card-Surcharge Abuse — Fee-integrity models",
+  icon: "BadgePercent",
   subtitle:
-    "Detects merchants whose billing descriptor masks the underlying business (descriptor cycling / misrepresentation). Pick a model to pull the cohort presenting a descriptor that doesn't match their real activity.",
+    "Detects merchants adding a card surcharge that breaks the brand rules — over the cost-of-acceptance cap, on prohibited debit/prepaid, or without point-of-sale disclosure. Pick a model to pull the cohort whose surcharge shows up as unexpected-fee disputes and reversals.",
   accent: "violet",
-  cohortSuffix: "mislabeled",
-  behaveVerb: "mislabel their descriptor like",
-  declaredKind: "a mismatched descriptor",
+  cohortSuffix: "over-surcharging",
+  behaveVerb: "surcharge cards like",
+  declaredKind: "a compliant no-surcharge merchant",
   models: [
-    { key: "nutra_subscription", subtype: "Nutra subscriptions", short: "Nutra", priority: "P3", owner: "Descriptor / misrepresentation review",
-      behavesLike: "a nutra biller cycling descriptors to dodge disputes", signals: [DESC, REFUND, CB] },
-    { key: "telemarketing", subtype: "Telemarketing", short: "Telemarketing", priority: "P3", owner: "Descriptor / misrepresentation review",
-      behavesLike: "a telemarketer masking its descriptor", signals: [DESC, CB, CNP] },
-    { key: "adult", subtype: "Adult content", short: "Adult", priority: "P1", owner: "Descriptor / misrepresentation review",
-      behavesLike: "an adult operator masking its descriptor", signals: [DESC, CNP, CB] },
+    { key: "surcharge_over_cap", subtype: "Over-cap surcharge", short: "Over-cap", priority: "P2", owner: "Fee-integrity / brand-rules review",
+      behavesLike: "a merchant surcharging above the cost-of-acceptance cap", signals: [SURCH_RATE, SURCH_PCT, CB] },
+    { key: "surcharge_prohibited", subtype: "Prohibited debit/prepaid", short: "Debit/prepaid", priority: "P1", owner: "Fee-integrity / brand-rules review",
+      behavesLike: "a merchant surcharging debit & prepaid where it is prohibited", signals: [SURCH_PCT, CB, REFUND] },
+    { key: "surcharge_undisclosed", subtype: "Undisclosed surcharge", short: "Undisclosed", priority: "P2", owner: "Fee-integrity / brand-rules review",
+      behavesLike: "a merchant adding a surcharge with no point-of-sale disclosure", signals: [SURCH_RATE, CB, REFUND] },
   ],
 };
 
@@ -160,5 +161,5 @@ export const CASH_CONFIG: TypologyConfig = {
 };
 
 export const TYPOLOGY_CONFIGS: TypologyConfig[] = [
-  MISCODING_CONFIG, MCC_ABUSE_CONFIG, SPLIT_CONFIG, FACTORING_CONFIG, DESCRIPTOR_CONFIG, CASH_CONFIG,
+  MISCODING_CONFIG, MCC_ABUSE_CONFIG, SPLIT_CONFIG, FACTORING_CONFIG, SURCHARGE_CONFIG, CASH_CONFIG,
 ];

@@ -42,7 +42,7 @@ export default function Investigation() {
   const transactions = useMemo(() => (record ? getTransactions(record.merchant.merchantId) : []), [record, getTransactions]);
   const brief = useMemo(() => (record ? generateBrief(record, transactions) : null), [record, transactions]);
   const linkedCase = useMemo(
-    () => (record ? getCases().find((c) => c.merchantId === record.merchant.merchantId) : undefined),
+    () => (record ? getCases().find((c) => c.members.some((m) => m.merchantId === record.merchant.merchantId)) : undefined),
     [record, getCases],
   );
 
@@ -141,7 +141,7 @@ export default function Investigation() {
               {[
                 ["Rule", record.scores.ruleScore], ["Supervised", record.scores.supervisedScore],
                 ["Anomaly", record.scores.anomalyScore], ["Graph", record.scores.graphScore],
-                ["Descriptor", record.scores.descriptorNlpScore], ["MCC mismatch", record.scores.mccMismatchScore],
+                ["Surcharge", record.scores.surchargeScore], ["MCC mismatch", record.scores.mccMismatchScore],
                 ["Behavior Δ", record.scores.behavioralChangeScore], ["Composite", record.scores.finalRiskScore],
               ].map(([label, val]) => (
                 <div key={label as string} className="rounded-lg border border-border bg-surface-2/50 p-2">

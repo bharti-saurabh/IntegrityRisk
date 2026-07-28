@@ -46,7 +46,7 @@ const STEPS: TourStep[] = [
   },
   {
     title: "Trust the model",
-    body: "The observatory reports real precision/recall/ROC-AUC computed against synthetic ground truth. The impact simulator lets you move the alert threshold and watch the precision/recall/workload tradeoff live.",
+    body: "The observatory reports precision, alert volume and captured exposure against synthetic ground truth — recall/F1/AUC are deliberately omitted because the true positive universe is unknowable for a live book. The impact simulator lets you move the alert threshold and watch the precision/workload/exposure tradeoff live.",
     route: "/observatory",
   },
   {

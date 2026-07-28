@@ -128,7 +128,7 @@ export function computeAggregates(
     MCC_ABUSE: 0,
     SPLIT_TICKETING: 0,
     FACTORING: 0,
-    FAKE_DESCRIPTOR: 0,
+    CARD_SURCHARGE: 0,
     CASH_DISBURSEMENT: 0,
   };
   let totalVolume = 0;

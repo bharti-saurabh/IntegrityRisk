@@ -201,7 +201,15 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "iicc-store-v1",
-      version: 1,
+      version: 2,
+      // v2: cases became acquirer-scoped, so caseIds changed (CASE-#### → CASE-ACQ-###).
+      // Drop stale per-case patches keyed by the old ids; keep everything else.
+      migrate: (persisted, from) => {
+        const s = persisted as Partial<PersistedState> | undefined;
+        if (!s) return persisted as PersistedState;
+        if (from < 2) return { ...s, casePatches: {} } as PersistedState;
+        return s as PersistedState;
+      },
       storage: createJSONStorage(() => localStorage),
       partialize: (s): PersistedState => ({
         persona: s.persona,

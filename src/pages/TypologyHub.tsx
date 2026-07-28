@@ -25,7 +25,7 @@ const MODULES: { typ: Exclude<Typology, "CLEAN">; route: string; anatomyKey: str
   { typ: "MCC_ABUSE", route: "/mcc-abuse", anatomyKey: "mcc_abuse", icon: "Receipt", blurb: "Honest line of business, but transactions qualified into a cheaper interchange band than warranted — rule-routed via keyed/fallback, cross-border settlement (the content model is blind here)." },
   { typ: "SPLIT_TICKETING", route: "/split", anatomyKey: "split_ticketing", icon: "Split", blurb: "Purchases deliberately split below monitoring thresholds to evade controls." },
   { typ: "FACTORING", route: "/factoring", anatomyKey: "factoring", icon: "Share2", blurb: "One merchant processing for undisclosed others via shared settlement / devices." },
-  { typ: "FAKE_DESCRIPTOR", route: "/descriptors", anatomyKey: "descriptor", icon: "Type", blurb: "Deceptive or brand-mimicking descriptors driving 'not recognized' disputes." },
+  { typ: "CARD_SURCHARGE", route: "/surcharge", anatomyKey: "surcharge", icon: "BadgePercent", blurb: "A card surcharge over the cap, on prohibited debit/prepaid, or undisclosed — surfacing as 'not recognized' unexpected-fee disputes and reversals." },
   { typ: "CASH_DISBURSEMENT", route: "/cash", anatomyKey: "cash", icon: "Banknote", blurb: "Card transactions converted to cash-equivalent value; round-dollar / wallet loads." },
 ];
 

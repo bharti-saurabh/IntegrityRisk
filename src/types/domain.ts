@@ -9,7 +9,7 @@ export type Typology =
   | "MCC_ABUSE"
   | "SPLIT_TICKETING"
   | "FACTORING"
-  | "FAKE_DESCRIPTOR"
+  | "CARD_SURCHARGE"
   | "CASH_DISBURSEMENT"
   | "CLEAN";
 
@@ -18,7 +18,7 @@ export const TYPOLOGY_LABELS: Record<Typology, string> = {
   MCC_ABUSE: "MCC / Interchange Abuse",
   SPLIT_TICKETING: "Split Ticketing",
   FACTORING: "Factoring / Laundering",
-  FAKE_DESCRIPTOR: "Fake Descriptor",
+  CARD_SURCHARGE: "Card Surcharge Abuse",
   CASH_DISBURSEMENT: "Cash-Disbursement Abuse",
   CLEAN: "No Abuse",
 };
@@ -168,7 +168,7 @@ export interface RiskScoreBreakdown {
   supervisedScore: number;
   anomalyScore: number;
   graphScore: number;
-  descriptorNlpScore: number;
+  surchargeScore: number;
   mccMismatchScore: number;
   behavioralChangeScore: number;
   finalRiskScore: number;
@@ -319,18 +319,39 @@ export interface AuditEntry {
   action: string;
 }
 
+// One violating merchant inside an acquirer-level case. Each carries its own
+// per-merchant fine; the parent case rolls these up into a total.
+export interface CaseMerchant {
+  merchantId: string;
+  tradeName: string;
+  typology: Typology;
+  tier: RiskTier;
+  modelScore: number;
+  exposure: number;
+  fineUsd: number;
+}
+
+// A case is scoped to an ACQUIRER, not a single merchant: it aggregates every
+// violating merchant that acquirer sponsors, with per-merchant fines and a
+// rolled-up total. Merchant-level fields (merchantId, typology, modelScore,
+// severity) reflect the representative (highest-scoring) member for list display.
 export interface InvestigationCase {
   caseId: string;
   alertId: string;
-  merchantId: string;
+  acquirerId: string;
+  acquirerName: string;
+  merchantId: string; // representative member, for detail default + record lookup
+  members: CaseMerchant[];
+  merchantCount: number;
+  totalFineUsd: number;
   createdAt: number;
   severity: RiskTier;
   queue: string;
   assignedAnalyst: string;
   status: CaseStatus;
   slaDueAt: number;
-  typology: Typology;
-  modelScore: number;
+  typology: Typology; // dominant typology across members
+  modelScore: number; // representative member score
   disposition: Disposition;
   recommendedAction: RecommendedAction;
   hypothesis: string;

@@ -61,7 +61,7 @@ export default function CaseQueue() {
       <PageHeader
         icon="Briefcase"
         title="Case Queue"
-        subtitle={`${cases.length} cases · dispositions and audit persist to this browser`}
+        subtitle={`${cases.length} acquirer cases · ${cases.reduce((a, c) => a + c.merchantCount, 0)} merchants · dispositions and audit persist to this browser`}
         actions={
           active ? (
             <Button variant="ghost" onClick={() => exportJson(`case-${active.caseId}.json`, active)}>
@@ -97,12 +97,13 @@ export default function CaseQueue() {
                   <div className={`text-lg font-bold tnum ${TIER_COLOR[c.severity]}`}>{Math.round(c.modelScore)}</div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="truncate text-[13px] font-medium">{record?.merchant.tradeName ?? c.merchantId}</span>
+                      <span className="truncate text-[13px] font-medium">{c.acquirerName}</span>
                       <span className="ml-auto shrink-0 text-[10px] text-ink-3">{c.caseId}</span>
                     </div>
-                    <div className="mt-0.5 truncate text-[11px] text-ink-3">{TYPOLOGY_LABELS[c.typology]} · {c.queue}</div>
+                    <div className="mt-0.5 truncate text-[11px] text-ink-3">{c.merchantCount} merchant{c.merchantCount === 1 ? "" : "s"} · {TYPOLOGY_LABELS[c.typology]}</div>
                     <div className="mt-1 flex items-center gap-2">
                       <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] text-ink-2">{CASE_STATUS_LABELS[c.status]}</span>
+                      <span className="rounded bg-amber/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber tnum">{fmtCurrency(c.totalFineUsd, true)} fine</span>
                       <span className={`text-[10px] ${sla.cls}`}>{sla.text}</span>
                     </div>
                   </div>
@@ -119,13 +120,13 @@ export default function CaseQueue() {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base font-bold">{record.merchant.tradeName}</h2>
+                    <h2 className="text-base font-bold">{active.acquirerName}</h2>
                     <TierBadge tier={active.severity} small />
                   </div>
-                  <div className="text-xs text-ink-3">{active.caseId} · alert {active.alertId} · created {fmtDate(active.createdAt)}</div>
+                  <div className="text-xs text-ink-3">{active.caseId} · acquirer {active.acquirerId} · {active.merchantCount} flagged merchant{active.merchantCount === 1 ? "" : "s"} · opened {fmtDate(active.createdAt)}</div>
                 </div>
                 <Button variant="ai" onClick={() => { selectMerchant(active.merchantId); navigate(`/investigate/${active.merchantId}`); }}>
-                  <Icon name="ScanSearch" size={14} /> Open investigation
+                  <Icon name="ScanSearch" size={14} /> Investigate top merchant
                 </Button>
               </div>
 
@@ -133,11 +134,55 @@ export default function CaseQueue() {
                 <span className="font-semibold text-ink">Hypothesis. </span>{active.hypothesis}
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                <KV label="Model score" value={`${Math.round(active.modelScore)}/100`} />
-                <KV label="Prevented exposure" value={fmtCurrency(active.preventedExposure, true)} accent="text-amber" />
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <KV label="Rolled-up fine" value={fmtCurrency(active.totalFineUsd, true)} accent="text-amber" />
+                <KV label="Merchants" value={String(active.merchantCount)} />
+                <KV label="Prevented exposure" value={fmtCurrency(active.preventedExposure, true)} />
                 <KV label="Assigned" value={active.assignedAnalyst} />
               </div>
+            </Card>
+
+            {/* Violating merchants — per-merchant fines rolling up to the total */}
+            <Card className="p-4">
+              <SectionLabel>Violating merchants · {active.merchantCount} · fines roll up to {fmtCurrency(active.totalFineUsd, true)}</SectionLabel>
+              <div className="mt-2 overflow-x-auto">
+                <table className="w-full min-w-[560px] text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-ink-3">
+                      <th className="px-2 py-2 font-medium">Merchant</th>
+                      <th className="px-2 py-2 font-medium">Typology</th>
+                      <th className="px-2 py-2 text-right font-medium">Score</th>
+                      <th className="px-2 py-2 text-right font-medium">Exposure</th>
+                      <th className="px-2 py-2 text-right font-medium">Fine</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {active.members.map((m) => (
+                      <tr
+                        key={m.merchantId}
+                        className="cursor-pointer border-b border-border/40 hover:bg-surface-2"
+                        onClick={() => { selectMerchant(m.merchantId); navigate(`/investigate/${m.merchantId}`); }}
+                      >
+                        <td className="px-2 py-2">
+                          <span className="font-medium text-ink">{m.tradeName}</span>
+                          <span className="ml-1.5 text-[10px] text-ink-3">{m.merchantId}</span>
+                        </td>
+                        <td className="px-2 py-2 text-ink-2">{TYPOLOGY_LABELS[m.typology]}</td>
+                        <td className={`px-2 py-2 text-right tnum font-semibold ${TIER_COLOR[m.tier]}`}>{Math.round(m.modelScore)}</td>
+                        <td className="px-2 py-2 text-right tnum text-ink-2">{fmtCurrency(m.exposure, true)}</td>
+                        <td className="px-2 py-2 text-right tnum font-semibold text-amber">{fmtCurrency(m.fineUsd, true)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t border-border text-[13px] font-bold">
+                      <td className="px-2 py-2" colSpan={4}>Total proposed fine</td>
+                      <td className="px-2 py-2 text-right tnum text-amber">{fmtCurrency(active.totalFineUsd, true)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <p className="mt-2 text-[11px] text-ink-3">Fines are directional, synthetic assessments for demonstration — not booked penalties. Click a merchant to open its investigation.</p>
             </Card>
 
             {/* Disposition controls — persist as accountable actions */}

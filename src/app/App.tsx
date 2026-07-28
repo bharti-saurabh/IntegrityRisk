@@ -12,7 +12,7 @@ const MccStudio = lazy(() => import("@/pages/MccStudio"));
 const MccAbuse = lazy(() => import("@/pages/MccAbuse"));
 const SplitLab = lazy(() => import("@/pages/SplitTicketingLab"));
 const Factoring = lazy(() => import("@/pages/FactoringExplorer"));
-const Descriptors = lazy(() => import("@/pages/DescriptorIntelligence"));
+const Surcharge = lazy(() => import("@/pages/SurchargeConsole"));
 const Cash = lazy(() => import("@/pages/CashDisbursement"));
 const Investigation = lazy(() => import("@/pages/Investigation"));
 const Cases = lazy(() => import("@/pages/CaseQueue"));
@@ -60,8 +60,11 @@ export function App() {
               <Route path="/split/:category" element={<SplitLab />} />
               <Route path="/factoring" element={<Factoring />} />
               <Route path="/factoring/:category" element={<Factoring />} />
-              <Route path="/descriptors" element={<Descriptors />} />
-              <Route path="/descriptors/:category" element={<Descriptors />} />
+              <Route path="/surcharge" element={<Surcharge />} />
+              <Route path="/surcharge/:category" element={<Surcharge />} />
+              {/* legacy path → surcharge (renamed from Descriptor Intelligence) */}
+              <Route path="/descriptors" element={<Navigate to="/surcharge" replace />} />
+              <Route path="/descriptors/:category" element={<Navigate to="/surcharge" replace />} />
               <Route path="/cash" element={<Cash />} />
               <Route path="/cash/:category" element={<Cash />} />
               <Route path="/investigate" element={<Investigation />} />

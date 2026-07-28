@@ -1,6 +1,7 @@
 import type { MerchantRiskRecord, Typology } from "@/types/domain";
 import { TYPOLOGY_LABELS } from "@/types/domain";
 import { round } from "@/utils/stats";
+import { exposureForRecord } from "@/analytics/aggregates";
 
 export interface ConfusionMatrix {
   tp: number;
@@ -9,29 +10,28 @@ export interface ConfusionMatrix {
   fn: number;
 }
 
+// Denominator metrics (recall, F1, PR-AUC, ROC-AUC) are deliberately excluded:
+// each requires the true universe of positives, which is unknowable in a real
+// integrity book (undetected abuse is, by definition, uncounted). We report only
+// what a synthetic ground-truth flag can honestly support against the alerts we
+// actually raise — precision, alert volume / workload, and captured exposure ($).
 export interface ThresholdPoint {
   threshold: number;
   precision: number;
-  recall: number;
-  f1: number;
   alerts: number;
-  tpr: number;
-  fpr: number;
+  capturedExposure: number;
 }
 
 export interface ModelMetrics {
   threshold: number;
   precision: number;
-  recall: number;
-  f1: number;
-  rocAuc: number;
-  prAuc: number;
+  alertVolume: number;
+  capturedExposureUsd: number;
   confusion: ConfusionMatrix;
   curve: ThresholdPoint[];
-  byTypology: { typology: Typology; label: string; precision: number; recall: number; support: number }[];
+  byTypology: { typology: Typology; label: string; precision: number; alerts: number }[];
   featureImportance: { id: string; label: string; importance: number }[];
   falsePositives: string[];
-  falseNegatives: string[];
 }
 
 // Ground-truth is available because the data is synthetic. Metrics are computed
@@ -52,11 +52,20 @@ export function confusionAt(records: MerchantRiskRecord[], threshold: number): C
   return { tp, fp, tn, fn };
 }
 
-function prf(c: ConfusionMatrix) {
-  const precision = c.tp + c.fp > 0 ? c.tp / (c.tp + c.fp) : 0;
-  const recall = c.tp + c.fn > 0 ? c.tp / (c.tp + c.fn) : 0;
-  const f1 = precision + recall > 0 ? (2 * precision * recall) / (precision + recall) : 0;
-  return { precision, recall, f1 };
+function precisionOf(c: ConfusionMatrix): number {
+  return c.tp + c.fp > 0 ? c.tp / (c.tp + c.fp) : 0;
+}
+
+// Captured exposure = the exposure $ carried by true-positive alerts at a
+// threshold — the dollars the model actually surfaces for review.
+function capturedExposureAt(records: MerchantRiskRecord[], threshold: number): number {
+  let sum = 0;
+  for (const r of records) {
+    if (r.scores.finalRiskScore >= threshold && r.merchant.groundTruthAbuseFlag) {
+      sum += exposureForRecord(r);
+    }
+  }
+  return sum;
 }
 
 export function computeModelMetrics(
@@ -64,57 +73,35 @@ export function computeModelMetrics(
   threshold = 62,
 ): ModelMetrics {
   const curve: ThresholdPoint[] = [];
-  const positives = records.filter((r) => r.merchant.groundTruthAbuseFlag).length;
-  const negatives = records.length - positives;
   for (let t = 0; t <= 100; t += 2) {
     const c = confusionAt(records, t);
-    const { precision, recall, f1 } = prf(c);
     curve.push({
       threshold: t,
-      precision: round(precision, 4),
-      recall: round(recall, 4),
-      f1: round(f1, 4),
+      precision: round(precisionOf(c), 4),
       alerts: c.tp + c.fp,
-      tpr: positives ? round(c.tp / positives, 4) : 0,
-      fpr: negatives ? round(c.fp / negatives, 4) : 0,
+      capturedExposure: round(capturedExposureAt(records, t), 0),
     });
   }
 
-  // ROC-AUC via trapezoidal integration over the threshold sweep.
-  const rocPts = [...curve].sort((a, b) => a.fpr - b.fpr);
-  let rocAuc = 0;
-  for (let i = 1; i < rocPts.length; i++) {
-    rocAuc += ((rocPts[i].fpr - rocPts[i - 1].fpr) * (rocPts[i].tpr + rocPts[i - 1].tpr)) / 2;
-  }
-  // PR-AUC via trapezoid over recall.
-  const prPts = [...curve].sort((a, b) => a.recall - b.recall);
-  let prAuc = 0;
-  for (let i = 1; i < prPts.length; i++) {
-    prAuc += ((prPts[i].recall - prPts[i - 1].recall) * (prPts[i].precision + prPts[i - 1].precision)) / 2;
-  }
-
   const c = confusionAt(records, threshold);
-  const { precision, recall, f1 } = prf(c);
+  const precision = precisionOf(c);
 
-  // Per-typology precision/recall (predicted primary vs ground-truth typology).
-  const typologies: Typology[] = ["MCC_MISCODING", "MCC_ABUSE", "SPLIT_TICKETING", "FACTORING", "FAKE_DESCRIPTOR", "CASH_DISBURSEMENT"];
+  // Per-typology precision + alert volume (predicted primary vs ground-truth typology).
+  const typologies: Typology[] = ["MCC_MISCODING", "MCC_ABUSE", "SPLIT_TICKETING", "FACTORING", "CARD_SURCHARGE", "CASH_DISBURSEMENT"];
   const byTypology = typologies.map((typ) => {
     let tp = 0,
-      fp = 0,
-      fn = 0;
+      fp = 0;
     for (const r of records) {
       const predicted = r.scores.finalRiskScore >= threshold && r.primaryTypology === typ;
       const actual = r.merchant.groundTruthTypology === typ;
       if (predicted && actual) tp++;
       else if (predicted && !actual) fp++;
-      else if (!predicted && actual) fn++;
     }
     return {
       typology: typ,
       label: TYPOLOGY_LABELS[typ],
       precision: round(tp + fp > 0 ? tp / (tp + fp) : 0, 3),
-      recall: round(tp + fn > 0 ? tp / (tp + fn) : 0, 3),
-      support: tp + fn,
+      alerts: tp + fp,
     };
   });
 
@@ -138,23 +125,16 @@ export function computeModelMetrics(
     .filter((r) => r.scores.finalRiskScore >= threshold && !r.merchant.groundTruthAbuseFlag)
     .slice(0, 12)
     .map((r) => r.merchant.merchantId);
-  const falseNegatives = records
-    .filter((r) => r.scores.finalRiskScore < threshold && r.merchant.groundTruthAbuseFlag)
-    .slice(0, 12)
-    .map((r) => r.merchant.merchantId);
 
   return {
     threshold,
     precision: round(precision, 4),
-    recall: round(recall, 4),
-    f1: round(f1, 4),
-    rocAuc: round(rocAuc, 4),
-    prAuc: round(prAuc, 4),
+    alertVolume: c.tp + c.fp,
+    capturedExposureUsd: round(capturedExposureAt(records, threshold), 0),
     confusion: c,
     curve,
     byTypology,
     featureImportance,
     falsePositives,
-    falseNegatives,
   };
 }

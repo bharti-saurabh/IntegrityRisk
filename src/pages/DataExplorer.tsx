@@ -25,7 +25,7 @@ const FAMILY_OPTS: { key: string; label: string }[] = [
   { key: "mcc_abuse", label: "MCC Abuse" },
   { key: "split_ticketing", label: "Split Ticketing" },
   { key: "factoring", label: "Factoring" },
-  { key: "descriptor", label: "Descriptor" },
+  { key: "surcharge", label: "Card Surcharge" },
   { key: "cash", label: "Cash" },
 ];
 const TIER_OPTS: (OverviewTier | "all")[] = ["all", "Critical", "High", "Elevated", "Monitor", "Low"];
@@ -754,7 +754,7 @@ function renderCell(v: unknown): string {
 // declared→predicted MCC divergence, and drills into the investigation workspace.
 
 type RiskSortKey = "risk" | "volume" | "divergence" | "txns";
-const RT_TYPOS: (Typology | "ALL")[] = ["ALL", "MCC_MISCODING", "MCC_ABUSE", "SPLIT_TICKETING", "FACTORING", "FAKE_DESCRIPTOR", "CASH_DISBURSEMENT", "CLEAN"];
+const RT_TYPOS: (Typology | "ALL")[] = ["ALL", "MCC_MISCODING", "MCC_ABUSE", "SPLIT_TICKETING", "FACTORING", "CARD_SURCHARGE", "CASH_DISBURSEMENT", "CLEAN"];
 const RT_TIERS: (RiskTier | "ALL")[] = ["ALL", "critical", "high", "elevated", "watch", "clear"];
 
 function RiskTableMode() {

@@ -57,6 +57,10 @@ export const REFUND: CategorySignal = { key: "refund_rate_amount", label: "Refun
 export const TICKET: CategorySignal = { key: "avg_ticket_usd", label: "Avg ticket", kind: "usd", elevated: 200 };
 export const DESC: CategorySignal = { key: "n_distinct_descriptors", label: "Distinct descriptors", kind: "count", elevated: 3 };
 export const SUBMERCH: CategorySignal = { key: "pct_txn_with_sub_merchant", label: "Sub-merchant txns", kind: "pct", elevated: 0.2 };
+// Card-surcharge signals: the added fee (bps of ticket) and how much of the card
+// book carries it. A HIGHER value reads as more suspicious for the surcharge family.
+export const SURCH_RATE: CategorySignal = { key: "surcharge_rate_bps", label: "Surcharge rate", kind: "bps", elevated: 300 };
+export const SURCH_PCT: CategorySignal = { key: "pct_txn_surcharged", label: "Surcharged txns", kind: "pct", elevated: 0.5 };
 
 export const MISCODING_CATEGORIES: MiscodingCategory[] = [
   // ---- P1 · prohibited / high-harm ----

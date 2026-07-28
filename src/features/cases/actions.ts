@@ -71,6 +71,6 @@ export const TYPOLOGY_COLOR: Record<Exclude<Typology, "CLEAN">, string> = {
   MCC_ABUSE: "#9333ea",
   SPLIT_TICKETING: "#d97706",
   FACTORING: "#7c3aed",
-  FAKE_DESCRIPTOR: "#e11d48",
+  CARD_SURCHARGE: "#e11d48",
   CASH_DISBURSEMENT: "#059669",
 };

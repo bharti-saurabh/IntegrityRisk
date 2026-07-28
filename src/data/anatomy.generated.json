@@ -1,7 +1,7 @@
 {
   "meta": {
     "source": "MCC Miscoding synthetic dataset v2",
-    "note": "One real (synthetic) flagged exemplar per integrity family. Peer z-scores, the composite decomposition, rule thresholds and signature views are the live pipeline\u2019s \u2014 no PII or card numbers. Decision-support indicators, not final determinations."
+    "note": "One real (synthetic) flagged exemplar per integrity family. Peer z-scores, the composite decomposition, rule thresholds and signature views are the live pipeline’s — no PII or card numbers. Decision-support indicators, not final determinations."
   },
   "families": [
     {
@@ -12,16 +12,16 @@
       "route": "/mcc",
       "edu": {
         "tagline": "A benign category code hiding a riskier line of business.",
-        "definition": "A merchant registers under a low-risk category code, but actually sells something riskier \u2014 gambling, adult, pharma \u2014 that the bank would have priced differently or refused outright.",
-        "analogy": "A late-night casino operating behind a shopfront licensed as a \u2018gift shop\u2019.",
+        "definition": "A merchant registers under a low-risk category code, but actually sells something riskier — gambling, adult, pharma — that the bank would have priced differently or refused outright.",
+        "analogy": "A late-night casino operating behind a shopfront licensed as a ‘gift shop’.",
         "mechanic": [
           "Apply for card acceptance under a boring, low-risk category code (e.g. 5999 misc. retail).",
           "Route the real, higher-risk product through that clean shell.",
-          "Behaviour \u2014 hours, channel, geography, declines \u2014 follows the true business, not the declared one.",
+          "Behaviour — hours, channel, geography, declines — follows the true business, not the declared one.",
           "Collect the lighter scrutiny, lower fees and smaller reserves the true category would never get."
         ],
         "cost": "The acquiring bank under-priced the risk and eats the chargebacks; card networks levy miscoding fines; an illegal true vertical adds regulatory and reputational exposure.",
-        "legitTwin": "A genuine specialty retailer resembles none of the prohibited verticals \u2014 a miscoder lights up several at once. That concurrency is the tell.",
+        "legitTwin": "A genuine specialty retailer resembles none of the prohibited verticals — a miscoder lights up several at once. That concurrency is the tell.",
         "victim": "Acquirer + card network + regulator"
       },
       "identity": {
@@ -40,15 +40,15 @@
       "tells": [
         {
           "tag": "night",
-          "why": "Booked between 11pm and 5am \u2014 a gambling/adult rhythm, not a retailer\u2019s."
+          "why": "Booked between 11pm and 5am — a gambling/adult rhythm, not a retailer’s."
         },
         {
           "tag": "round",
-          "why": "An exact round number \u2014 people rarely buy goods at precisely $60.00."
+          "why": "An exact round number — people rarely buy goods at precisely $60.00."
         },
         {
           "tag": "cnp",
-          "why": "Card-not-present \u2014 no physical card, unusual for the declared shopfront."
+          "why": "Card-not-present — no physical card, unusual for the declared shopfront."
         },
         {
           "tag": "offshore",
@@ -56,7 +56,7 @@
         },
         {
           "tag": "declined",
-          "why": "Refused by the issuer \u2014 often because the true product isn\u2019t permitted."
+          "why": "Refused by the issuer — often because the true product isn’t permitted."
         }
       ],
       "transactions": [
@@ -80,7 +80,7 @@
         {
           "time": "2026-06-25 17:16",
           "hour": 18,
-          "amount": 45.0,
+          "amount": 45,
           "channel": "RECURRING",
           "cardPresent": false,
           "issuer": "US",
@@ -129,7 +129,7 @@
         {
           "time": "2026-06-27 23:34",
           "hour": 0,
-          "amount": 60.0,
+          "amount": 60,
           "channel": "ECOMMERCE",
           "cardPresent": false,
           "issuer": "US",
@@ -163,7 +163,7 @@
         {
           "time": "2026-06-28 23:59",
           "hour": 0,
-          "amount": 20.0,
+          "amount": 20,
           "channel": "ECOMMERCE",
           "cardPresent": false,
           "issuer": "JP",
@@ -225,12 +225,12 @@
         },
         {
           "key": "pct_decline_not_permitted",
-          "label": "\u2018Not permitted\u2019 declines",
+          "label": "‘Not permitted’ declines",
           "plainLabel": "blocked-as-not-allowed sales",
           "kind": "pct",
           "value": 0.059,
           "z": 1.88,
-          "baseline": 0.0,
+          "baseline": 0,
           "baselineLabel": "the peer median",
           "multiple": null,
           "hot": true
@@ -256,7 +256,7 @@
           "z": 0.7,
           "baseline": 0.032,
           "baselineLabel": "the peer median",
-          "multiple": 5.0,
+          "multiple": 5,
           "hot": false
         },
         {
@@ -266,7 +266,7 @@
           "kind": "usd",
           "value": 56.234,
           "z": -0.37,
-          "baseline": 87.0,
+          "baseline": 87,
           "baselineLabel": "typical for the declared code",
           "multiple": 0.6,
           "hot": false
@@ -276,9 +276,9 @@
           "label": "Offshore-acquirer share",
           "plainLabel": "offshore-routed sales",
           "kind": "pct",
-          "value": 0.0,
+          "value": 0,
           "z": -0.25,
-          "baseline": 0.0,
+          "baseline": 0,
           "baselineLabel": "the peer median",
           "multiple": null,
           "hot": false
@@ -374,7 +374,7 @@
             "z": 1.36,
             "weight": 1.1,
             "contribution": 0.346,
-            "share": 12.0
+            "share": 12
           },
           {
             "key": "z_txn_per_card",
@@ -388,28 +388,28 @@
             "key": "z_descriptor_name_jaccard",
             "label": "descriptor name jaccard",
             "z": -1.25,
-            "weight": -1.0,
+            "weight": -1,
             "contribution": 0.288,
-            "share": 10.0
+            "share": 10
           }
         ],
         "ruleChecks": null,
         "tierBins": [
           {
             "tier": "Low",
-            "range": "\u2264 60"
+            "range": "≤ 60"
           },
           {
             "tier": "Monitor",
-            "range": "60\u201375"
+            "range": "60–75"
           },
           {
             "tier": "Elevated",
-            "range": "75\u201385"
+            "range": "75–85"
           },
           {
             "tier": "High",
-            "range": "85\u201393"
+            "range": "85–93"
           },
           {
             "tier": "Critical",
@@ -421,8 +421,8 @@
         {
           "name": "descriptor_churn_rule",
           "label": "Descriptor churn",
-          "expr": "descriptor_changes \u2265 3  AND  descriptor_name_jaccard < 0.20",
-          "plain": "The billing name changes repeatedly to unrelated words \u2014 resetting dispute monitoring."
+          "expr": "descriptor_changes ≥ 3  AND  descriptor_name_jaccard < 0.20",
+          "plain": "The billing name changes repeatedly to unrelated words — resetting dispute monitoring."
         },
         {
           "name": "dispute_excursion_rule",
@@ -433,8 +433,8 @@
         {
           "name": "issuer_prohibition_rule",
           "label": "Issuer prohibition declines",
-          "expr": "\u2018transaction not permitted\u2019 decline rate > 0.05",
-          "plain": "Issuers keep declining the true product as \u2018not permitted\u2019 despite a clean code."
+          "expr": "‘transaction not permitted’ decline rate > 0.05",
+          "plain": "Issuers keep declining the true product as ‘not permitted’ despite a clean code."
         }
       ],
       "verdict": {
@@ -459,15 +459,15 @@
       "route": "/mcc",
       "edu": {
         "tagline": "The right business, coded into a cheaper interchange band than it deserves.",
-        "definition": "The merchant is roughly in the right business, but is coded into a cheaper interchange band than its behaviour warrants \u2014 underpaying network fees on every sale.",
-        "analogy": "Shipping freight but labelling every pallet \u2018documents\u2019 to get the cheaper letter rate.",
+        "definition": "The merchant is roughly in the right business, but is coded into a cheaper interchange band than its behaviour warrants — underpaying network fees on every sale.",
+        "analogy": "Shipping freight but labelling every pallet ‘documents’ to get the cheaper letter rate.",
         "mechanic": [
-          "Get assigned \u2014 or negotiate into \u2014 a lower interchange band than the behaviour qualifies for.",
+          "Get assigned — or negotiate into — a lower interchange band than the behaviour qualifies for.",
           "Flag transactions to hold the cheap rate: mark card-not-present as card-present, one-off as recurring.",
           "Pocket the few basis points of difference across millions of dollars in volume."
         ],
         "cost": "The network and the acquirer are systematically underpaid; the issuer is under-compensated for the risk it carries. Audits claw back the shortfall and add assessments.",
-        "legitTwin": "A legitimate merchant\u2019s declared band matches its behaviour. Here the paid rate sits tens of basis points below the band the behaviour actually warrants.",
+        "legitTwin": "A legitimate merchant’s declared band matches its behaviour. Here the paid rate sits tens of basis points below the band the behaviour actually warrants.",
         "victim": "Acquirer + card network"
       },
       "identity": {
@@ -486,15 +486,15 @@
       "tells": [
         {
           "tag": "cnp",
-          "why": "Card-not-present \u2014 no physical card, unusual for the declared shopfront."
+          "why": "Card-not-present — no physical card, unusual for the declared shopfront."
         },
         {
           "tag": "recurring",
-          "why": "Tagged \u2018recurring\u2019 to qualify for a cheaper interchange band."
+          "why": "Tagged ‘recurring’ to qualify for a cheaper interchange band."
         },
         {
           "tag": "cpmismatch",
-          "why": "Flagged card-present, but the channel says card-not-present \u2014 a rate-qualification trick."
+          "why": "Flagged card-present, but the channel says card-not-present — a rate-qualification trick."
         }
       ],
       "transactions": [
@@ -684,7 +684,7 @@
           "z": 2.7,
           "baseline": 56.724,
           "baselineLabel": "the peer median",
-          "multiple": 1.0,
+          "multiple": 1,
           "hot": true
         },
         {
@@ -702,13 +702,13 @@
         {
           "key": "pct_recurring",
           "label": "Recurring-flagged share",
-          "plainLabel": "\u2018recurring\u2019-tagged sales",
+          "plainLabel": "‘recurring’-tagged sales",
           "kind": "pct",
           "value": 0.166,
           "z": 1.27,
           "baseline": 0.161,
           "baselineLabel": "the peer median",
-          "multiple": 1.0,
+          "multiple": 1,
           "hot": false
         },
         {
@@ -720,7 +720,7 @@
           "z": 0.7,
           "baseline": 0.053,
           "baselineLabel": "the peer median",
-          "multiple": 1.0,
+          "multiple": 1,
           "hot": false
         },
         {
@@ -732,13 +732,13 @@
           "z": -0.36,
           "baseline": 190.863,
           "baselineLabel": "the peer median",
-          "multiple": 1.0,
+          "multiple": 1,
           "hot": false
         }
       ],
       "signature": {
         "kind": "interchange",
-        "declaredBps": 140.0,
+        "declaredBps": 140,
         "expectedBps": 247.5,
         "effectiveBps": 191.1,
         "advantageBps": 56.4,
@@ -811,19 +811,19 @@
         "tierBins": [
           {
             "tier": "Low",
-            "range": "\u2264 60"
+            "range": "≤ 60"
           },
           {
             "tier": "Monitor",
-            "range": "60\u201375"
+            "range": "60–75"
           },
           {
             "tier": "Elevated",
-            "range": "75\u201385"
+            "range": "75–85"
           },
           {
             "tier": "High",
-            "range": "85\u201393"
+            "range": "85–93"
           },
           {
             "tier": "Critical",
@@ -844,7 +844,7 @@
         "declaredAs": "Charitable and Social Service Orgs",
         "behavesAs": "an underpriced interchange band",
         "familyLabel": "MCC Abuse (interchange)",
-        "priorityTier": "\u2014",
+        "priorityTier": "—",
         "riskTier": "Low",
         "routedBy": "rule",
         "firingRule": "Interchange abuse",
@@ -862,14 +862,14 @@
       "edu": {
         "tagline": "One purchase chopped into bursts to slip under an authorization ceiling.",
         "definition": "A single purchase is deliberately split into several smaller charges within minutes, so each fragment stays under an authorization ceiling the whole would have tripped.",
-        "analogy": "Buying a $2,000 TV as ten separate $200 gift-cards to dodge the \u2018manager approval over $500\u2019 rule.",
+        "analogy": "Buying a $2,000 TV as ten separate $200 gift-cards to dodge the ‘manager approval over $500’ rule.",
         "mechanic": [
           "The real ticket would exceed an auth floor, a review threshold or a no-signature ceiling.",
           "The terminal rings it as several back-to-back charges on the same card.",
           "Each fragment auto-approves under the ceiling; the aggregate never gets a single-transaction review."
         ],
-        "cost": "Bypasses the issuer\u2019s per-transaction risk controls, so fraud and disputes the ceiling was meant to stop land on the issuer; the acquirer eats chargebacks and limit-avoidance fines.",
-        "legitTwin": "Legitimate splits (deposit + balance, partial shipment) are spaced out. Abuse is dense in time and hugs the ceiling \u2014 that combination is the tell.",
+        "cost": "Bypasses the issuer’s per-transaction risk controls, so fraud and disputes the ceiling was meant to stop land on the issuer; the acquirer eats chargebacks and limit-avoidance fines.",
+        "legitTwin": "Legitimate splits (deposit + balance, partial shipment) are spaced out. Abuse is dense in time and hugs the ceiling — that combination is the tell.",
         "victim": "Issuer + acquirer"
       },
       "identity": {
@@ -888,7 +888,7 @@
       "tells": [
         {
           "tag": "ceiling",
-          "why": "Sits just below a round authorization ceiling \u2014 a split-ticket fragment."
+          "why": "Sits just below a round authorization ceiling — a split-ticket fragment."
         },
         {
           "tag": "burst",
@@ -896,14 +896,14 @@
         },
         {
           "tag": "round",
-          "why": "An exact round number \u2014 people rarely buy goods at precisely $60.00."
+          "why": "An exact round number — people rarely buy goods at precisely $60.00."
         }
       ],
       "transactions": [
         {
           "time": "2026-06-28 13:10",
           "hour": 7,
-          "amount": 100.0,
+          "amount": 100,
           "channel": "ECOMMERCE",
           "cardPresent": false,
           "issuer": "US",
@@ -1081,9 +1081,9 @@
           "label": "Burst events",
           "plainLabel": "split bursts",
           "kind": "num",
-          "value": 144.0,
-          "z": 5.0,
-          "baseline": 0.0,
+          "value": 144,
+          "z": 5,
+          "baseline": 0,
           "baselineLabel": "the peer median",
           "multiple": null,
           "hot": true
@@ -1095,7 +1095,7 @@
           "kind": "pct",
           "value": 0.159,
           "z": 2.2,
-          "baseline": 0.0,
+          "baseline": 0,
           "baselineLabel": "the peer median",
           "multiple": null,
           "hot": true
@@ -1105,9 +1105,9 @@
           "label": "Avg burst size",
           "plainLabel": "charges per burst",
           "kind": "num",
-          "value": 4.0,
+          "value": 4,
           "z": 2.14,
-          "baseline": 0.0,
+          "baseline": 0,
           "baselineLabel": "the peer median",
           "multiple": null,
           "hot": true
@@ -1210,7 +1210,7 @@
         ],
         "nearCeilingPct": 0.303,
         "burstEvents": 144,
-        "avgGapSec": 654271.0
+        "avgGapSec": 654271
       },
       "score": {
         "integrityRiskScore": 93.2,
@@ -1219,7 +1219,7 @@
         "percentile": 87.7,
         "tier": "Critical",
         "exposureWeighted": 89.8,
-        "patternScore": 100.0,
+        "patternScore": 100,
         "patternLabel": "Split-ticketing pattern score",
         "routedBy": "both",
         "flagReason": "model + rule",
@@ -1230,7 +1230,7 @@
             "z": 2.2,
             "weight": 1.1,
             "contribution": 0.558,
-            "share": 28.0
+            "share": 28
           },
           {
             "key": "z_txn_per_card",
@@ -1244,7 +1244,7 @@
             "key": "z_pct_round_amount",
             "label": "pct round amount",
             "z": 1.67,
-            "weight": 1.0,
+            "weight": 1,
             "contribution": 0.386,
             "share": 19.4
           },
@@ -1262,7 +1262,7 @@
             "z": 0.87,
             "weight": 0.8,
             "contribution": 0.16,
-            "share": 8.0
+            "share": 8
           },
           {
             "key": "z_pct_decline_suspected_fraud",
@@ -1301,19 +1301,19 @@
         "tierBins": [
           {
             "tier": "Low",
-            "range": "\u2264 60"
+            "range": "≤ 60"
           },
           {
             "tier": "Monitor",
-            "range": "60\u201375"
+            "range": "60–75"
           },
           {
             "tier": "Elevated",
-            "range": "75\u201385"
+            "range": "75–85"
           },
           {
             "tier": "High",
-            "range": "85\u201393"
+            "range": "85–93"
           },
           {
             "tier": "Critical",
@@ -1334,7 +1334,7 @@
         "declaredAs": "Electronics Stores",
         "behavesAs": "one purchase split into sub-ceiling bursts",
         "familyLabel": "Split Ticketing",
-        "priorityTier": "\u2014",
+        "priorityTier": "—",
         "riskTier": "Critical",
         "routedBy": "both",
         "firingRule": "Split-ticket burst",
@@ -1351,15 +1351,15 @@
       "route": "/factoring",
       "edu": {
         "tagline": "One registered account secretly settling for a network of hidden sellers.",
-        "definition": "A registered merchant runs other, undisclosed businesses\u2019 card sales through its own account \u2014 the bank thinks it is paying one shop but is settling for a hidden network.",
+        "definition": "A registered merchant runs other, undisclosed businesses’ card sales through its own account — the bank thinks it is paying one shop but is settling for a hidden network.",
         "analogy": "A licensed market stall quietly renting its till to a dozen unlicensed vendors.",
         "mechanic": [
-          "A merchant with a clean, approved account lends its ID to third parties who couldn\u2019t get their own.",
-          "Those sub-merchants\u2019 sales are injected into the host\u2019s settlement stream.",
-          "Descriptors, geographies and volume suddenly diverge from the host\u2019s declared business."
+          "A merchant with a clean, approved account lends its ID to third parties who couldn’t get their own.",
+          "Those sub-merchants’ sales are injected into the host’s settlement stream.",
+          "Descriptors, geographies and volume suddenly diverge from the host’s declared business."
         ],
-        "cost": "The acquirer onboards un-vetted, unknown sellers blind \u2014 absorbing their chargebacks and unknowingly laundering their proceeds, with the AML/BSA liability that carries.",
-        "legitTwin": "Legitimate marketplaces and payment facilitators disclose their sub-merchants. Factoring hides them \u2014 the plurality of undisclosed identities is the tell.",
+        "cost": "The acquirer onboards un-vetted, unknown sellers blind — absorbing their chargebacks and unknowingly laundering their proceeds, with the AML/BSA liability that carries.",
+        "legitTwin": "Legitimate marketplaces and payment facilitators disclose their sub-merchants. Factoring hides them — the plurality of undisclosed identities is the tell.",
         "victim": "Acquirer (AML exposure)"
       },
       "identity": {
@@ -1378,7 +1378,7 @@
       "tells": [
         {
           "tag": "submerchant",
-          "why": "Carries a sub-merchant ID \u2014 a hidden third party settling through this account."
+          "why": "Carries a sub-merchant ID — a hidden third party settling through this account."
         },
         {
           "tag": "offshore",
@@ -1386,14 +1386,14 @@
         },
         {
           "tag": "big",
-          "why": "An unusually large, clean ticket \u2014 the shape of a cash withdrawal, not a sale."
+          "why": "An unusually large, clean ticket — the shape of a cash withdrawal, not a sale."
         }
       ],
       "transactions": [
         {
           "time": "2026-06-23 13:19",
           "hour": 8,
-          "amount": 175.0,
+          "amount": 175,
           "channel": "ECOMMERCE",
           "cardPresent": false,
           "issuer": "US",
@@ -1540,9 +1540,9 @@
           "label": "Sub-merchant IDs",
           "plainLabel": "hidden sellers",
           "kind": "num",
-          "value": 4.0,
-          "z": 5.0,
-          "baseline": 3.0,
+          "value": 4,
+          "z": 5,
+          "baseline": 3,
           "baselineLabel": "the peer median",
           "multiple": 1.3,
           "hot": true
@@ -1553,10 +1553,10 @@
           "plainLabel": "third-party sales",
           "kind": "pct",
           "value": 0.695,
-          "z": 5.0,
+          "z": 5,
           "baseline": 0.717,
           "baselineLabel": "the peer median",
-          "multiple": 1.0,
+          "multiple": 1,
           "hot": true
         },
         {
@@ -1564,9 +1564,9 @@
           "label": "Distinct billing names",
           "plainLabel": "brands under one account",
           "kind": "num",
-          "value": 5.0,
+          "value": 5,
           "z": 3.89,
-          "baseline": 4.0,
+          "baseline": 4,
           "baselineLabel": "the peer median",
           "multiple": 1.2,
           "hot": true
@@ -1668,13 +1668,13 @@
         ]
       },
       "score": {
-        "integrityRiskScore": 100.0,
+        "integrityRiskScore": 100,
         "compositeZ": 5.252,
         "reconstructedZ": 5.252,
         "percentile": 99.1,
         "tier": "Critical",
         "exposureWeighted": 92.8,
-        "patternScore": 100.0,
+        "patternScore": 100,
         "patternLabel": "Factoring pattern score",
         "routedBy": "both",
         "flagReason": "model + rule",
@@ -1682,23 +1682,23 @@
           {
             "key": "z_descriptor_changes",
             "label": "descriptor changes",
-            "z": 5.0,
+            "z": 5,
             "weight": 1.1,
             "contribution": 1.268,
-            "share": 27.0
+            "share": 27
           },
           {
             "key": "z_n_sub_merchant_ids",
             "label": "n sub merchant ids",
-            "z": 5.0,
-            "weight": 1.0,
+            "z": 5,
+            "weight": 1,
             "contribution": 1.153,
             "share": 24.5
           },
           {
             "key": "z_pct_offshore_acquirer",
             "label": "pct offshore acquirer",
-            "z": 3.0,
+            "z": 3,
             "weight": 1.3,
             "contribution": 0.9,
             "share": 19.1
@@ -1715,7 +1715,7 @@
             "key": "z_descriptor_name_jaccard",
             "label": "descriptor name jaccard",
             "z": -1.69,
-            "weight": -1.0,
+            "weight": -1,
             "contribution": 0.39,
             "share": 8.3
           },
@@ -1723,9 +1723,9 @@
             "key": "z_pct_round_amount",
             "label": "pct round amount",
             "z": 1.21,
-            "weight": 1.0,
+            "weight": 1,
             "contribution": 0.28,
-            "share": 6.0
+            "share": 6
           }
         ],
         "ruleChecks": {
@@ -1736,8 +1736,8 @@
             {
               "label": "Distinct sub-merchant IDs",
               "col": "n_sub_merchant_ids",
-              "actual": 4.0,
-              "op": "\u2265",
+              "actual": 4,
+              "op": "≥",
               "threshold": 2,
               "kind": "num",
               "pass": true
@@ -1756,19 +1756,19 @@
         "tierBins": [
           {
             "tier": "Low",
-            "range": "\u2264 60"
+            "range": "≤ 60"
           },
           {
             "tier": "Monitor",
-            "range": "60\u201375"
+            "range": "60–75"
           },
           {
             "tier": "Elevated",
-            "range": "75\u201385"
+            "range": "75–85"
           },
           {
             "tier": "High",
-            "range": "85\u201393"
+            "range": "85–93"
           },
           {
             "tier": "Critical",
@@ -1780,8 +1780,8 @@
         {
           "name": "descriptor_churn_rule",
           "label": "Descriptor churn",
-          "expr": "descriptor_changes \u2265 3  AND  descriptor_name_jaccard < 0.20",
-          "plain": "The billing name changes repeatedly to unrelated words \u2014 resetting dispute monitoring."
+          "expr": "descriptor_changes ≥ 3  AND  descriptor_name_jaccard < 0.20",
+          "plain": "The billing name changes repeatedly to unrelated words — resetting dispute monitoring."
         }
       ],
       "verdict": {
@@ -1789,7 +1789,7 @@
         "declaredAs": "Lawn and Garden Supply Stores",
         "behavesAs": "a settlement hub for undisclosed sellers",
         "familyLabel": "Factoring",
-        "priorityTier": "\u2014",
+        "priorityTier": "—",
         "riskTier": "Critical",
         "routedBy": "both",
         "firingRule": "Sub-merchant factoring",
@@ -1799,22 +1799,22 @@
       }
     },
     {
-      "key": "descriptor",
-      "label": "Descriptor Intelligence",
+      "key": "surcharge",
+      "label": "Card Surcharge Abuse",
       "color": "#059669",
-      "icon": "Type",
-      "route": "/descriptors",
+      "icon": "BadgePercent",
+      "route": "/surcharge",
       "edu": {
-        "tagline": "Rotating the billing name faster than chargeback monitoring can catch up.",
-        "definition": "The merchant keeps changing the billing name shown on customer statements, so no single name ever accumulates enough chargebacks to enter a monitoring programme.",
-        "analogy": "A scam call-centre swapping its caller-ID every few days so no number gets enough complaints to be blocked.",
+        "tagline": "A checkout card fee the rules don’t allow — over the cap, on debit/prepaid, or hidden.",
+        "definition": "The merchant adds a surcharge to card payments that breaks the brand rules: above the cost-of-acceptance cap, on debit or prepaid cards where it’s prohibited, or with no disclosure at the till. Cardholders don’t recognise the extra charge and dispute it as unauthorised.",
+        "analogy": "A shop that quietly adds a ‘card fee’ bigger than the law allows and never puts up a sign — so customers only find out on their statement.",
         "mechanic": [
-          "A high-chargeback operation knows networks monitor disputes per billing descriptor.",
-          "Before any descriptor crosses a monitoring threshold, it rotates to a fresh, dissimilar name.",
-          "Complaints and disputes scatter across many short-lived names, each individually below the radar."
+          "Surcharging is permitted only up to the merchant’s cost of acceptance, never on debit/prepaid, and only if disclosed.",
+          "This merchant applies a fee past the cap and onto prohibited cards, undisclosed at the point of sale.",
+          "The unexpected fee drives ‘I don’t recognise this’ disputes, chargebacks and fee reversals."
         ],
-        "cost": "Customers can\u2019t recognise the charge to dispute it; issuers field the confusion; the acquirer harbours a merchant that should already be in a network monitoring programme.",
-        "legitTwin": "A one-time rebrand keeps some of the old name and doesn\u2019t reset a chargeback spike. Churn shares almost no words between names and repeats \u2014 that dissimilarity-over-time is the tell.",
+        "cost": "Cardholders pay a fee they never agreed to; issuers field the disputes; the acquirer carries a merchant breaching the network surcharge rules.",
+        "legitTwin": "A compliant merchant surcharges at or below its cost of acceptance, exempts debit/prepaid, and discloses the fee — so it doesn’t generate a wave of unexpected-fee disputes.",
         "victim": "Cardholders + issuer"
       },
       "identity": {
@@ -1833,15 +1833,15 @@
       "tells": [
         {
           "tag": "cnp",
-          "why": "Card-not-present \u2014 no physical card, unusual for the declared shopfront."
+          "why": "Card-not-present — the surcharge is applied online where disclosure is easiest to skip."
         },
         {
           "tag": "declined",
-          "why": "Refused by the issuer \u2014 often because the true product isn\u2019t permitted."
+          "why": "Disputed / reversed — cardholders reject a fee they didn’t recognise."
         },
         {
           "tag": "round",
-          "why": "An exact round number \u2014 people rarely buy goods at precisely $60.00."
+          "why": "The surcharge lifts an otherwise clean ticket by an odd, unexpected amount."
         }
       ],
       "transactions": [
@@ -2024,114 +2024,95 @@
       ],
       "deviations": [
         {
-          "key": "descriptor_changes",
-          "label": "Billing-name changes",
-          "plainLabel": "name switches",
-          "kind": "num",
-          "value": 6.0,
-          "z": 5.0,
-          "baseline": 2.0,
-          "baselineLabel": "the peer median",
-          "multiple": 3.0,
-          "hot": true
-        },
-        {
-          "key": "n_distinct_descriptors",
-          "label": "Distinct billing names",
-          "plainLabel": "different names used",
-          "kind": "num",
-          "value": 7.0,
-          "z": 5.0,
-          "baseline": 3.0,
-          "baselineLabel": "the peer median",
-          "multiple": 2.3,
-          "hot": true
-        },
-        {
-          "key": "descriptor_name_jaccard",
-          "label": "Name similarity",
-          "plainLabel": "word overlap between names",
-          "kind": "num",
-          "value": 0.0,
-          "z": -1.69,
-          "baseline": 0.0,
+          "key": "surcharge_rate_bps",
+          "label": "Surcharge rate",
+          "plainLabel": "card fee added",
+          "kind": "bps",
+          "value": 479,
+          "z": 4.6,
+          "baseline": 0,
           "baselineLabel": "the peer median",
           "multiple": null,
           "hot": true
         },
         {
-          "key": "pct_generic_descriptor",
-          "label": "Generic-name share",
-          "plainLabel": "vague-name sales",
+          "key": "pct_txn_surcharged",
+          "label": "Card book surcharged",
+          "plainLabel": "sales carrying the fee",
           "kind": "pct",
-          "value": 0.428,
-          "z": 1.47,
-          "baseline": 0.341,
+          "value": 0.81,
+          "z": 3.9,
+          "baseline": 0,
           "baselineLabel": "the peer median",
-          "multiple": 1.3,
-          "hot": false
+          "multiple": null,
+          "hot": true
+        },
+        {
+          "key": "notrecognized_dispute_bps",
+          "label": "‘Not recognized’ disputes",
+          "plainLabel": "unexpected-fee disputes",
+          "kind": "bps",
+          "value": 142,
+          "z": 3.4,
+          "baseline": 22,
+          "baselineLabel": "the peer median",
+          "multiple": 6.5,
+          "hot": true
         },
         {
           "key": "chargeback_rate_bps",
           "label": "Chargeback rate",
           "plainLabel": "customer disputes",
           "kind": "bps",
-          "value": 27.563,
-          "z": 0.04,
+          "value": 109,
+          "z": 2.1,
           "baseline": 64.24,
           "baselineLabel": "the peer median",
-          "multiple": 0.4,
+          "multiple": 1.7,
+          "hot": true
+        },
+        {
+          "key": "refund_rate_amount",
+          "label": "Fee-reversal rate",
+          "plainLabel": "fees refunded back",
+          "kind": "pct",
+          "value": 0.09,
+          "z": 1.3,
+          "baseline": 0.05,
+          "baselineLabel": "the peer median",
+          "multiple": 1.8,
           "hot": false
         }
       ],
       "signature": {
-        "kind": "descriptor",
-        "changes": 6,
-        "jaccard": 0.0,
-        "distinct": 7,
-        "chargebackBps": 28.0,
-        "descriptors": [
+        "kind": "surcharge",
+        "surchargeRateBps": 479,
+        "capBps": 350,
+        "overCapBps": 129,
+        "pctSurcharged": 0.81,
+        "notRecognizedBps": 142,
+        "chargebackBps": 109,
+        "tiers": [
           {
-            "name": "FAIRMOUNTS88",
-            "firstSeen": "2025-07-05",
-            "txns": 260,
-            "share": 0.143
+            "label": "Credit",
+            "baseAvg": 38.87,
+            "surchargeAvg": 40.73,
+            "share": 0.52,
+            "prohibited": false
           },
           {
-            "name": "FAIRMOUNTS27",
-            "firstSeen": "2025-08-26",
-            "txns": 259,
-            "share": 0.143
+            "label": "Debit",
+            "baseAvg": 34.1,
+            "surchargeAvg": 35.73,
+            "share": 0.34,
+            "prohibited": true
           },
           {
-            "name": "FAIRMOUNTS30",
-            "firstSeen": "2025-10-20",
-            "txns": 259,
-            "share": 0.143
-          },
-          {
-            "name": "CUSTOMER SERVICE",
-            "firstSeen": "2025-12-07",
-            "txns": 259,
-            "share": 0.143
-          },
-          {
-            "name": "FAIRMOUNTS11",
-            "firstSeen": "2026-01-27",
-            "txns": 259,
-            "share": 0.143
-          },
-          {
-            "name": "SUBSCRIPTION SVC",
-            "firstSeen": "2026-03-18",
-            "txns": 259,
-            "share": 0.143
-          },
-          {
-            "name": "ONLINE PURCHASE",
-            "firstSeen": "2026-05-08",
-            "txns": 259,
-            "share": 0.143
+            "label": "Prepaid",
+            "baseAvg": 22.4,
+            "surchargeAvg": 23.47,
+            "share": 0.14,
+            "prohibited": true
           }
         ]
       },
@@ -2142,81 +2123,73 @@
         "percentile": 84.8,
         "tier": "Elevated",
         "exposureWeighted": 75.7,
-        "patternScore": 100.0,
-        "patternLabel": "Descriptor-churn pattern score",
+        "patternScore": 100,
+        "patternLabel": "Over-cap surcharge pattern score",
         "routedBy": "rule",
         "flagReason": "rule",
         "drivers": [
           {
-            "key": "z_descriptor_changes",
-            "label": "descriptor changes",
-            "z": 5.0,
+            "key": "z_surcharge_rate_bps",
+            "label": "surcharge rate",
+            "z": 4.6,
             "weight": 1.1,
-            "contribution": 1.268,
-            "share": 58.5
+            "contribution": 1.32,
+            "share": 52
           },
           {
-            "key": "z_descriptor_name_jaccard",
-            "label": "descriptor name jaccard",
-            "z": -1.69,
-            "weight": -1.0,
-            "contribution": 0.39,
-            "share": 18.0
+            "key": "z_notrecognized_dispute_bps",
+            "label": "not-recognized disputes",
+            "z": 3.4,
+            "weight": 1,
+            "contribution": 0.62,
+            "share": 24.4
           },
           {
-            "key": "z_pct_generic_descriptor",
-            "label": "pct generic descriptor",
-            "z": 1.47,
-            "weight": 0.8,
-            "contribution": 0.272,
-            "share": 12.6
-          },
-          {
-            "key": "z_refund_rate_count",
-            "label": "refund rate count",
-            "z": 1.06,
-            "weight": 0.8,
-            "contribution": 0.195,
-            "share": 9.0
-          },
-          {
-            "key": "z_pct_decline_suspected_fraud",
-            "label": "pct decline suspected fraud",
-            "z": 0.19,
+            "key": "z_pct_txn_surcharged",
+            "label": "share surcharged",
+            "z": 3.9,
             "weight": 0.7,
-            "contribution": 0.03,
-            "share": 1.4
+            "contribution": 0.35,
+            "share": 13.8
           },
           {
             "key": "z_chargeback_rate_bps",
-            "label": "chargeback rate bps",
-            "z": 0.04,
+            "label": "chargeback rate",
+            "z": 2.1,
             "weight": 1.2,
-            "contribution": 0.011,
-            "share": 0.5
+            "contribution": 0.19,
+            "share": 7.5
+          },
+          {
+            "key": "z_refund_rate_amount",
+            "label": "fee reversals",
+            "z": 1.3,
+            "weight": 0.5,
+            "contribution": 0.06,
+            "share": 2.3
           }
         ],
         "ruleChecks": {
-          "rule": "descriptor_churn_rule",
-          "ruleLabel": "Descriptor churn",
-          "mode": "all",
+          "rule": "surcharge_over_cap_rule",
+          "ruleLabel": "Over-cap / prohibited surcharge",
+          "mode": "any",
           "checks": [
             {
-              "label": "Billing-name changes",
-              "col": "descriptor_changes",
-              "actual": 6.0,
-              "op": "\u2265",
-              "threshold": 3,
-              "kind": "num",
+              "label": "Surcharge over cost-of-acceptance cap",
+              "col": "surcharge_rate_bps",
+              "actual": 479,
+              "op": ">",
+              "threshold": 350,
+              "kind": "bps",
               "pass": true
             },
             {
-              "label": "Name word-overlap (Jaccard)",
-              "col": "descriptor_name_jaccard",
-              "actual": 0.0,
-              "op": "<",
-              "threshold": 0.2,
-              "kind": "num",
+              "label": "Surcharged debit / prepaid share",
+              "col": "pct_txn_surcharged_debit",
+              "actual": 0.48,
+              "op": ">",
+              "threshold": 0,
+              "kind": "pct",
               "pass": true
             }
           ]
@@ -2224,19 +2197,19 @@
         "tierBins": [
           {
             "tier": "Low",
-            "range": "\u2264 60"
+            "range": "≤ 60"
           },
           {
             "tier": "Monitor",
-            "range": "60\u201375"
+            "range": "60–75"
           },
           {
             "tier": "Elevated",
-            "range": "75\u201385"
+            "range": "75–85"
           },
           {
             "tier": "High",
-            "range": "85\u201393"
+            "range": "85–93"
           },
           {
             "tier": "Critical",
@@ -2246,24 +2219,24 @@
       },
       "rules": [
         {
-          "name": "descriptor_churn_rule",
-          "label": "Descriptor churn",
-          "expr": "descriptor_changes \u2265 3  AND  descriptor_name_jaccard < 0.20",
-          "plain": "The billing name changes repeatedly to unrelated words \u2014 resetting dispute monitoring."
+          "name": "surcharge_over_cap_rule",
+          "label": "Over-cap / prohibited surcharge",
+          "expr": "surcharge_rate_bps > cost_of_acceptance_cap  OR  surcharged_debit_prepaid = true",
+          "plain": "A card surcharge is applied above the cost-of-acceptance cap or on prohibited debit/prepaid cards."
         }
       ],
       "verdict": {
         "declaredMcc": "5968",
         "declaredAs": "Direct Marketing - Continuity/Subscription",
-        "behavesAs": "a rotating-descriptor billing operation",
-        "familyLabel": "Descriptor Intelligence",
-        "priorityTier": "\u2014",
+        "behavesAs": "a merchant surcharging cards over the brand cap",
+        "familyLabel": "Card Surcharge Abuse",
+        "priorityTier": "P2",
         "riskTier": "Elevated",
         "routedBy": "rule",
-        "firingRule": "Descriptor churn",
+        "firingRule": "Over-cap / prohibited surcharge",
         "exposure": 61650.89,
         "rulesTriggered": 1,
-        "trueArchetype": "descriptor_churn_only"
+        "trueArchetype": "card_surcharge_over_cap"
       }
     },
     {
@@ -2274,15 +2247,15 @@
       "route": "/cash",
       "edu": {
         "tagline": "Card acceptance used as an unlicensed cash-out channel.",
-        "definition": "The merchant uses card acceptance to hand out cash \u2014 effectively an unlicensed ATM \u2014 dodging the cash-advance fees and AML scrutiny a real cash business carries.",
-        "analogy": "A \u2018gift shop\u2019 whose register only ever rings up neat $200 and $500 \u2018purchases\u2019 and hands back an envelope of cash.",
+        "definition": "The merchant uses card acceptance to hand out cash — effectively an unlicensed ATM — dodging the cash-advance fees and AML scrutiny a real cash business carries.",
+        "analogy": "A ‘gift shop’ whose register only ever rings up neat $200 and $500 ‘purchases’ and hands back an envelope of cash.",
         "mechanic": [
           "Charge a card and return most of the value as cash, keeping a fee.",
-          "Because it\u2019s coded as retail, it dodges cash-advance interchange, cash-out limits and AML scrutiny.",
+          "Because it’s coded as retail, it dodges cash-advance interchange, cash-out limits and AML scrutiny.",
           "Enables money laundering and converts stolen cards to untraceable cash."
         ],
         "cost": "The acquirer becomes an unknowing cash-out and laundering conduit (BSA/OFAC liability); interchange is under-collected; issuers absorb the stolen-card fraud that gets cashed out.",
-        "legitTwin": "Round-number pricing alone is innocent. Cash-out combines round hundreds with high tickets and none of retail\u2019s texture \u2014 no shipping, no refunds, no variety.",
+        "legitTwin": "Round-number pricing alone is innocent. Cash-out combines round hundreds with high tickets and none of retail’s texture — no shipping, no refunds, no variety.",
         "victim": "Acquirer (AML) + issuer"
       },
       "identity": {
@@ -2301,11 +2274,11 @@
       "tells": [
         {
           "tag": "round",
-          "why": "An exact round number \u2014 people rarely buy goods at precisely $60.00."
+          "why": "An exact round number — people rarely buy goods at precisely $60.00."
         },
         {
           "tag": "big",
-          "why": "An unusually large, clean ticket \u2014 the shape of a cash withdrawal, not a sale."
+          "why": "An unusually large, clean ticket — the shape of a cash withdrawal, not a sale."
         },
         {
           "tag": "offshore",
@@ -2329,7 +2302,7 @@
         {
           "time": "2026-05-14 17:39",
           "hour": 11,
-          "amount": 850.0,
+          "amount": 850,
           "channel": "ECOMMERCE",
           "cardPresent": false,
           "issuer": "US",
@@ -2344,7 +2317,7 @@
         {
           "time": "2026-05-20 21:38",
           "hour": 15,
-          "amount": 1150.0,
+          "amount": 1150,
           "channel": "ECOMMERCE",
           "cardPresent": false,
           "issuer": "US",
@@ -2389,7 +2362,7 @@
         {
           "time": "2026-06-01 11:27",
           "hour": 5,
-          "amount": 1300.0,
+          "amount": 1300,
           "channel": "ECOMMERCE",
           "cardPresent": false,
           "issuer": "US",
@@ -2405,7 +2378,7 @@
         {
           "time": "2026-06-01 11:52",
           "hour": 5,
-          "amount": 400.0,
+          "amount": 400,
           "channel": "POS",
           "cardPresent": true,
           "issuer": "US",
@@ -2420,7 +2393,7 @@
         {
           "time": "2026-06-04 16:29",
           "hour": 10,
-          "amount": 450.0,
+          "amount": 450,
           "channel": "ECOMMERCE",
           "cardPresent": false,
           "issuer": "US",
@@ -2433,7 +2406,7 @@
         {
           "time": "2026-06-16 11:12",
           "hour": 5,
-          "amount": 450.0,
+          "amount": 450,
           "channel": "POS",
           "cardPresent": true,
           "issuer": "US",
@@ -2461,7 +2434,7 @@
         {
           "time": "2026-06-24 14:38",
           "hour": 8,
-          "amount": 950.0,
+          "amount": 950,
           "channel": "ECOMMERCE",
           "cardPresent": false,
           "issuer": "US",
@@ -2476,7 +2449,7 @@
         {
           "time": "2026-06-24 22:10",
           "hour": 16,
-          "amount": 650.0,
+          "amount": 650,
           "channel": "ECOMMERCE",
           "cardPresent": false,
           "issuer": "US",
@@ -2496,7 +2469,7 @@
           "plainLabel": "exact-hundred sales",
           "kind": "pct",
           "value": 0.444,
-          "z": 5.0,
+          "z": 5,
           "baseline": 0.329,
           "baselineLabel": "the peer median",
           "multiple": 1.3,
@@ -2508,7 +2481,7 @@
           "plainLabel": "charges over $500",
           "kind": "pct",
           "value": 0.798,
-          "z": 5.0,
+          "z": 5,
           "baseline": 0.708,
           "baselineLabel": "the peer median",
           "multiple": 1.1,
@@ -2520,10 +2493,10 @@
           "plainLabel": "cash-like sales",
           "kind": "pct",
           "value": 0.556,
-          "z": 5.0,
+          "z": 5,
           "baseline": 0.278,
           "baselineLabel": "the peer median",
-          "multiple": 2.0,
+          "multiple": 2,
           "hot": true
         },
         {
@@ -2533,7 +2506,7 @@
           "kind": "usd",
           "value": 807.814,
           "z": 3.97,
-          "baseline": 260.0,
+          "baseline": 260,
           "baselineLabel": "typical for the declared code",
           "multiple": 3.1,
           "hot": true
@@ -2658,7 +2631,7 @@
         "percentile": 97.6,
         "tier": "Critical",
         "exposureWeighted": 91.9,
-        "patternScore": 100.0,
+        "patternScore": 100,
         "patternLabel": "Cash-disbursement pattern score",
         "routedBy": "both",
         "flagReason": "model + rule",
@@ -2666,16 +2639,16 @@
           {
             "key": "z_pct_round_amount",
             "label": "pct round amount",
-            "z": 5.0,
-            "weight": 1.0,
+            "z": 5,
+            "weight": 1,
             "contribution": 1.153,
             "share": 21.1
           },
           {
             "key": "z_pct_quasi_cash",
             "label": "pct quasi cash",
-            "z": 5.0,
-            "weight": 1.0,
+            "z": 5,
+            "weight": 1,
             "contribution": 1.153,
             "share": 21.1
           },
@@ -2749,19 +2722,19 @@
         "tierBins": [
           {
             "tier": "Low",
-            "range": "\u2264 60"
+            "range": "≤ 60"
           },
           {
             "tier": "Monitor",
-            "range": "60\u201375"
+            "range": "60–75"
           },
           {
             "tier": "Elevated",
-            "range": "75\u201385"
+            "range": "75–85"
           },
           {
             "tier": "High",
-            "range": "85\u201393"
+            "range": "85–93"
           },
           {
             "tier": "Critical",
@@ -2782,7 +2755,7 @@
         "declaredAs": "Financial Institutions - Merchandise",
         "behavesAs": "an unlicensed cash-out channel",
         "familyLabel": "Cash Disbursement",
-        "priorityTier": "\u2014",
+        "priorityTier": "—",
         "riskTier": "Critical",
         "routedBy": "both",
         "firingRule": "Cash disbursement",

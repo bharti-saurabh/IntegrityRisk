@@ -15,7 +15,7 @@ export const ENSEMBLE_WEIGHTS = {
   supervised: 0.2,
   anomaly: 0.15,
   graph: 0.15,
-  descriptorNlp: 0.15,
+  surcharge: 0.15,
   mccMismatch: 0.1,
   behavioralChange: 0.1,
 } as const;
@@ -44,14 +44,17 @@ function anomalyScore(f: MerchantFeatures): number {
   return clamp(logistic100(zmag - 2.5, 0.9, 0) * 0.7 + f.mccDivergence * 40);
 }
 
-function descriptorNlpScore(f: MerchantFeatures): number {
+// Card-surcharge abuse: a fee added to card transactions (over the brand cap, on
+// prohibited debit/prepaid, or undisclosed) surfaces to the cardholder as an
+// unexpected charge — driving "I didn't authorize this fee" disputes, chargebacks
+// and fee reversals. No descriptor-text forensics; the signature is the dispute
+// and refund fallout of the fee itself.
+function surchargeScore(f: MerchantFeatures): number {
   return clamp(
     100 *
-      (0.4 * f.brandMimicScore +
-        0.2 * Math.min(1, f.descriptorEntropy / 2.2) +
-        0.15 * f.genericTokenRatio +
-        0.15 * (1 - f.descriptorNameSimilarity) +
-        0.1 * Math.min(1, f.notRecognizedDisputeRate * 20)),
+      (0.5 * Math.min(1, f.notRecognizedDisputeRate * 15) +
+        0.3 * Math.min(1, f.disputeRate * 12) +
+        0.2 * Math.min(1, f.refundRate * 6)),
   );
 }
 
@@ -109,7 +112,7 @@ export function computeScores(
   const rule = ruleScore(ruleHits);
   const supervised = supervisedScore(f);
   const anomaly = anomalyScore(f);
-  const descriptor = descriptorNlpScore(f);
+  const surcharge = surchargeScore(f);
   const mismatch = mccMismatchScore(mcc, f);
   const change = clamp(f.changePointScore * 100);
   const w = ENSEMBLE_WEIGHTS;
@@ -118,7 +121,7 @@ export function computeScores(
       w.supervised * supervised +
       w.anomaly * anomaly +
       w.graph * graphScore +
-      w.descriptorNlp * descriptor +
+      w.surcharge * surcharge +
       w.mccMismatch * mismatch +
       w.behavioralChange * change,
   );
@@ -132,7 +135,7 @@ export function computeScores(
     supervisedScore: round(supervised, 1),
     anomalyScore: round(anomaly, 1),
     graphScore: round(graphScore, 1),
-    descriptorNlpScore: round(descriptor, 1),
+    surchargeScore: round(surcharge, 1),
     mccMismatchScore: round(mismatch, 1),
     behavioralChangeScore: round(change, 1),
     finalRiskScore: round(final, 1),
@@ -221,9 +224,9 @@ export function computeTypologyScores(
       100 * (0.3 * Math.min(1, f.descriptorEntropy / 2.2) + 0.2 * Math.min(1, f.categoryDiversity / 2)) +
       0.5 * ruleByTypology("FACTORING"),
   );
-  const descriptorScore = clamp(
-    100 * (0.5 * f.brandMimicScore + 0.3 * Math.min(1, f.notRecognizedDisputeRate * 15)) +
-      0.5 * ruleByTypology("FAKE_DESCRIPTOR"),
+  const surchargeTypScore = clamp(
+    100 * (0.5 * Math.min(1, f.notRecognizedDisputeRate * 15) + 0.3 * Math.min(1, f.disputeRate * 12)) +
+      0.5 * ruleByTypology("CARD_SURCHARGE"),
   );
   const cashScore = clamp(
     100 * (0.4 * f.roundDollarRatio + 0.3 * Math.min(1, f.walletLoadRatio * 1.5) + 0.3 * Math.min(1, f.refundAfterPurchaseRatio * 1.5)) +
@@ -236,7 +239,7 @@ export function computeTypologyScores(
     MCC_ABUSE: round(abuseScore, 1),
     SPLIT_TICKETING: round(splitScore, 1),
     FACTORING: round(factoringScore, 1),
-    FAKE_DESCRIPTOR: round(descriptorScore, 1),
+    CARD_SURCHARGE: round(surchargeTypScore, 1),
     CASH_DISBURSEMENT: round(cashScore, 1),
   };
 }

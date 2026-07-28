@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, SectionLabel, StatTile, Button, Chip } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
-import { fmtNumber, fmtPct } from "@/utils/format";
+import { fmtNumber, fmtPct, fmtCurrency } from "@/utils/format";
 import { exportJson } from "@/utils/exports";
 import { FAMILY_META, PRIORITY_TIER_HEX, type FamilyKey } from "@/data/overview";
 import {
@@ -43,16 +43,12 @@ export default function ModelStore() {
   const [selectedId, setSelectedId] = useState<string>(CARDS[0].id);
   const selected = CARDS.find((c) => c.id === selectedId)!;
 
-  const aucValues = registry.models
-    .map((m) => m.metrics.auc)
+  const precisionValues = registry.models
+    .map((m) => m.metrics.precision)
     .filter((v): v is number => typeof v === "number");
-  const meanAuc = aucValues.reduce((a, b) => a + b, 0) / Math.max(1, aucValues.length);
-  const featureUnion = useMemo(() => {
-    const set = new Set<string>();
-    registry.models.forEach((m) => m.features.forEach((f) => set.add(f.key)));
-    registry.contentBank.subModels.forEach((sm) => sm.features.forEach((f) => set.add(f.key)));
-    return set.size;
-  }, []);
+  const meanPrecision = precisionValues.reduce((a, b) => a + b, 0) / Math.max(1, precisionValues.length);
+  const capturedExposureUsd = registry.models.reduce((a, m) => a + (m.metrics.capturedExposureUsd ?? 0), 0);
+  const alertVolume = registry.models.reduce((a, m) => a + (m.metrics.alertVolume ?? 0), 0);
 
   return (
     <div>
@@ -69,9 +65,9 @@ export default function ModelStore() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Models in store" value={CARDS.length} sub="detectors · ensemble · rules" accent="cyan" icon={<Icon name="Boxes" size={16} />} />
-        <StatTile label="Mean detector AUC" value={meanAuc.toFixed(3)} sub="threshold-free discrimination" accent="ok" icon={<Icon name="Target" size={16} />} />
-        <StatTile label="Features tracked" value={featureUnion} sub="peer-normalized signals" accent="violet" icon={<Icon name="Cpu" size={16} />} />
-        <StatTile label="Merchants scored" value={fmtNumber(registry.meta.merchantsScored)} sub={`${fmtNumber(registry.meta.flaggedMerchants)} flagged`} accent="amber" icon={<Icon name="Users" size={16} />} />
+        <StatTile label="Mean precision" value={fmtPct(meanPrecision, 1)} sub="across detectors, at op. point" accent="ok" icon={<Icon name="Target" size={16} />} />
+        <StatTile label="Alert volume" value={fmtNumber(alertVolume)} sub="merchants sent to review" accent="violet" icon={<Icon name="Briefcase" size={16} />} />
+        <StatTile label="Captured exposure" value={fmtCurrency(capturedExposureUsd, true)} sub="$ on true-positive alerts" accent="amber" icon={<Icon name="Banknote" size={16} />} />
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(280px,340px)_1fr]">
@@ -120,7 +116,7 @@ export default function ModelStore() {
 /* ------------------------------------------------------------------ catalog */
 function CatalogRow({ entry, active, onClick }: { entry: Entry; active: boolean; onClick: () => void }) {
   const color = accentOf(entry);
-  const auc = "metrics" in entry ? entry.metrics.auc : undefined;
+  const precision = "metrics" in entry ? entry.metrics.precision : undefined;
   const headline =
     entry.kind === "expert-rules"
       ? `${(entry as RulePack).rules.length} gates`
@@ -149,10 +145,10 @@ function CatalogRow({ entry, active, onClick }: { entry: Entry; active: boolean;
             <span className="shrink-0 text-[10px] text-ink-3 tnum">v{entry.version}</span>
           </div>
           <div className="mt-0.5 text-[11px] text-ink-3">{KIND_LABEL[entry.kind]} · {headline}</div>
-          {typeof auc === "number" ? (
+          {typeof precision === "number" ? (
             <div className="mt-1.5 flex items-center gap-1.5">
-              <span className="micro-label" style={{ color }}>AUC</span>
-              <span className="text-xs font-bold tnum" style={{ color }}>{auc.toFixed(3)}</span>
+              <span className="micro-label" style={{ color }}>Precision</span>
+              <span className="text-xs font-bold tnum" style={{ color }}>{fmtPct(precision, 0)}</span>
             </div>
           ) : null}
         </div>
@@ -274,15 +270,16 @@ function ModelDetail({ model, onOpen }: { model: Model; onOpen: (route: string) 
           <span className="text-[10px] text-ink-3">{metricNote(m)}</span>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <MetricStat label="ROC-AUC" value={typeof m.auc === "number" ? m.auc.toFixed(3) : "—"} hint="threshold-free" color={color} />
-          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint={model.metrics.operatingPoint} />
-          <MetricStat label="Recall" value={fmtPct(m.recall, 0)} hint="of planted class caught" />
-          <MetricStat label="F1" value={m.f1.toFixed(2)} hint={`n=${m.support} synthetic`} />
+          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint="of alerts confirmed" color={color} />
+          <MetricStat label="Alert volume" value={fmtNumber(m.alertVolume)} hint="merchants reviewed" />
+          <MetricStat label="Captured exposure" value={fmtCurrency(m.capturedExposureUsd, true)} hint="$ on true positives" />
+          <MetricStat label="Confirmed" value={fmtNumber(m.tp)} hint="true-positive alerts" />
         </div>
         <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-ink-3 tnum">
-          <span>TP {m.tp}</span><span>FP {m.fp}</span><span>FN {m.fn}</span>
+          <span>TP {m.tp}</span><span>FP {m.fp}</span>
           <span className="text-ink-3">· operating point: {m.operatingPoint}</span>
         </div>
+        <p className="mt-2 text-[10px] text-ink-3">Recall / F1 / AUC omitted — the true positive universe is unobservable for a live integrity book.</p>
       </Card>
 
       <Card className="p-5">
@@ -373,7 +370,7 @@ function ContentBankDetail({ bank }: { bank: ContentBank }) {
       <Card className="p-5">
         <SectionLabel>Priority-tier detection (audited)</SectionLabel>
         <p className="mt-1 text-[11px] text-ink-3">
-          The reliable read: recall of the P1/P2/P3 rollup against planted labels.
+          The reliable read: precision of the P1/P2/P3 rollup against planted labels, with the alert volume each tier raises.
         </p>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {(["P1", "P2", "P3"] as const).map((t) => (
@@ -385,10 +382,10 @@ function ContentBankDetail({ bank }: { bank: ContentBank }) {
                 {t}
               </span>
               <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-xl font-bold tnum text-ink">{fmtPct(tm[t].recall, 0)}</span>
-                <span className="text-[10px] text-ink-3">recall</span>
+                <span className="text-xl font-bold tnum text-ink">{fmtPct(tm[t].precision, 0)}</span>
+                <span className="text-[10px] text-ink-3">precision</span>
               </div>
-              <div className="text-[10px] text-ink-3 tnum">P {fmtPct(tm[t].precision, 0)} · n={tm[t].support}</div>
+              <div className="text-[10px] text-ink-3 tnum">{fmtNumber(tm[t].alertVolume)} alerts · {fmtNumber(tm[t].tp)} confirmed</div>
             </div>
           ))}
         </div>
@@ -416,10 +413,8 @@ function ContentBankDetail({ bank }: { bank: ContentBank }) {
                 </div>
                 <div className="flex items-center gap-3 text-[11px] tnum text-ink-3">
                   <span>{s.featureCount} feats</span>
-                  <span>n={s.support}</span>
-                  {typeof s.metrics.auc === "number" ? (
-                    <span className="font-bold" style={{ color }}>AUC {s.metrics.auc.toFixed(2)}</span>
-                  ) : null}
+                  <span>{s.flagged} alerts</span>
+                  <span className="font-bold" style={{ color }}>P {fmtPct(s.metrics.precision, 0)}</span>
                 </div>
               </div>
               <div className="mt-1.5 flex flex-wrap gap-1.5">

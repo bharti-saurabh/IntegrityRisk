@@ -299,8 +299,8 @@ export default function ExecutiveCommandCenter() {
               },
               {
                 l: "Detection quality",
-                v: detection ? `${fmtPct(detection.precision)} / ${fmtPct(detection.recall)}` : "—",
-                d: "precision / recall vs. labels",
+                v: detection ? `${fmtPct(detection.precision)} · ${fmtNumber(detection.alertVolume)}` : "—",
+                d: "precision · alerts vs. labels",
               },
             ].map((s, i) => (
               <div
@@ -401,8 +401,8 @@ export default function ExecutiveCommandCenter() {
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[
                     { l: "Precision", v: fmtPct(detection.precision), c: CHART.cyan },
-                    { l: "Recall", v: fmtPct(detection.recall), c: CHART.green },
-                    { l: "True positives", v: fmtNumber(detection.tp), c: CHART.axis },
+                    { l: "Captured exposure", v: fmtCurrency(detection.capturedExposureUsd, true), c: CHART.green },
+                    { l: "Alert volume", v: fmtNumber(detection.alertVolume), c: CHART.axis },
                     { l: "False positives", v: fmtNumber(detection.fp), c: CHART.amber },
                   ].map((m) => (
                     <div key={m.l} className="rounded-lg border border-border bg-surface-2/40 p-3">

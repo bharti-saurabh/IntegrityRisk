@@ -177,7 +177,7 @@ export function generateBrief(
   if (typ === "SPLIT_TICKETING") steps.push("Reconstruct the near-threshold clusters and confirm they represent single underlying purchases.");
   if (typ === "MCC_ABUSE") steps.push("Sample keyed/fallback and cross-border settlements and re-derive the qualified interchange tier; quantify the downgrade vs. the declared band.");
   if (typ === "CASH_DISBURSEMENT") steps.push("Sample round-dollar purchase/refund pairs and verify goods/services were actually delivered.");
-  if (typ === "FAKE_DESCRIPTOR") steps.push("Initiate merchant outreach on descriptor accuracy and monitor 'not recognized' disputes.");
+  if (typ === "CARD_SURCHARGE") steps.push("Sample surcharged card transactions and re-derive the fee vs. the cost-of-acceptance cap; confirm debit/prepaid handling and point-of-sale disclosure, then require the merchant to correct or cease surcharging.");
   steps.push(`Recommended action on file: ${RECOMMENDED_ACTION_LABELS[record.merchant.groundTruthAbuseFlag ? "enhanced-due-diligence" : "continue-monitoring"] ?? "continue monitoring"}.`);
   if (typ === "CLEAN") {
     steps.length = 0;
