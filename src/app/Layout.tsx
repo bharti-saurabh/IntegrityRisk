@@ -100,14 +100,15 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-canvas/80 px-4 py-3 backdrop-blur-md">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-canvas/80 px-4 py-2 backdrop-blur-md">
           <button
             onClick={() => setPaletteOpen(true)}
-            className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-left text-xs text-ink-3 hover:border-ink-3 sm:max-w-md"
+            title="Search — merchants, cases, actions"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-left text-xs text-ink-3 transition-colors hover:border-ink-3 hover:text-ink-2"
           >
             <Icon name="Search" size={14} />
-            <span className="flex-1">Search merchants, cases, actions…</span>
-            <kbd className="rounded border border-border px-1.5 py-0.5 text-[10px]">⌘K</kbd>
+            <span className="hidden sm:inline">Search</span>
+            <kbd className="hidden rounded border border-border px-1.5 py-0.5 text-[10px] sm:inline">⌘K</kbd>
           </button>
 
           <div className="ml-auto flex items-center gap-2">

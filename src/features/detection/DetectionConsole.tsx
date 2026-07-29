@@ -22,6 +22,10 @@ import { subjectFromExplorer, buildInvestigation } from "@/features/ai-copilot/a
 import { AgentStreamPanel } from "@/features/ai-copilot/AgentStreamPanel";
 import { useAppStore } from "@/stores/appStore";
 
+// The deterministic verdict the agent settles on — reused for the pinned
+// findings card so the dossier shows the same synthesis the drawer streamed.
+type InvestigationSynthesis = ReturnType<typeof subjectFromExplorer>["synthesis"];
+
 // ---------------------------------------------------------------------------
 // Reusable detection-model console. Every integrity typology renders through
 // this component (see src/data/typologies.ts): pick an identification model →
@@ -171,7 +175,11 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   const initialKey = routeParam && modelByKey[routeParam] ? routeParam : config.models[0].key;
   const [modelKey, setModelKey] = useState(initialKey);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [mode, setMode] = useState<"evidence" | "agent">("evidence");
+  // Investigation is now a slide-over drawer (not a full-panel swap): the
+  // evidence dossier stays put underneath, and completed runs collapse to a
+  // pinned findings card on the merchants that have been investigated.
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [investigatedIds, setInvestigatedIds] = useState<Set<string>>(() => new Set());
   const [runId, setRunId] = useState(0);
   // Local queue filters — how an analyst narrows the remediation list to what
   // they'll actually work. Kept out of the global store so they can't perturb
@@ -181,6 +189,11 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   const [minSignals, setMinSignals] = useState(0);
   const [hideCased, setHideCased] = useState(false);
   const [sortBy, setSortBy] = useState<"risk" | "exposure" | "signals">("risk");
+  // Progressive disclosure: the model rationale and the secondary filters both
+  // start collapsed so the console opens compact and the queue/detail win the
+  // vertical space (no more scrolling past a tall control band).
+  const [showModelInfo, setShowModelInfo] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Reset to this family's first model whenever we switch consoles.
   useEffect(() => {
@@ -215,12 +228,14 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   // Reset selection + filters when the model (and therefore the cohort) changes.
   useEffect(() => {
     setSelectedId(cohort[0]?.merchant_id ?? null);
-    setMode("evidence");
+    setDrawerOpen(false);
+    setInvestigatedIds(new Set());
     setQuery("");
     setTierFilter("all");
     setMinSignals(0);
     setHideCased(false);
     setSortBy("risk");
+    setShowFilters(false);
   }, [modelKey, cohort]);
 
   const selected = cohort.find((m) => m.merchant_id === selectedId) ?? cohort[0] ?? null;
@@ -262,6 +277,8 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   }, [cohort, tierFilter, minSignals, hideCased, query, sortBy, filedCases, model]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtersActive = query.trim() !== "" || tierFilter !== "all" || minSignals > 0 || hideCased;
+  // Count only the collapsible facets (search stays visible) for the "Filters (n)" badge.
+  const activeFilterCount = (tierFilter !== "all" ? 1 : 0) + (minSignals > 0 ? 1 : 0) + (hideCased ? 1 : 0);
   const resetFilters = () => { setQuery(""); setTierFilter("all"); setMinSignals(0); setHideCased(false); };
 
   const stats = useMemo(
@@ -269,71 +286,93 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
     [merchants, selected, model],
   );
 
+  // Lock background scroll + close the investigation drawer on Escape.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDrawerOpen(false); };
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [drawerOpen]);
+
   if (error) return <EmptyState title="Couldn't load merchant data" hint={error} />;
   if (!merchants) return <EmptyState title="Loading detection models…" hint="Scoring the synthetic portfolio across the typology catalog." />;
 
-  const startAgent = () => { setMode("agent"); setRunId((n) => n + 1); };
+  // Open the slide-over and (re)play the run; mark the merchant investigated so
+  // its dossier keeps a pinned findings card after the drawer closes.
+  const openInvestigation = () => {
+    if (!selected) return;
+    setInvestigatedIds((prev) => new Set(prev).add(selected.merchant_id));
+    setRunId((n) => n + 1);
+    setDrawerOpen(true);
+  };
+  const closeDrawer = () => setDrawerOpen(false);
 
   return (
     <div>
       <PageHeader icon={config.icon} title={config.title} subtitle={config.subtitle} />
 
-      {/* ---- Control: model selector + cohort metrics in one compact band -- */}
+      {/* ---- Compact control toolbar: selector + priority/owner + KPI chips - */}
       <Card className="overflow-hidden p-0">
-        <div className="flex flex-col gap-3 p-4 lg:flex-row lg:items-end lg:gap-4">
-          <div className="min-w-[260px] flex-1">
-            <SectionLabel>Identification model</SectionLabel>
-            <div className="relative mt-1.5">
-              <select
-                value={modelKey}
-                onChange={(e) => setModelKey(e.target.value)}
-                className="w-full appearance-none rounded-lg border border-border bg-surface-2 py-2.5 pl-3 pr-9 text-sm font-semibold text-ink outline-none focus:border-cyan/50"
-              >
-                {priorityGroups.map((p) => (
-                  <optgroup key={p} label={`${p} · ${PRIORITY_LABEL[p]}`}>
-                    {config.models.filter((m) => m.priority === p).map((m) => (
-                      <option key={m.key} value={m.key}>
-                        Merchants suspected {m.short} · {config.cohortSuffix}  ({counts[m.key] ?? 0})
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-              <Icon name="ChevronDown" size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-3" />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <SectionLabel>Priority</SectionLabel>
-            <span
-              className="inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold"
-              style={{ color: PRIORITY_HEX[model.priority], borderColor: `${PRIORITY_HEX[model.priority]}55`, background: `${PRIORITY_HEX[model.priority]}12` }}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 p-2.5">
+          <div className="relative min-w-[220px] flex-1">
+            <select
+              value={modelKey}
+              onChange={(e) => setModelKey(e.target.value)}
+              aria-label="Identification model"
+              className="w-full appearance-none rounded-lg border border-border bg-surface-2 py-2 pl-3 pr-9 text-[13px] font-semibold text-ink outline-none focus:border-cyan/50"
             >
-              {model.priority} · {PRIORITY_LABEL[model.priority]}
-            </span>
+              {priorityGroups.map((p) => (
+                <optgroup key={p} label={`${p} · ${PRIORITY_LABEL[p]}`}>
+                  {config.models.filter((m) => m.priority === p).map((m) => (
+                    <option key={m.key} value={m.key}>
+                      Merchants suspected {m.short} · {config.cohortSuffix}  ({counts[m.key] ?? 0})
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <Icon name="ChevronDown" size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink-3" />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <SectionLabel>Remediation owner</SectionLabel>
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-xs font-medium text-ink-2">
-              <Icon name="Users" size={13} /> {model.owner}
-            </span>
+          <span
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold"
+            style={{ color: PRIORITY_HEX[model.priority], borderColor: `${PRIORITY_HEX[model.priority]}55`, background: `${PRIORITY_HEX[model.priority]}12` }}
+          >
+            {model.priority} · {PRIORITY_LABEL[model.priority]}
+          </span>
+          <span className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-ink-2 md:inline-flex">
+            <Icon name="Users" size={12} /> {model.owner}
+          </span>
+
+          <div className="ml-auto flex items-center gap-3.5 pl-1">
+            <Kpi value={fmtNumber(cohort.length)} label="cohort" tone="text-cyan" />
+            <Kpi value={fmtCompact(summary.exposure)} label="exposure" tone="text-amber" />
+            <Kpi value={summary.avg.toFixed(1)} label="avg risk" tone="text-critical" />
+            <Kpi value={fmtNumber(summary.acute)} label="crit/high" tone="text-violet" />
           </div>
         </div>
 
-        <div className="border-t border-border bg-cyan/[0.03] px-4 py-2.5 text-[13px] text-ink-2">
-          <span className="font-semibold text-ink-3">Model output — </span>
-          <b className="text-ink">{cohort.length}</b> merchant{cohort.length === 1 ? "" : "s"} {config.behaveVerb}{" "}
-          <b className="text-ink">{model.behavesLike}</b> but are declared under {config.declaredKind}. Signals:{" "}
-          {model.signals.map((s) => s.label).join(" · ")}.
-        </div>
-
-        <div className="grid grid-cols-2 gap-px border-t border-border bg-border sm:grid-cols-4">
-          <MetricCell label="Cohort size" value={fmtNumber(cohort.length)} sub={`suspected & ${config.cohortSuffix}`} tone="text-cyan" icon="Layers" />
-          <MetricCell label="Exposure at stake" value={fmtCompact(summary.exposure)} sub="gross sales in cohort" tone="text-amber" icon="TrendingUp" />
-          <MetricCell label="Avg integrity risk" value={summary.avg.toFixed(1)} sub="0–100 model score" tone="text-critical" icon="Gauge" />
-          <MetricCell label="Critical / High" value={fmtNumber(summary.acute)} sub={`${summary.modelFlagged} model-flagged`} tone="text-violet" icon="ShieldAlert" />
-        </div>
+        <button
+          onClick={() => setShowModelInfo((v) => !v)}
+          className="flex w-full items-center gap-1.5 border-t border-border px-3 py-1.5 text-left text-[11px] text-ink-3 transition-colors hover:text-ink-2"
+        >
+          <Icon name="ChevronDown" size={12} className={`transition-transform ${showModelInfo ? "" : "-rotate-90"}`} />
+          <span className="font-medium">How this model flags</span>
+          <span className="truncate text-ink-3/70">— {config.behaveVerb} {model.behavesLike}</span>
+        </button>
+        {showModelInfo ? (
+          <div className="border-t border-border bg-cyan/[0.03] px-4 py-2.5 text-[12.5px] leading-relaxed text-ink-2">
+            <b className="text-ink">{cohort.length}</b> merchant{cohort.length === 1 ? "" : "s"} {config.behaveVerb}{" "}
+            <b className="text-ink">{model.behavesLike}</b> but are declared under {config.declaredKind}.{" "}
+            <span className="text-ink-3">Signals:</span> {model.signals.map((s) => s.label).join(" · ")}.{" "}
+            <span className="text-ink-3">{summary.modelFlagged} model-flagged · {fmtNumber(summary.acute)} critical/high.</span>
+          </div>
+        ) : null}
       </Card>
 
       {/* ---- Master / detail ---------------------------------------------- */}
@@ -362,7 +401,8 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
             </div>
           </div>
 
-          {/* Queue filters — narrow the list to what you'll actually work. */}
+          {/* Queue filters — search stays visible; the facets collapse behind
+              a "Filters (n)" disclosure with removable chips when collapsed. */}
           <div className="space-y-2 border-b border-border px-3 py-2.5">
             <div className="relative">
               <Icon name="Search" size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
@@ -379,37 +419,59 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
               ) : null}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1">
-              <span className="micro-label mr-1">Tier</span>
-              <FilterChip active={tierFilter === "all"} onClick={() => setTierFilter("all")}>All</FilterChip>
-              {presentTiers.map((t) => (
-                <FilterChip key={t} active={tierFilter === t} onClick={() => setTierFilter(t)} dot={TIER_HEX[t]}>{t}</FilterChip>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-1">
-              <span className="micro-label mr-1">Signals ≥</span>
-              {Array.from({ length: model.signals.length + 1 }, (_, n) => n).map((n) => (
-                <FilterChip key={n} active={minSignals === n} onClick={() => setMinSignals(n)}>{n === 0 ? "Any" : n}</FilterChip>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between gap-2 pt-0.5">
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setHideCased((v) => !v)}
-                className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-2 hover:text-ink"
+                onClick={() => setShowFilters((v) => !v)}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2 py-1 text-[11px] font-medium text-ink-2 transition-colors hover:text-ink"
               >
-                <span className={`flex h-3.5 w-3.5 items-center justify-center rounded border ${hideCased ? "border-cyan bg-cyan text-white" : "border-border bg-surface-2"}`}>
-                  {hideCased ? <Icon name="Check" size={10} /> : null}
-                </span>
-                Hide filed cases
+                <Icon name="ChevronDown" size={12} className={`transition-transform ${showFilters ? "" : "-rotate-90"}`} />
+                Filters
+                {activeFilterCount > 0 ? (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan px-1 text-[9px] font-bold text-white tnum">{activeFilterCount}</span>
+                ) : null}
               </button>
+
+              {!showFilters && activeFilterCount > 0 ? (
+                <div className="flex flex-1 flex-wrap items-center justify-end gap-1">
+                  {tierFilter !== "all" ? <ActiveChip onClear={() => setTierFilter("all")} dot={TIER_HEX[tierFilter]}>{tierFilter}</ActiveChip> : null}
+                  {minSignals > 0 ? <ActiveChip onClear={() => setMinSignals(0)}>≥{minSignals} sig</ActiveChip> : null}
+                  {hideCased ? <ActiveChip onClear={() => setHideCased(false)}>hiding filed</ActiveChip> : null}
+                </div>
+              ) : null}
+
               {filtersActive ? (
-                <button onClick={resetFilters} className="inline-flex items-center gap-1 text-[11px] text-ink-3 hover:text-ink">
+                <button onClick={resetFilters} className="ml-auto inline-flex shrink-0 items-center gap-1 text-[11px] text-ink-3 hover:text-ink">
                   <Icon name="X" size={11} /> Clear
                 </button>
               ) : null}
             </div>
+
+            {showFilters ? (
+              <div className="space-y-2 pt-0.5">
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="micro-label mr-1">Tier</span>
+                  <FilterChip active={tierFilter === "all"} onClick={() => setTierFilter("all")}>All</FilterChip>
+                  {presentTiers.map((t) => (
+                    <FilterChip key={t} active={tierFilter === t} onClick={() => setTierFilter(t)} dot={TIER_HEX[t]}>{t}</FilterChip>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="micro-label mr-1">Signals ≥</span>
+                  {Array.from({ length: model.signals.length + 1 }, (_, n) => n).map((n) => (
+                    <FilterChip key={n} active={minSignals === n} onClick={() => setMinSignals(n)}>{n === 0 ? "Any" : n}</FilterChip>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setHideCased((v) => !v)}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-2 hover:text-ink"
+                >
+                  <span className={`flex h-3.5 w-3.5 items-center justify-center rounded border ${hideCased ? "border-cyan bg-cyan text-white" : "border-border bg-surface-2"}`}>
+                    {hideCased ? <Icon name="Check" size={10} /> : null}
+                  </span>
+                  Hide filed cases
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <div className="min-w-0 flex-1 overflow-y-auto">
@@ -428,7 +490,7 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
                 return (
                   <button
                     key={m.merchant_id}
-                    onClick={() => { setSelectedId(m.merchant_id); setMode("evidence"); }}
+                    onClick={() => setSelectedId(m.merchant_id)}
                     className={`flex w-full items-center gap-3 border-b border-border/50 px-4 py-2.5 text-left transition-all ${active ? "bg-cyan/[0.06]" : "hover:bg-surface-2/60"}`}
                   >
                     <TierDot tier={m.risk_tier} />
@@ -458,55 +520,99 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
         <div className="min-w-0">
           {!selected ? (
             <EmptyState title="Select a merchant from the queue" hint="Each row is a merchant this model flags as potentially disguised." />
-          ) : mode === "agent" ? (
-            (() => {
-              const subject = subjectFromExplorer(selected, model);
-              return (
-                <div className="space-y-3">
-                  <Button variant="ghost" onClick={() => setMode("evidence")}>
-                    <Icon name="ArrowLeft" size={15} /> Back to evidence
-                  </Button>
-                  <AgentStreamPanel
-                    steps={buildInvestigation(subject)}
-                    runId={runId}
-                    subjectName={selected.merchant_name}
-                    suspectedLabel={`${model.short.toLowerCase()} operator`}
-                    suspectedScore={selected.integrity_risk_score}
-                    declaredMcc={String(selected.declared_mcc)}
-                    disposition={subject.synthesis.disposition}
-                    recommended={subject.synthesis.recommended}
-                    hypothesis={subject.synthesis.hypothesis}
-                    confidence={subject.synthesis.confidence}
-                    confidenceLabel={subject.synthesis.confidenceLabel}
-                    scoreUnit="score"
-                    quickPrompts={COHORT_PROMPTS}
-                    onAsk={(promptId, freeText) => cohortAnswer(freeText ? routeCohortQuestion(freeText) : promptId, selected, model, config)}
-                    caseAction={{
-                      filed: filedCases.some((c) => c.merchantId === selected.merchant_id),
-                      onFile: () =>
-                        fileCase({
-                          merchantId: selected.merchant_id,
-                          merchantName: selected.merchant_name,
-                          familyLabel: config.title.split("—")[0].trim(),
-                          familyColor: FAMILY_META[config.family as FamilyKey]?.color ?? "#2563eb",
-                          suspectedLabel: model.behavesLike,
-                          score: selected.integrity_risk_score,
-                          disposition: subject.synthesis.disposition,
-                          recommended: subject.synthesis.recommended,
-                          confidence: subject.synthesis.confidence,
-                          href: `${config.route}/${model.key}`,
-                          plane: "B",
-                        }),
-                    }}
-                    footerNote={`${model.priority} · ${model.owner} · Decision-support only — a named human signs off.`}
-                  />
-                </div>
-              );
-            })()
           ) : (
-            <EvidencePanel merchant={selected} model={model} config={config} stats={stats} onInvestigate={startAgent} />
+            <EvidencePanel
+              merchant={selected}
+              model={model}
+              config={config}
+              stats={stats}
+              investigated={investigatedIds.has(selected.merchant_id)}
+              onInvestigate={openInvestigation}
+            />
           )}
         </div>
+      </div>
+
+      {/* ---- Investigation slide-over (agent runs here, dossier stays put) - */}
+      <InvestigationDrawer open={drawerOpen} onClose={closeDrawer} title={selected?.merchant_name ?? ""}>
+        {drawerOpen && selected ? (() => {
+          const subject = subjectFromExplorer(selected, model);
+          return (
+            <AgentStreamPanel
+              embedded
+              steps={buildInvestigation(subject)}
+              runId={runId}
+              subjectName={selected.merchant_name}
+              suspectedLabel={`${model.short.toLowerCase()} operator`}
+              suspectedScore={selected.integrity_risk_score}
+              declaredMcc={String(selected.declared_mcc)}
+              disposition={subject.synthesis.disposition}
+              recommended={subject.synthesis.recommended}
+              hypothesis={subject.synthesis.hypothesis}
+              confidence={subject.synthesis.confidence}
+              confidenceLabel={subject.synthesis.confidenceLabel}
+              scoreUnit="score"
+              quickPrompts={COHORT_PROMPTS}
+              onAsk={(promptId, freeText) => cohortAnswer(freeText ? routeCohortQuestion(freeText) : promptId, selected, model, config)}
+              caseAction={{
+                filed: filedCases.some((c) => c.merchantId === selected.merchant_id),
+                onFile: () =>
+                  fileCase({
+                    merchantId: selected.merchant_id,
+                    merchantName: selected.merchant_name,
+                    familyLabel: config.title.split("—")[0].trim(),
+                    familyColor: FAMILY_META[config.family as FamilyKey]?.color ?? "#2563eb",
+                    suspectedLabel: model.behavesLike,
+                    score: selected.integrity_risk_score,
+                    disposition: subject.synthesis.disposition,
+                    recommended: subject.synthesis.recommended,
+                    confidence: subject.synthesis.confidence,
+                    href: `${config.route}/${model.key}`,
+                    plane: "B",
+                  }),
+              }}
+              footerNote={`${model.priority} · ${model.owner} · Decision-support only — a named human signs off.`}
+            />
+          );
+        })() : null}
+      </InvestigationDrawer>
+    </div>
+  );
+}
+
+// ---- investigation slide-over ---------------------------------------------
+// A right-anchored drawer that overlays the console while the agent runs, so
+// the evidence dossier underneath stays intact. Always mounted (so the panel
+// slides in rather than pops), children mount only while open (so playback
+// starts on open and stops on close).
+function InvestigationDrawer({ open, onClose, title, children }: {
+  open: boolean; onClose: () => void; title: string; children: ReactNode;
+}) {
+  return (
+    <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
+      <div
+        onClick={onClose}
+        className={`absolute inset-0 backdrop-blur-[1px] transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0"}`}
+        style={{ background: "rgba(2,6,23,0.55)" }}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="AI investigation"
+        className={`absolute right-0 top-0 flex h-full w-full max-w-[560px] flex-col border-l border-border bg-surface shadow-2xl transition-transform duration-300 ease-out ${open ? "translate-x-0" : "translate-x-full"}`}
+      >
+        <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+          <Icon name="Building2" size={14} className="text-ink-3" />
+          <span className="truncate text-[12px] font-semibold text-ink-2">{title}</span>
+          <button
+            onClick={onClose}
+            aria-label="Close investigation"
+            className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+          >
+            <Icon name="X" size={16} />
+          </button>
+        </div>
+        {children}
       </div>
     </div>
   );
@@ -514,11 +620,12 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
 
 // ---- evidence panel -------------------------------------------------------
 
-function EvidencePanel({ merchant: m, model: c, config, stats, onInvestigate }: {
-  merchant: ExplorerMerchant; model: DetectionModel; config: TypologyConfig; stats: SignalStat[]; onInvestigate: () => void;
+function EvidencePanel({ merchant: m, model: c, config, stats, investigated, onInvestigate }: {
+  merchant: ExplorerMerchant; model: DetectionModel; config: TypologyConfig; stats: SignalStat[]; investigated: boolean; onInvestigate: () => void;
 }) {
   const beyond = stats.filter((s) => s.z >= 3);
   const surcharge = config.family === "surcharge" ? assessSurcharge(m) : null;
+  const synthesis = investigated ? subjectFromExplorer(m, c).synthesis : null;
   return (
     <Card className="p-0" glow={m.risk_tier === "Critical" ? "critical" : null}>
       {/* header */}
@@ -533,11 +640,20 @@ function EvidencePanel({ merchant: m, model: c, config, stats, onInvestigate }: 
           </div>
           <div className="truncate text-xs text-ink-3">{m.corp_name} · {m.merchant_city}, {m.merchant_country} · {m.merchant_id}</div>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold tnum" style={{ color: TIER_HEX[m.risk_tier] }}>{m.integrity_risk_score.toFixed(1)}</div>
-          <div className="text-[10px] uppercase tracking-wide text-ink-3">integrity risk</div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-2xl font-bold tnum" style={{ color: TIER_HEX[m.risk_tier] }}>{m.integrity_risk_score.toFixed(1)}</div>
+            <div className="text-[10px] uppercase tracking-wide text-ink-3">integrity risk</div>
+          </div>
+          {/* Primary action pinned to the dossier header — no scrolling to reach it. */}
+          <Button variant="ai" onClick={onInvestigate} className="shrink-0">
+            <Icon name="Sparkles" size={15} /> {investigated ? "Re-open" : "Investigate"}
+          </Button>
         </div>
       </div>
+
+      {/* pinned AI findings — the collapsed result of a completed investigation */}
+      {synthesis ? <FindingsCard synthesis={synthesis} onReopen={onInvestigate} /> : null}
 
       {surcharge ? (
         <SurchargeCompliance a={surcharge} />
@@ -610,16 +726,50 @@ function EvidencePanel({ merchant: m, model: c, config, stats, onInvestigate }: 
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border p-4">
-        <div className="text-[11px] text-ink-3">
-          Route to <b className="text-ink-2">{c.owner}</b> for {c.subtype} attestation.
-        </div>
-        <Button variant="ai" onClick={onInvestigate}>
-          <Icon name="Sparkles" size={15} /> Investigate with AI
-        </Button>
+      {/* footer note — the primary Investigate action lives in the header above */}
+      <div className="border-t border-border p-4 text-[11px] text-ink-3">
+        Route to <b className="text-ink-2">{c.owner}</b> for {c.subtype} attestation — or run the full agent workup with <b className="text-ink-2">Investigate</b> in the header.
       </div>
     </Card>
+  );
+}
+
+// ---- pinned AI findings ---------------------------------------------------
+// The durable summary a completed investigation leaves in the dossier: verdict,
+// confidence, recommended disposition, and a way back into the full run. Shown
+// on any merchant the analyst has already investigated in this session.
+function FindingsCard({ synthesis, onReopen }: { synthesis: InvestigationSynthesis; onReopen: () => void }) {
+  const conf = synthesis.confidence != null ? Math.round(synthesis.confidence * 100) : null;
+  return (
+    <div className="mx-4 mt-4 overflow-hidden rounded-xl border border-violet/30 bg-gradient-to-br from-violet/[0.07] to-cyan/[0.04]">
+      <div className="flex items-center gap-2 border-b border-violet/20 px-3.5 py-2.5">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-violet to-cyan text-white">
+          <Icon name="Sparkles" size={13} />
+        </span>
+        <span className="text-[12px] font-bold text-ink">AI investigation — findings</span>
+        {conf != null ? (
+          <span className="ml-auto rounded-full bg-ok/15 px-2 py-0.5 text-[10px] font-semibold text-ok tnum">
+            {conf}%{synthesis.confidenceLabel ? ` · ${synthesis.confidenceLabel}` : ""}
+          </span>
+        ) : null}
+      </div>
+      <div className="px-3.5 py-3">
+        <p className="text-[12px] leading-relaxed text-ink-2"><b className="text-ink">{synthesis.hypothesis}</b></p>
+        {synthesis.recommended ? (
+          <div className="mt-2 flex items-start gap-2 rounded-lg border border-border bg-surface/70 px-2.5 py-1.5 text-[11.5px]">
+            <Icon name="Target" size={12} className="mt-0.5 shrink-0 text-cyan" />
+            <span className="text-ink-2"><b className="text-ink">Recommended:</b> {synthesis.recommended}</span>
+          </div>
+        ) : null}
+        <div className="mt-1.5 flex items-start gap-2 rounded-lg border border-border bg-surface/70 px-2.5 py-1.5 text-[11.5px]">
+          <Icon name="Briefcase" size={12} className="mt-0.5 shrink-0 text-amber" />
+          <span className="text-ink-2"><b className="text-ink">Disposition:</b> {synthesis.disposition}</span>
+        </div>
+        <button onClick={onReopen} className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-ai hover:underline">
+          <Icon name="Sparkles" size={12} /> Reopen full investigation
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -724,20 +874,26 @@ function SurchargeCompliance({ a }: { a: SurchargeAssessment }) {
   );
 }
 
-// Dense metric cell for the control-card summary strip — hairline-separated,
-// far tighter than a full StatTile so the whole cohort read-out costs one row.
-function MetricCell({ label, value, sub, tone, icon }: {
-  label: string; value: string; sub: string; tone: string; icon: string;
-}) {
+// Inline KPI read-out for the compact control toolbar — value over a micro-label,
+// so the whole cohort summary rides on the toolbar's right edge in one row.
+function Kpi({ value, label, tone }: { value: string; label: string; tone: string }) {
   return (
-    <div className="bg-surface px-4 py-3">
-      <div className="flex items-center justify-between">
-        <span className="micro-label">{label}</span>
-        <Icon name={icon} size={15} className={`opacity-60 ${tone}`} />
-      </div>
-      <div className={`mt-1 text-2xl font-bold tnum ${tone}`}>{value}</div>
-      <div className="mt-0.5 truncate text-[11px] text-ink-3 tnum">{sub}</div>
+    <div className="flex flex-col items-end leading-none">
+      <span className={`text-[15px] font-bold tnum ${tone}`}>{value}</span>
+      <span className="mt-0.5 text-[9px] font-medium uppercase tracking-wide text-ink-3">{label}</span>
     </div>
+  );
+}
+
+// Removable active-filter pill shown next to "Filters" when the facets are
+// collapsed — one-click clear so a hidden filter is never silently in effect.
+function ActiveChip({ children, onClear, dot }: { children: ReactNode; onClear: () => void; dot?: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-cyan/35 bg-cyan/15 px-2 py-0.5 text-[10px] font-medium text-cyan">
+      {dot ? <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} /> : null}
+      {children}
+      <button onClick={onClear} aria-label="Remove filter" className="opacity-70 hover:opacity-100"><Icon name="X" size={9} /></button>
+    </span>
   );
 }
 

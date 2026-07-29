@@ -104,6 +104,8 @@ export interface AgentStreamPanelProps {
    *  so it surfaces on the Command Center. Omit to hide the action. */
   caseAction?: { filed: boolean; onFile: () => void };
   footerNote?: string;
+  /** Render flush inside a slide-over drawer (no outer Card chrome / height cap). */
+  embedded?: boolean;
 }
 
 export function AgentStreamPanel(props: AgentStreamPanelProps) {
@@ -141,8 +143,8 @@ export function AgentStreamPanel(props: AgentStreamPanelProps) {
     return { ...ln, total, doneCount, activeHere, complete: total > 0 && doneCount >= total };
   });
 
-  return (
-    <Card className="flex max-h-[calc(100vh-130px)] flex-col p-0" glow="cyan">
+  const body = (
+    <>
       {/* header */}
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet/30 to-cyan/30 text-ai">
@@ -291,8 +293,11 @@ export function AgentStreamPanel(props: AgentStreamPanelProps) {
       ) : props.footerNote ? (
         <div className="border-t border-border px-3 py-2 text-center text-[10px] text-ink-3">{props.footerNote}</div>
       ) : null}
-    </Card>
+    </>
   );
+
+  if (props.embedded) return <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface">{body}</div>;
+  return <Card className="flex max-h-[calc(100vh-130px)] flex-col p-0" glow="cyan">{body}</Card>;
 }
 
 function MetricChip({ m }: { m: StreamMetric }) {
