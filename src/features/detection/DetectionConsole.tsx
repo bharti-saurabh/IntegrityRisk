@@ -13,6 +13,7 @@ import type { ExplorerMerchant } from "@/features/explorer/types";
 import {
   PRIORITY_ORDER, PRIORITY_LABEL, PRIORITY_HEX,
   formatSignal, isElevated,
+  CNP, QUASI, ROUND, RECUR, XBORDER, CB, REFUND, TICKET, DESC,
   type CategorySignal,
 } from "@/data/miscodingCategories";
 import type { TypologyConfig, DetectionModel } from "@/data/typologies";
@@ -59,6 +60,35 @@ interface SignalStat {
   ceiling: number; // peer mean + 3σ
   pct: number; // percentile of observed within the peer population (0..1)
   sample: number[]; // peer observed values, for the distribution plot
+  contribution?: number; // model log-odds contribution (driver-routed merchants only)
+  share?: number; // fraction of the score's upward push (0..1)
+}
+
+// Two interchange features carry model weight but aren't in the typology signal
+// catalog, so define their display metadata here. Both read "higher = more
+// suspicious" after the model's orientation, matching the σ-deviation viz.
+const IADV: CategorySignal = { key: "interchange_advantage_bps", label: "Interchange advantage", kind: "bps", elevated: 0 };
+const IEFF: CategorySignal = { key: "effective_interchange_bps", label: "Effective interchange", kind: "bps", elevated: 250 };
+
+// Feature-key → display metadata, so a merchant's model DRIVERS (which vary per
+// merchant) can be rendered on the same peer-deviation charts as the fixed
+// per-typology signal lens.
+const SIGNAL_BY_KEY: Partial<Record<keyof ExplorerMerchant, CategorySignal>> = {
+  pct_cnp: CNP, pct_quasi_cash: QUASI, pct_round_100: ROUND, pct_recurring: RECUR,
+  pct_cross_border: XBORDER, chargeback_rate_bps: CB, refund_rate_amount: REFUND,
+  avg_ticket_usd: TICKET, n_distinct_descriptors: DESC,
+  interchange_advantage_bps: IADV, effective_interchange_bps: IEFF,
+};
+
+// Some declared MCCs are restricted, not benign — the synthetic data groups MCC
+// 7273 under "Adult", but it is a Dating & Escort code. Correct the DISPLAY of
+// the declared category (peer grouping still uses the raw mcc_group) so the
+// "declared as" framing doesn't call a restricted code benign.
+const RESTRICTED_MCC: Record<number, { group: string; kind: string }> = {
+  7273: { group: "Dating & Escort", kind: "a restricted dating/escort MCC" },
+};
+function declaredDisplay(m: ExplorerMerchant, config: TypologyConfig): { group: string; kind: string } {
+  return RESTRICTED_MCC[m.declared_mcc] ?? { group: m.mcc_group, kind: config.declaredKind };
 }
 
 function avg(xs: number[]): number {
@@ -91,6 +121,38 @@ function computeStats(merchants: ExplorerMerchant[], m: ExplorerMerchant, model:
     const pct = xs.length ? xs.filter((v) => v <= observed).length / xs.length : 1;
     return { sig, observed, mean, std, z, ceiling: mean + 3 * std, pct, sample: xs };
   });
+}
+
+// Dynamic-axis variant: instead of the fixed per-typology signal lens, plot the
+// features the MODEL actually leaned on for THIS merchant (its score drivers, in
+// contribution order). Peer-deviation stats are recomputed here so the charts
+// stay internally consistent; each stat also carries the model's stored
+// contribution/share for the score decomposition. Model-routed merchants only.
+function driverStats(merchants: ExplorerMerchant[], m: ExplorerMerchant): SignalStat[] {
+  const peers = peerPopulation(merchants, m.mcc_group);
+  return (m.drivers ?? [])
+    .map((d): SignalStat | null => {
+      const sig = SIGNAL_BY_KEY[d.key];
+      if (!sig) return null;
+      const xs = peers.map((p) => p[d.key] as number).filter((v) => typeof v === "number" && isFinite(v));
+      const mean = avg(xs);
+      const std = Math.max(stdev(xs, mean), sig.elevated * 0.12, 1e-9);
+      const observed = m[d.key] as number;
+      const z = (observed - mean) / std;
+      const pct = xs.length ? xs.filter((v) => v <= observed).length / xs.length : 1;
+      return { sig, observed, mean, std, z, ceiling: mean + 3 * std, pct, sample: xs, contribution: d.contribution, share: d.share };
+    })
+    .filter((s): s is SignalStat => s !== null);
+}
+
+// Peer baseline used for a merchant's z-scores, described for the confidence
+// band: how many peers and whether we could stay within its declared vertical.
+function peerContext(merchants: ExplorerMerchant[], group: string): { n: number; source: "clean-group" | "group" | "global" } {
+  const clean = merchants.filter((m) => m.mcc_group === group && m.label === "clean");
+  if (clean.length >= 8) return { n: clean.length, source: "clean-group" };
+  const grp = merchants.filter((m) => m.mcc_group === group);
+  if (grp.length >= 8) return { n: grp.length, source: "group" };
+  return { n: merchants.filter((m) => m.label === "clean").length, source: "global" };
 }
 
 // Saturating map from σ-distance to a 0..1 track position. Real peer variance on
@@ -181,6 +243,16 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [investigatedIds, setInvestigatedIds] = useState<Set<string>>(() => new Set());
   const [runId, setRunId] = useState(0);
+  // Analyst triage on the model's flag: a merchant can be Cleared (false
+  // positive) or Confirmed (escalate). Kept local to the console so it doesn't
+  // perturb the persisted case store; filing a formal case is the durable path.
+  const [dispositions, setDispositions] = useState<Map<string, "cleared" | "confirmed">>(() => new Map());
+  const disposeMerchant = (id: string, d: "cleared" | "confirmed" | null) =>
+    setDispositions((prev) => {
+      const next = new Map(prev);
+      if (d === null) next.delete(id); else next.set(id, d);
+      return next;
+    });
   // Local queue filters — how an analyst narrows the remediation list to what
   // they'll actually work. Kept out of the global store so they can't perturb
   // other consoles or the portfolio view.
@@ -230,6 +302,7 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
     setSelectedId(cohort[0]?.merchant_id ?? null);
     setDrawerOpen(false);
     setInvestigatedIds(new Set());
+    setDispositions(new Map());
     setQuery("");
     setTierFilter("all");
     setMinSignals(0);
@@ -281,10 +354,15 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   const activeFilterCount = (tierFilter !== "all" ? 1 : 0) + (minSignals > 0 ? 1 : 0) + (hideCased ? 1 : 0);
   const resetFilters = () => { setQuery(""); setTierFilter("all"); setMinSignals(0); setHideCased(false); };
 
-  const stats = useMemo(
-    () => (merchants && selected ? computeStats(merchants, selected, model) : []),
-    [merchants, selected, model],
-  );
+  // Model-routed merchants (MCC-miscoding) carry per-merchant score drivers, so
+  // the deviation charts use THOSE features as axes. Rule-routed families fall
+  // back to the fixed per-typology signal lens.
+  const stats = useMemo(() => {
+    if (!merchants || !selected) return [];
+    return selected.drivers && selected.drivers.length
+      ? driverStats(merchants, selected)
+      : computeStats(merchants, selected, model);
+  }, [merchants, selected, model]);
 
   // Lock background scroll + close the investigation drawer on Escape.
   useEffect(() => {
@@ -526,8 +604,11 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
               model={model}
               config={config}
               stats={stats}
+              merchants={merchants}
               investigated={investigatedIds.has(selected.merchant_id)}
               onInvestigate={openInvestigation}
+              disposition={dispositions.get(selected.merchant_id) ?? null}
+              onDispose={(d) => disposeMerchant(selected.merchant_id, d)}
             />
           )}
         </div>
@@ -620,12 +701,20 @@ function InvestigationDrawer({ open, onClose, title, children }: {
 
 // ---- evidence panel -------------------------------------------------------
 
-function EvidencePanel({ merchant: m, model: c, config, stats, investigated, onInvestigate }: {
-  merchant: ExplorerMerchant; model: DetectionModel; config: TypologyConfig; stats: SignalStat[]; investigated: boolean; onInvestigate: () => void;
+function EvidencePanel({ merchant: m, model: c, config, stats, merchants, investigated, onInvestigate, disposition, onDispose }: {
+  merchant: ExplorerMerchant; model: DetectionModel; config: TypologyConfig; stats: SignalStat[];
+  merchants: ExplorerMerchant[]; investigated: boolean; onInvestigate: () => void;
+  disposition: "cleared" | "confirmed" | null; onDispose: (d: "cleared" | "confirmed" | null) => void;
 }) {
   const beyond = stats.filter((s) => s.z >= 3);
   const surcharge = config.family === "surcharge" ? assessSurcharge(m) : null;
   const synthesis = investigated ? subjectFromExplorer(m, c).synthesis : null;
+  // Model-routed merchants carry score drivers → show the ML score decomposition
+  // and drive the charts off those features. Rule-routed families keep the
+  // fixed-signal lens and their rule-based flag basis.
+  const isModel = (m.drivers?.length ?? 0) > 0;
+  const pctx = isModel ? peerContext(merchants, m.mcc_group) : null;
+  const declared = declaredDisplay(m, config);
   return (
     <Card className="p-0" glow={m.risk_tier === "Critical" ? "critical" : null}>
       {/* header */}
@@ -637,6 +726,12 @@ function EvidencePanel({ merchant: m, model: c, config, stats, investigated, onI
           <div className="flex items-center gap-2">
             <h2 className="truncate text-base font-bold">{m.merchant_name}</h2>
             <span className="rounded-full px-2 py-0.5 text-[10px] font-bold text-white" style={{ background: TIER_HEX[m.risk_tier] }}>{m.risk_tier}</span>
+            {disposition ? (
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${disposition === "cleared" ? "bg-ok/15 text-ok" : "bg-critical/15 text-critical"}`}>
+                <Icon name={disposition === "cleared" ? "Check" : "AlertTriangle"} size={10} />
+                {disposition === "cleared" ? "Cleared" : "Confirmed"}
+              </span>
+            ) : null}
           </div>
           <div className="truncate text-xs text-ink-3">{m.corp_name} · {m.merchant_city}, {m.merchant_country} · {m.merchant_id}</div>
         </div>
@@ -663,8 +758,8 @@ function EvidencePanel({ merchant: m, model: c, config, stats, investigated, onI
           <div className="grid gap-3 p-4 sm:grid-cols-[1fr_auto_1fr] sm:items-center">
             <div className="rounded-lg border border-border bg-surface-2/50 p-3">
               <div className="text-[10px] uppercase tracking-wide text-ink-3">Declared as</div>
-              <div className="mt-1 text-sm font-semibold text-ink">{m.mcc_group}</div>
-              <div className="text-[11px] text-ink-3">MCC {m.declared_mcc} · {config.declaredKind}</div>
+              <div className="mt-1 text-sm font-semibold text-ink">{declared.group}</div>
+              <div className="text-[11px] text-ink-3">MCC {m.declared_mcc} · {declared.kind}</div>
             </div>
             <Icon name="ArrowRight" size={18} className="mx-auto hidden text-ink-3 sm:block" />
             <div className="rounded-lg border p-3" style={{ borderColor: `${PRIORITY_HEX[c.priority]}44`, background: `${PRIORITY_HEX[c.priority]}0d` }}>
@@ -674,10 +769,14 @@ function EvidencePanel({ merchant: m, model: c, config, stats, investigated, onI
             </div>
           </div>
 
-          {/* deviation from declared-MCC peers */}
+          {/* ML score decomposition — model-routed merchants only */}
+          {isModel ? <ModelDecomposition m={m} stats={stats} /> : null}
+
+          {/* peer-deviation charts — axes are this merchant's model drivers when
+              model-routed, else the fixed per-typology signal lens */}
           <div className="px-4 pb-2">
             <div className="flex items-center justify-between">
-              <SectionLabel>Deviation from declared-MCC peers</SectionLabel>
+              <SectionLabel>{isModel ? "How these features deviate from declared-MCC peers" : "Deviation from declared-MCC peers"}</SectionLabel>
               <span className="text-[10px] text-ink-3">observed vs μ ± 3σ of legit {m.mcc_group}</span>
             </div>
 
@@ -693,16 +792,35 @@ function EvidencePanel({ merchant: m, model: c, config, stats, investigated, onI
             <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-surface-2/40 px-3 py-1.5 text-[11px] text-ink-2">
               <Icon name={beyond.length ? "AlertTriangle" : "ShieldCheck"} size={13} className={beyond.length ? "text-critical" : "text-ok"} />
               {beyond.length ? (
-                <span><b className="text-critical">{beyond.length}</b> signal{beyond.length === 1 ? "" : "s"} beyond 3σ of the {m.mcc_group} norm: {beyond.map((s) => s.sig.label).join(", ")}.</span>
+                <span><b className="text-critical">{beyond.length}</b> feature{beyond.length === 1 ? "" : "s"} beyond 3σ of the {m.mcc_group} norm: {beyond.map((s) => s.sig.label).join(", ")}.</span>
               ) : (
-                <span>No single signal exceeds 3σ — the flag is composite across {stats.length} variables.</span>
+                <span>No single feature exceeds 3σ — the flag is composite across {stats.length} variables.</span>
               )}
             </div>
 
             <PeerDistribution stats={stats} group={m.mcc_group} />
+
+            {/* confidence band — honest about the peer baseline behind the z-scores */}
+            {pctx ? (
+              <div className="mt-2 flex items-start gap-2 rounded-lg border border-dashed border-border px-3 py-1.5 text-[11px] text-ink-3">
+                <Icon name="Info" size={13} className="mt-0.5 shrink-0" />
+                <span>
+                  Confidence: deviations measured vs{" "}
+                  {pctx.source === "clean-group"
+                    ? <><b className="text-ink-2">{pctx.n}</b> clean {m.mcc_group} peers</>
+                    : pctx.source === "group"
+                    ? <><b className="text-ink-2">{pctx.n}</b> {m.mcc_group} merchants</>
+                    : <><b className="text-ink-2">{fmtNumber(pctx.n)}</b> clean merchants (global baseline — declared vertical has too few peers)</>}
+                  . Synthetic data — directional, not a determination.
+                </span>
+              </div>
+            ) : null}
           </div>
         </>
       )}
+
+      {/* analyst triage — resolve the model's flag before it can leave the queue */}
+      {!surcharge ? <TriageBar disposition={disposition} onDispose={onDispose} /> : null}
 
       {/* basis + exposure */}
       <div className="grid gap-3 p-4 sm:grid-cols-2">
@@ -731,6 +849,116 @@ function EvidencePanel({ merchant: m, model: c, config, stats, investigated, onI
         Route to <b className="text-ink-2">{c.owner}</b> for {c.subtype} attestation — or run the full agent workup with <b className="text-ink-2">Investigate</b> in the header.
       </div>
     </Card>
+  );
+}
+
+// ---- ML score decomposition -----------------------------------------------
+// Replaces a "why this fired" rule list. The score IS the model output
+// (100·P(abuse) from a logistic model over peer-relative feature z-scores); this
+// card decomposes that single number into each feature's log-odds contribution,
+// so the analyst sees which features drove the score and by how much.
+const DRIVER_HEX = ["#2563eb", "#7c3aed", "#0891b2", "#db2777", "#d97706", "#0d9488"];
+
+function ModelDecomposition({ m, stats }: { m: ExplorerMerchant; stats: SignalStat[] }) {
+  const p = m.integrity_risk_score / 100;
+  const drivers = stats.filter((s) => (s.share ?? 0) > 0);
+  if (!drivers.length) return null;
+  return (
+    <div className="px-4 pb-2">
+      <div className="flex items-center justify-between">
+        <SectionLabel>Why the model scored it — feature attribution</SectionLabel>
+        <span className="text-[10px] text-ink-3 tnum">P(abuse) {p.toFixed(3)} → {m.integrity_risk_score.toFixed(1)}</span>
+      </div>
+      <p className="mt-1 text-[11.5px] leading-relaxed text-ink-3">
+        Identification is model-driven, not a rule checklist. The bar shows each feature's share of the
+        model's push toward <span className="text-ink-2">abuse</span>.
+      </p>
+
+      {/* stacked contribution bar */}
+      <div className="mt-2 flex h-6 overflow-hidden rounded-md border border-border">
+        {drivers.map((st, i) => (
+          <div
+            key={String(st.sig.key)}
+            className="h-full"
+            style={{ width: `${(st.share ?? 0) * 100}%`, background: DRIVER_HEX[i % DRIVER_HEX.length] }}
+            title={`${st.sig.label} — ${Math.round((st.share ?? 0) * 100)}%`}
+          />
+        ))}
+      </div>
+
+      <div className="mt-2 overflow-x-auto rounded-lg border border-border">
+        <table className="w-full min-w-[440px] text-[12px]">
+          <thead>
+            <tr className="bg-surface-2/60 text-[10px] uppercase tracking-wide text-ink-3">
+              <th className="px-3 py-1.5 text-left font-medium">Feature</th>
+              <th className="px-3 py-1.5 text-right font-medium">This merchant</th>
+              <th className="px-3 py-1.5 text-right font-medium">Peer norm</th>
+              <th className="px-3 py-1.5 text-right font-medium">Deviation</th>
+              <th className="px-3 py-1.5 text-right font-medium">Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            {drivers.map((st, i) => {
+              const tone = zTone(st.z);
+              return (
+                <tr key={String(st.sig.key)} className="border-t border-border/60">
+                  <td className="px-3 py-1.5">
+                    <span className="flex items-center gap-2 font-medium text-ink-2">
+                      <span className="h-2 w-2 shrink-0 rounded-sm" style={{ background: DRIVER_HEX[i % DRIVER_HEX.length] }} />
+                      {st.sig.label}
+                    </span>
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-semibold text-ink tnum">{formatSignal(st.sig, st.observed)}</td>
+                  <td className="px-3 py-1.5 text-right text-ink-3 tnum">{formatSignal(st.sig, st.mean)}</td>
+                  <td className={`px-3 py-1.5 text-right font-semibold tnum ${tone.text}`}>{fmtSigma(st.z)}</td>
+                  <td className="px-3 py-1.5 text-right font-bold text-ink tnum">{Math.round((st.share ?? 0) * 100)}%</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---- analyst triage --------------------------------------------------------
+// The model's flag is decision-support: an analyst confirms (escalate) or clears
+// (false positive) it. Kept neutral — no ground-truth reveal; the decomposition
+// and confidence band above are the evidence the analyst weighs.
+function TriageBar({ disposition, onDispose }: {
+  disposition: "cleared" | "confirmed" | null; onDispose: (d: "cleared" | "confirmed" | null) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-t border-border p-4">
+      <SectionLabel>Analyst triage</SectionLabel>
+      <div className="ml-auto flex items-center gap-2">
+        {disposition ? (
+          <button
+            onClick={() => onDispose(null)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-ink-2 hover:text-ink"
+          >
+            <Icon name="RotateCcw" size={13} /> Reset
+          </button>
+        ) : null}
+        <button
+          onClick={() => onDispose(disposition === "cleared" ? null : "cleared")}
+          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+            disposition === "cleared" ? "border-ok bg-ok/15 text-ok" : "border-border bg-surface-2 text-ink-2 hover:text-ink"
+          }`}
+        >
+          <Icon name="Check" size={14} /> Clear — false positive
+        </button>
+        <button
+          onClick={() => onDispose(disposition === "confirmed" ? null : "confirmed")}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold text-white transition-colors ${
+            disposition === "confirmed" ? "bg-critical" : "bg-critical/85 hover:bg-critical"
+          }`}
+        >
+          <Icon name="AlertTriangle" size={14} /> Confirm — escalate
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -995,10 +1223,23 @@ function DeviationBar({ stat: st }: { stat: SignalStat }) {
   );
 }
 
+function ordinalSuffix(n: number): string {
+  const t = n % 100;
+  if (t >= 11 && t <= 13) return "th";
+  switch (n % 10) {
+    case 1: return "st";
+    case 2: return "nd";
+    case 3: return "rd";
+    default: return "th";
+  }
+}
+
 function fmtPercentile(p: number): string {
   const v = p * 100;
   if (v >= 99.95) return "99.9th+";
-  return `${v.toFixed(v >= 99 ? 1 : 0)}th`;
+  if (v >= 99) return `${v.toFixed(1)}th`; // fractional — always "th"
+  const r = Math.round(v);
+  return `${r}${ordinalSuffix(r)}`;
 }
 
 // The actual peer distribution for the single most-deviant signal: "here's the

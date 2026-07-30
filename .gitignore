@@ -36,3 +36,6 @@ scripts/artifacts/
 /MCC Miscoding Data/
 /MCC Miscoding Data v2/
 /MCC Miscoding Data.zip
+
+# Recompute backups
+*.bak

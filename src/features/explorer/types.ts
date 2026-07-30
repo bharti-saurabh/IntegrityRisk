@@ -1,3 +1,18 @@
+// Per-feature attribution for a model-routed merchant's integrity score. The
+// score is 100·P(abuse) from a logistic model over peer-relative feature
+// z-scores (scripts/recompute_integrity_scores.py); each driver is one feature's
+// log-odds contribution — the honest decomposition of WHY the model scored it.
+// Present only on the model-routed universe (MCC-miscoding + the clean pool);
+// rule-routed families carry an empty array.
+export interface Driver {
+  key: keyof ExplorerMerchant; // the feature column
+  label: string;
+  z: number; // oriented, peer-relative z (clipped) used by the model
+  coef: number; // model log-odds weight for this feature
+  contribution: number; // coef · z — this feature's push toward "abuse"
+  share: number; // contribution as a fraction of the total upward push (0..1)
+}
+
 // Shape of a row in public/data/merchants.json (produced by build_explorer_data.py).
 // Powers the dependency-free Browse table; the SQL console reads the parquet twins.
 export interface ExplorerMerchant {
@@ -38,6 +53,7 @@ export interface ExplorerMerchant {
   family_label: string;
   subtype: string;
   label: "interchange_abuse" | "integrity_violation" | "clean";
+  drivers?: Driver[];
 }
 
 export async function loadMerchants(): Promise<ExplorerMerchant[]> {
