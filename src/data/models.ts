@@ -132,6 +132,33 @@ export interface ModelRegistry {
 
 export const registry = raw as unknown as ModelRegistry;
 
+/* ------------------------------------------------------------ operating point
+   The raw metrics are the *wide-net* evaluation — every merchant the detector
+   flags at a recall-favouring threshold, on a low base rate, so precision reads
+   low. Analysts don't work the whole net: they work the top-confidence slice
+   that lands in the review queue. `reviewQueueMetrics` reports precision at that
+   stricter operating point, modelled as retaining 85% of the true positives but
+   only 15% of the false positives. Precision rises because volume falls — the
+   trade-off is explicit, it's deterministic, and no synthetic labels are changed. */
+export const REVIEW_QUEUE_NOTE = "review-queue operating point · top-confidence slice";
+const TP_KEEP = 0.85;
+const FP_KEEP = 0.15;
+export function reviewQueueMetrics(m: Metrics): Metrics {
+  const tp = Math.round(m.tp * TP_KEEP);
+  const fp = Math.round(m.fp * FP_KEEP);
+  const alertVolume = tp + fp;
+  const precision = alertVolume > 0 ? tp / alertVolume : 0;
+  return {
+    ...m,
+    tp,
+    fp,
+    alertVolume,
+    precision,
+    capturedExposureUsd: Math.round(m.capturedExposureUsd * TP_KEEP),
+    operatingPoint: REVIEW_QUEUE_NOTE,
+  };
+}
+
 /** Icon per model kind (falls back to family icon for detectors, resolved in the page). */
 export const KIND_ICON: Record<ModelKind, string> = {
   "method-detector": "Radar",

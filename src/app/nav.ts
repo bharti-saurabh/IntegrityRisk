@@ -14,10 +14,10 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/explorer", label: "Data Explorer", icon: "Search", group: "Overview", personas: ["data-scientist", "analyst"] },
   { to: "/anatomy", label: "Anatomy", icon: "Fingerprint", group: "Overview", personas: ["executive", "analyst"] },
   { to: "/mcc", label: "MCC Miscoding Models", icon: "ScanSearch", group: "Typologies", personas: ["analyst"] },
-  { to: "/mcc-abuse", label: "MCC Abuse Models", icon: "Receipt", group: "Typologies" },
-  { to: "/split", label: "Split-Ticketing Models", icon: "Split", group: "Typologies" },
-  { to: "/cash", label: "Cash-Disbursement Models", icon: "Banknote", group: "Typologies" },
   { to: "/surcharge", label: "Card Surcharge", icon: "BadgePercent", group: "Typologies" },
+  // MCC Abuse, Split-Ticketing and Cash-Disbursement retired from the nav — the demo
+  // is scoped to the two typologies with a live console + anatomy. Their routes
+  // redirect to the Command Center (see App.tsx).
   { to: "/models", label: "Model Store", icon: "Boxes", group: "Models", personas: ["data-scientist", "executive"] },
   { to: "/rules", label: "Rules Engine", icon: "Filter", group: "Models" },
 ];

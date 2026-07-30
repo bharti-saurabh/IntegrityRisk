@@ -8,10 +8,7 @@ import { ErrorBoundary } from "@/app/ErrorBoundary";
 const Executive = lazy(() => import("@/pages/ExecutiveCommandCenter"));
 const Explorer = lazy(() => import("@/pages/DataExplorer"));
 const MccStudio = lazy(() => import("@/pages/MccStudio"));
-const MccAbuse = lazy(() => import("@/pages/MccAbuse"));
-const SplitLab = lazy(() => import("@/pages/SplitTicketingLab"));
 const Surcharge = lazy(() => import("@/pages/SurchargeConsole"));
-const Cash = lazy(() => import("@/pages/CashDisbursement"));
 const Investigation = lazy(() => import("@/pages/Investigation"));
 const ModelStore = lazy(() => import("@/pages/ModelStore"));
 const Anatomy = lazy(() => import("@/pages/AnatomyDeck"));
@@ -49,10 +46,13 @@ export function App() {
               <Route path="/typologies" element={<Navigate to="/anatomy" replace />} />
               <Route path="/mcc" element={<MccStudio />} />
               <Route path="/mcc/:category" element={<MccStudio />} />
-              <Route path="/mcc-abuse" element={<MccAbuse />} />
-              <Route path="/mcc-abuse/:category" element={<MccAbuse />} />
-              <Route path="/split" element={<SplitLab />} />
-              <Route path="/split/:category" element={<SplitLab />} />
+              {/* Retired typologies — scoped out of the demo, redirect to the Command Center. */}
+              <Route path="/mcc-abuse" element={<Navigate to="/" replace />} />
+              <Route path="/mcc-abuse/:category" element={<Navigate to="/" replace />} />
+              <Route path="/split" element={<Navigate to="/" replace />} />
+              <Route path="/split/:category" element={<Navigate to="/" replace />} />
+              <Route path="/cash" element={<Navigate to="/" replace />} />
+              <Route path="/cash/:category" element={<Navigate to="/" replace />} />
               {/* Factoring retired as its own tab — its cohort is covered under MCC Miscoding. */}
               <Route path="/factoring" element={<Navigate to="/mcc" replace />} />
               <Route path="/factoring/:category" element={<Navigate to="/mcc" replace />} />
@@ -61,8 +61,6 @@ export function App() {
               {/* legacy path → surcharge (renamed from Descriptor Intelligence) */}
               <Route path="/descriptors" element={<Navigate to="/surcharge" replace />} />
               <Route path="/descriptors/:category" element={<Navigate to="/surcharge" replace />} />
-              <Route path="/cash" element={<Cash />} />
-              <Route path="/cash/:category" element={<Cash />} />
               <Route path="/investigate" element={<Investigation />} />
               <Route path="/investigate/:merchantId" element={<Investigation />} />
               <Route path="/anatomy" element={<Anatomy />} />

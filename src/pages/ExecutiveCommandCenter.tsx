@@ -13,8 +13,13 @@ import { useAppStore } from "@/stores/appStore";
 import type { FiledCase } from "@/types/domain";
 import {
   overview, FAMILY_META, TIER_ORDER, TIER_HEX, PRIORITY_TIER_HEX,
-  type Family, type OverviewTier, type PriorityMerchant,
+  type Family, type FamilyKey, type OverviewTier, type PriorityMerchant,
 } from "@/data/overview";
+
+/** The demo is scoped to the two typologies with a live console + anatomy. The
+ *  Command Center renders only these families, and every headline total is
+ *  recomputed from them so the summary stays internally consistent. */
+const ACTIVE_FAMILIES: FamilyKey[] = ["mcc_miscoding", "surcharge"];
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 function monthLabel(iso: string): string {
@@ -254,14 +259,23 @@ export default function ExecutiveCommandCenter() {
   const clearFiledCases = useAppStore((s) => s.clearFiledCases);
 
   const tierData = overview.tiers;
-  const totalAlerts = families.reduce((s, f) => s + f.alerts, 0);
+
+  // Scope to the active families and derive the flagged headline from them, so the
+  // top-line "flagged" figures always reconcile with the family cards below.
+  const activeFamilies = families.filter((f) => ACTIVE_FAMILIES.includes(f.key));
+  const activePriority = priority.filter((m) => ACTIVE_FAMILIES.includes(m.family));
+  const totalAlerts = activeFamilies.reduce((s, f) => s + f.alerts, 0);
+  const flaggedInScope = activeFamilies.reduce((s, f) => s + f.alerts, 0);
+  const criticalInScope = activeFamilies.reduce((s, f) => s + f.critical, 0);
+  const exposureInScope = activeFamilies.reduce((s, f) => s + f.exposure, 0);
+  const exposurePctInScope = portfolio.grossSalesUsd > 0 ? exposureInScope / portfolio.grossSalesUsd : 0;
 
   return (
     <div>
       <PageHeader
         icon="LayoutDashboard"
         title="Integrity Intelligence Command Center"
-        subtitle="Portfolio-wide merchant-integrity risk across six alert families · synthetic monitoring window"
+        subtitle="Merchant-integrity risk across the active typologies — MCC Miscoding & Card Surcharge · synthetic monitoring window"
         actions={
           <>
             <Button variant="ghost" onClick={() => exportJson("integrity-overview.json", overview)}>
@@ -289,13 +303,13 @@ export default function ExecutiveCommandCenter() {
               },
               {
                 l: "Flagged for review",
-                v: fmtNumber(portfolio.flaggedMerchants),
-                d: `${fmtNumber(portfolio.criticalMerchants)} critical · ${totalAlerts} alerts`,
+                v: fmtNumber(flaggedInScope),
+                d: `${fmtNumber(criticalInScope)} critical · ${totalAlerts} alerts`,
               },
               {
                 l: "Flagged exposure",
-                v: fmtCurrency(portfolio.flaggedExposureUsd, true),
-                d: `${fmtPct(portfolio.flaggedExposurePct)} of ${fmtCurrency(portfolio.grossSalesUsd, true)} book`,
+                v: fmtCurrency(exposureInScope, true),
+                d: `${fmtPct(exposurePctInScope)} of ${fmtCurrency(portfolio.grossSalesUsd, true)} book`,
               },
               {
                 l: "Detection quality",
@@ -355,7 +369,7 @@ export default function ExecutiveCommandCenter() {
         </div>
       </section>
 
-      {/* ══════════ Six alert families ══════════ */}
+      {/* ══════════ Active alert families ══════════ */}
       <section className="mt-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <SectionLabel>Alert families · one primary typology per merchant</SectionLabel>
@@ -363,8 +377,8 @@ export default function ExecutiveCommandCenter() {
             Exposure attributed to a single family — never double-counted across typologies.
           </span>
         </div>
-        <div className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {families.map((f) => (
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          {activeFamilies.map((f) => (
             <FamilyCard key={f.key} fam={f} onOpen={() => navigate(FAMILY_META[f.key].route)} />
           ))}
         </div>
@@ -379,7 +393,7 @@ export default function ExecutiveCommandCenter() {
           </span>
         </div>
         <div className="mt-2 grid gap-3 lg:grid-cols-2">
-          {families
+          {activeFamilies
             .filter((f) => (f.subtypes?.length ?? 0) > 0)
             .map((f) => (
               <FamilyTaxonomy
@@ -413,14 +427,10 @@ export default function ExecutiveCommandCenter() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-[12px] sm:grid-cols-3">
+                <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-[12px]">
                   <div className="flex items-center justify-between border-b border-border-soft pb-1.5">
                     <span className="text-ink-3">Integrity violations</span>
                     <span className="font-bold tnum">{fmtNumber(detection.integrityViolations)}</span>
-                  </div>
-                  <div className="flex items-center justify-between border-b border-border-soft pb-1.5">
-                    <span className="text-ink-3">Interchange abuse</span>
-                    <span className="font-bold tnum">{fmtNumber(detection.interchangeAbuse)}</span>
                   </div>
                   <div className="flex items-center justify-between border-b border-border-soft pb-1.5">
                     <span className="text-ink-3">Missed (FN)</span>
@@ -483,7 +493,7 @@ export default function ExecutiveCommandCenter() {
             <SectionLabel>Declared MCC</SectionLabel>
             <SectionLabel className="text-right">Exposure</SectionLabel>
           </div>
-          {priority.map((m: PriorityMerchant) => {
+          {activePriority.map((m: PriorityMerchant) => {
             const fmeta = FAMILY_META[m.family];
             return (
               <button

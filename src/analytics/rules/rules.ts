@@ -64,45 +64,6 @@ export const DEFAULT_RULES: Rule[] = [
     enabled: true,
   },
   {
-    id: "RULE-SPLIT-001",
-    name: "Repeated near-threshold ticket clustering",
-    typology: "SPLIT_TICKETING",
-    severity: "HIGH",
-    conditions: [
-      { feature: "thresholdProximityRatio", operator: ">", value: 0.25 },
-      { feature: "rapidRepeatRatio", operator: ">", value: 0.08 },
-    ],
-    score: 28,
-    explanationTemplate:
-      "{{thresholdProximityPct}}% of purchases sit just below the ${{threshold}} threshold with {{rapidRepeatPct}}% rapid same-card repeats.",
-    enabled: true,
-  },
-  {
-    id: "RULE-FACT-001",
-    name: "High descriptor diversity for a single merchant ID",
-    typology: "FACTORING",
-    severity: "HIGH",
-    conditions: [
-      { feature: "descriptorCount", operator: ">=", value: 4 },
-      { feature: "descriptorEntropy", operator: ">", value: 1.2 },
-    ],
-    score: 26,
-    explanationTemplate:
-      "Merchant processes under {{descriptorCount}} descriptors (entropy {{descriptorEntropy}}) — atypical for a single business.",
-    enabled: true,
-  },
-  {
-    id: "RULE-FACT-002",
-    name: "Shared settlement / infrastructure with other entities",
-    typology: "FACTORING",
-    severity: "CRITICAL",
-    conditions: [{ feature: "sharedBankAccountCount", operator: ">=", value: 2 }],
-    score: 24,
-    explanationTemplate:
-      "Settlement account shared with {{sharedBankAccountCount}} other merchants, including higher-risk entities.",
-    enabled: true,
-  },
-  {
     id: "RULE-SURCH-001",
     name: "Card surcharge disputed as unauthorized",
     typology: "CARD_SURCHARGE",
@@ -122,62 +83,6 @@ export const DEFAULT_RULES: Rule[] = [
     score: 18,
     explanationTemplate:
       "{{disputePct}}% dispute rate with {{refundPct}}% fee reversals — the chargeback fallout of surcharging card transactions over the cap or without disclosure.",
-    enabled: true,
-  },
-  {
-    id: "RULE-CASH-001",
-    name: "Round-dollar purchases with immediate refunds",
-    typology: "CASH_DISBURSEMENT",
-    severity: "HIGH",
-    conditions: [
-      { feature: "roundDollarRatio", operator: ">", value: 0.45 },
-      { feature: "refundAfterPurchaseRatio", operator: ">", value: 0.15 },
-    ],
-    score: 28,
-    explanationTemplate:
-      "{{roundDollarPct}}% round-dollar purchases with {{refundAfterPct}}% refund-after-purchase — a cash-extraction signature.",
-    enabled: true,
-  },
-  {
-    id: "RULE-CASH-002",
-    name: "Wallet-load behavior under retail MCC",
-    typology: "CASH_DISBURSEMENT",
-    severity: "HIGH",
-    conditions: [
-      { feature: "walletLoadRatio", operator: ">", value: 0.2 },
-      { feature: "declaredMcc", operator: "in", value: ["5411", "5812", "5499", "5999", "5541"] },
-    ],
-    score: 24,
-    explanationTemplate:
-      "{{walletLoadPct}}% of activity shows wallet-load indicators inconsistent with {{declaredMccLabel}}.",
-    enabled: true,
-  },
-  {
-    id: "RULE-ABUSE-001",
-    name: "Interchange downgrade: keyed/fallback entry under a qualified card-present MCC",
-    typology: "MCC_ABUSE",
-    severity: "HIGH",
-    conditions: [
-      { feature: "declaredMcc", operator: "in", value: ["5411", "5812", "5541", "5499", "5814"] },
-      { feature: "manualEntryRatio", operator: ">", value: 0.18 },
-    ],
-    score: 24,
-    explanationTemplate:
-      "{{manualEntryPct}}% keyed / fallback entry under {{declaredMccLabel}} — settled at a lower interchange band than the entry characteristics qualify for.",
-    enabled: true,
-  },
-  {
-    id: "RULE-ABUSE-002",
-    name: "Cross-border keyed settlement inconsistent with declared band",
-    typology: "MCC_ABUSE",
-    severity: "MEDIUM",
-    conditions: [
-      { feature: "crossBorderRatio", operator: ">", value: 0.2 },
-      { feature: "fallbackRatio", operator: ">", value: 0.12 },
-    ],
-    score: 16,
-    explanationTemplate:
-      "{{crossBorderPct}}% cross-border with {{fallbackPct}}% fallback entry — settlement geography and entry mode inconsistent with the declared interchange qualification.",
     enabled: true,
   },
   {

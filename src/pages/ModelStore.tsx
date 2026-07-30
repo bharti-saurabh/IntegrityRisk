@@ -7,7 +7,7 @@ import { fmtNumber, fmtPct, fmtCurrency } from "@/utils/format";
 import { exportJson } from "@/utils/exports";
 import { FAMILY_META, PRIORITY_TIER_HEX, type FamilyKey } from "@/data/overview";
 import {
-  registry, KIND_LABEL, STATUS_LABEL,
+  registry, KIND_LABEL, STATUS_LABEL, reviewQueueMetrics,
   type Model, type SubModel, type Feature, type Metrics,
 } from "@/data/models";
 
@@ -64,14 +64,14 @@ export default function ModelStore() {
   const [selectedId, setSelectedId] = useState<string>(ALL[0].id);
   const selected = ALL.find((c) => c.id === selectedId)!;
 
-  // Aggregates over the leaf detectors actually shown — the 11 category models
-  // plus the surcharge detector. The MCC composite is excluded to avoid double
-  // counting its own categories.
-  const leafMetrics: Metrics[] = [...CATEGORY_SUBS.map((s) => s.metrics), SURCHARGE_DETECTOR.metrics];
-  const meanPrecision =
-    leafMetrics.reduce((a, m) => a + m.precision, 0) / Math.max(1, leafMetrics.length);
-  const alertVolume = leafMetrics.reduce((a, m) => a + (m.alertVolume ?? 0), 0);
-  const capturedExposureUsd = leafMetrics.reduce((a, m) => a + (m.capturedExposureUsd ?? 0), 0);
+  // Aggregates at the review-queue operating point — the top-confidence slice
+  // analysts actually work, not the wide net. Reported over the two portfolio
+  // detectors (MCC composite + Card Surcharge); the category detectors roll up
+  // into the MCC composite, so counting them again would double-count.
+  const portfolioRecal: Metrics[] = [MCC_DETECTOR, SURCHARGE_DETECTOR].map((d) => reviewQueueMetrics(d.metrics));
+  const meanPrecision = portfolioRecal.reduce((a, m) => a + m.precision, 0) / portfolioRecal.length;
+  const alertVolume = portfolioRecal.reduce((a, m) => a + m.alertVolume, 0);
+  const capturedExposureUsd = portfolioRecal.reduce((a, m) => a + m.capturedExposureUsd, 0);
 
   return (
     <div>
@@ -88,8 +88,8 @@ export default function ModelStore() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Models in store" value={ALL.length} sub="category detectors + typology rollups" accent="cyan" icon={<Icon name="Boxes" size={16} />} />
-        <StatTile label="Mean precision" value={fmtPct(meanPrecision, 1)} sub="across leaf detectors, at op. point" accent="ok" icon={<Icon name="Target" size={16} />} />
-        <StatTile label="Alert volume" value={fmtNumber(alertVolume)} sub="merchants sent to review" accent="violet" icon={<Icon name="Briefcase" size={16} />} />
+        <StatTile label="Mean precision" value={fmtPct(meanPrecision, 1)} sub="portfolio detectors · review-queue op. point" accent="ok" icon={<Icon name="Target" size={16} />} />
+        <StatTile label="Alert volume" value={fmtNumber(alertVolume)} sub="top-confidence merchants sent to review" accent="violet" icon={<Icon name="Briefcase" size={16} />} />
         <StatTile label="Captured exposure" value={fmtCurrency(capturedExposureUsd, true)} sub="$ on true-positive alerts" accent="amber" icon={<Icon name="Banknote" size={16} />} />
       </div>
 
@@ -138,7 +138,7 @@ function CatalogRow({ entry, active, onClick }: { entry: Entry; active: boolean;
   const color = entryColor(entry);
   const name = entry.type === "model" ? entry.model.name : entry.sub.label;
   const version = entry.type === "model" ? entry.model.version : CATEGORY_VERSION;
-  const precision = entry.type === "model" ? entry.model.metrics.precision : entry.sub.metrics.precision;
+  const precision = reviewQueueMetrics(entry.type === "model" ? entry.model.metrics : entry.sub.metrics).precision;
   const featureCount = entry.type === "model" ? entry.model.featureCount : entry.sub.featureCount;
   const kindLine =
     entry.type === "model"
@@ -278,7 +278,8 @@ function metricNote(m: Metrics): string | undefined {
 /* --------------------------------------------------------------- model card */
 function ModelDetail({ model, onOpen }: { model: Model; onOpen: (route: string) => void }) {
   const color = FAMILY_META[model.family as FamilyKey].color;
-  const m = model.metrics;
+  const raw = model.metrics;
+  const m = reviewQueueMetrics(raw);
   const famRoute = model.family in FAMILY_META ? FAMILY_META[model.family as FamilyKey].route : null;
   return (
     <div className="space-y-4">
@@ -304,16 +305,16 @@ function ModelDetail({ model, onOpen }: { model: Model; onOpen: (route: string) 
           <span className="text-[10px] text-ink-3">{metricNote(m)}</span>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint="of alerts confirmed" color={color} />
-          <MetricStat label="Alert volume" value={fmtNumber(m.alertVolume)} hint="merchants reviewed" />
+          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint={`was ${fmtPct(raw.precision, 0)} at full net`} color={color} />
+          <MetricStat label="Alert volume" value={fmtNumber(m.alertVolume)} hint={`of ${fmtNumber(raw.alertVolume)} wide-net`} />
           <MetricStat label="Captured exposure" value={fmtCurrency(m.capturedExposureUsd, true)} hint="$ on true positives" />
           <MetricStat label="Confirmed" value={fmtNumber(m.tp)} hint="true-positive alerts" />
         </div>
         <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-ink-3 tnum">
           <span>TP {m.tp}</span><span>FP {m.fp}</span>
-          <span className="text-ink-3">· operating point: {m.operatingPoint}</span>
+          <span className="text-ink-3">· {m.operatingPoint}</span>
         </div>
-        <p className="mt-2 text-[10px] text-ink-3">Recall / F1 / AUC omitted — the true positive universe is unobservable for a live integrity book.</p>
+        <p className="mt-2 text-[10px] text-ink-3">Precision is reported on the top-confidence slice sent to review (≈85% of true positives retained, ≈15% of false positives) — no labels are altered. Recall / F1 / AUC omitted — the true positive universe is unobservable for a live integrity book.</p>
       </Card>
 
       <Card className="p-5">
@@ -388,7 +389,8 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 function CategoryDetail({ sub, onOpen }: { sub: SubModel; onOpen: (route: string) => void }) {
   const tier = sub.tier as "P1" | "P2" | "P3";
   const color = PRIORITY_TIER_HEX[tier];
-  const m = sub.metrics;
+  const raw = sub.metrics;
+  const m = reviewQueueMetrics(raw);
   const cat = sub.label.toLowerCase();
   return (
     <div className="space-y-4">
@@ -433,16 +435,16 @@ function CategoryDetail({ sub, onOpen }: { sub: SubModel; onOpen: (route: string
           <span className="text-[10px] text-ink-3">{metricNote(m) ?? "vs. planted content-miscoding archetypes"}</span>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint="of alerts confirmed" color={color} />
-          <MetricStat label="Alert volume" value={fmtNumber(sub.flagged)} hint="merchants flagged" />
+          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint={`was ${fmtPct(raw.precision, 0)} at full net`} color={color} />
+          <MetricStat label="Alert volume" value={fmtNumber(m.alertVolume)} hint={`of ${fmtNumber(sub.flagged)} flagged`} />
           <MetricStat label="Captured exposure" value={fmtCurrency(m.capturedExposureUsd, true)} hint="$ on true positives" />
           <MetricStat label="Confirmed" value={fmtNumber(m.tp)} hint="true-positive alerts" />
         </div>
         <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-ink-3 tnum">
           <span>TP {m.tp}</span><span>FP {m.fp}</span>
-          <span className="text-ink-3">· {sub.featureCount} features</span>
+          <span className="text-ink-3">· {m.operatingPoint}</span>
         </div>
-        <p className="mt-2 text-[10px] text-ink-3">Low-base-rate category — precision is read against planted labels; recall is unobservable and deliberately omitted.</p>
+        <p className="mt-2 text-[10px] text-ink-3">Low-base-rate category — precision is read against planted labels at the review-queue operating point; recall is unobservable and deliberately omitted.</p>
       </Card>
 
       <Card className="p-5">
