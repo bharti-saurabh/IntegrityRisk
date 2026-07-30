@@ -43,6 +43,17 @@ const ANATOMIES: Anatomy[] = [
     accent: "#2456D6",
     accentBg: "#EBF0FC",
   },
+  {
+    key: "surcharge",
+    file: "surcharge_anatomy3.html",
+    eyebrow: "Fee-integrity typology",
+    title: "Card Surcharge Abuse",
+    blurb:
+      "How the same card fee is legal in one country and banned across the border — a deterministic jurisdiction rulebook, not a peer model, decides the verdict and the recovery.",
+    icon: "BadgePercent",
+    accent: "#0F7A52",
+    accentBg: "#E7F5EF",
+  },
 ];
 
 function AnatomyCard({ a, onOpen }: { a: Anatomy; onOpen: (a: Anatomy) => void }) {
