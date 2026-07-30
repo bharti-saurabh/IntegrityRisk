@@ -17,7 +17,10 @@ import {
   type CategorySignal,
 } from "@/data/miscodingCategories";
 import type { TypologyConfig, DetectionModel } from "@/data/typologies";
-import { assessSurcharge, type SurchargeAssessment } from "@/data/surchargeCompliance";
+import {
+  assessSurcharge, buildSurchargePortfolio, violationHex,
+  type SurchargeAssessment,
+} from "@/data/surchargeCompliance";
 import { TIER_HEX, TIER_ORDER, FAMILY_META, type OverviewTier, type FamilyKey } from "@/data/overview";
 import { subjectFromExplorer, buildInvestigation } from "@/features/ai-copilot/agentStream";
 import { AgentStreamPanel } from "@/features/ai-copilot/AgentStreamPanel";
@@ -452,6 +455,11 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
           </div>
         ) : null}
       </Card>
+
+      {/* ---- Fee-integrity: whole-book NCA recovery lens ------------------- */}
+      {config.family === "surcharge" && merchants ? (
+        <SurchargePortfolioPanel merchants={merchants} />
+      ) : null}
 
       {/* ---- Master / detail ---------------------------------------------- */}
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(320px,400px)_1fr]">
@@ -998,6 +1006,269 @@ function FindingsCard({ synthesis, onReopen }: { synthesis: InvestigationSynthes
         </button>
       </div>
     </div>
+  );
+}
+
+// ---- surcharge portfolio (fee-integrity family only) ----------------------
+// The whole-book NCA recovery lens: every surcharging merchant run through the
+// same jurisdiction/cap/prohibited-card engine, rolled up to acquirer, violation
+// type and jurisdiction, with the recovery band = violating × an editable
+// $/merchant assessment. Hybrid of the two signed-off mockups (acquirer scorecard
+// + regime matrix) sharing one merchant drill-down. Acquirers are synthetic
+// (the book has no acquirer field); rate & volume are the real synthetic columns.
+
+const SURCH_ACCENT = "#059669"; // fee-integrity family color (emerald)
+
+function PortfolioBar({ pct, hex }: { pct: number; hex: string }) {
+  return (
+    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-2">
+      <div className="h-full rounded-full" style={{ width: `${Math.max(2, pct)}%`, background: hex }} />
+    </div>
+  );
+}
+
+function SevChip({ severity }: { severity: "SEVERE" | "POTENTIAL" }) {
+  const sev = severity === "SEVERE";
+  return (
+    <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[9.5px] font-bold ${sev ? "bg-critical/12 text-critical" : "bg-amber/12 text-amber"}`}>
+      {severity}
+    </span>
+  );
+}
+
+function SurchargePortfolioPanel({ merchants }: { merchants: ExplorerMerchant[] }) {
+  const [ncaLow, setNcaLow] = useState(5000);
+  const [ncaHigh, setNcaHigh] = useState(10000);
+  const [open, setOpen] = useState(true);
+  const [filter, setFilter] = useState<{ kind: "acq" | "vt" | "jur"; value: string } | null>(null);
+
+  const p = useMemo(
+    () => buildSurchargePortfolio(merchants, ncaLow, ncaHigh),
+    [merchants, ncaLow, ncaHigh],
+  );
+
+  const rows = useMemo(() => {
+    if (!filter) return p.merchants;
+    if (filter.kind === "acq") return p.merchants.filter((m) => m.acquirer === filter.value);
+    if (filter.kind === "vt") return p.merchants.filter((m) => m.vt === filter.value);
+    return p.merchants.filter((m) => m.region === filter.value);
+  }, [p, filter]);
+  const shown = filter ? rows : rows.slice(0, 12);
+
+  const maxAcqPv = Math.max(1, ...p.byAcquirer.map((a) => a.pv));
+  const totVtPv = Math.max(1, p.byViolation.reduce((s, v) => s + v.pv, 0));
+  const maxJurPv = Math.max(1, ...p.byJurisdiction.map((j) => j.pv));
+  const money = (n: number) => fmtCurrency(n, true);
+  const toggle = (kind: "acq" | "vt" | "jur", value: string) =>
+    setFilter((f) => (f && f.kind === kind && f.value === value ? null : { kind, value }));
+
+  return (
+    <Card className="mt-4 overflow-hidden p-0" glow="cyan">
+      {/* header */}
+      <div className="flex items-center justify-between gap-2 px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: `${SURCH_ACCENT}14`, color: SURCH_ACCENT }}>
+            <Icon name="Landmark" size={16} />
+          </span>
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.09em]" style={{ color: SURCH_ACCENT }}>Fee-integrity · portfolio scan</div>
+            <div className="text-[13.5px] font-semibold text-ink">Acquirer NCA recovery — surcharge non-compliance at book scale</div>
+          </div>
+        </div>
+        <button onClick={() => setOpen((v) => !v)} className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-1 text-[11px] font-medium text-ink-2 transition-colors hover:text-ink">
+          <Icon name="ChevronDown" size={12} className={`transition-transform ${open ? "" : "-rotate-90"}`} />
+          {open ? "Hide" : "Show"}
+        </button>
+      </div>
+
+      {open ? (
+        <div className="border-t border-border p-4">
+          {/* KPI strip */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="rounded-xl border p-3" style={{ borderColor: `${SURCH_ACCENT}55`, background: `linear-gradient(135deg, ${SURCH_ACCENT}12, transparent)` }}>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-ink-3">NCA recovery opportunity</div>
+              <div className="mt-0.5 text-[22px] font-extrabold tnum" style={{ color: SURCH_ACCENT }}>{money(p.kpi.ncaLow)}–{money(p.kpi.ncaHigh)}</div>
+              <div className="mt-0.5 text-[11px] text-ink-3">{fmtNumber(p.kpi.violating)} violating × ${fmtNumber(ncaLow / 1000)}–{fmtNumber(ncaHigh / 1000)}K</div>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-ink-3">Violating merchants</div>
+              <div className="mt-0.5 text-[22px] font-extrabold text-ink tnum">{fmtNumber(p.kpi.violating)}</div>
+              <div className="mt-0.5 text-[11px] text-ink-3">of {fmtNumber(p.kpi.surcharging)} surcharging · {Math.round((p.kpi.violating / Math.max(1, p.kpi.surcharging)) * 100)}% of book</div>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-ink-3">PV in violation</div>
+              <div className="mt-0.5 text-[22px] font-extrabold text-ink tnum">{money(p.kpi.pv)}</div>
+              <div className="mt-0.5 text-[11px] text-ink-3">surcharged volume under a failing regime</div>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-ink-3">Severity split</div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 rounded-full bg-critical/12 px-2 py-0.5 text-[11px] font-bold text-critical tnum">{p.kpi.severe} severe</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber/12 px-2 py-0.5 text-[11px] font-bold text-amber tnum">{p.kpi.potential} potential</span>
+              </div>
+              <div className="mt-1 text-[11px] text-ink-3">severe = ban regime or prohibited card</div>
+            </div>
+          </div>
+
+          {/* two lenses */}
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {/* acquirer leaderboard */}
+            <div className="rounded-xl border border-border p-3.5">
+              <div className="mb-2 flex items-center justify-between">
+                <SectionLabel>Acquirers by recovery opportunity</SectionLabel>
+                <span className="text-[10px] uppercase tracking-wide text-ink-3">click to filter</span>
+              </div>
+              <div className="space-y-2.5">
+                {p.byAcquirer.map((a) => {
+                  const active = filter?.kind === "acq" && filter.value === a.acquirer;
+                  return (
+                    <button key={a.acquirer} onClick={() => toggle("acq", a.acquirer)} className={`block w-full rounded-lg border px-2.5 py-2 text-left transition-colors ${active ? "border-cyan/60 bg-cyan/[0.04]" : "border-transparent hover:bg-surface-2"}`}>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-[13px] font-semibold text-ink">{a.acquirer}</span>
+                        <span className="text-[13px] font-extrabold text-ink tnum">{money(a.n * ncaLow)}–{money(a.n * ncaHigh)}</span>
+                      </div>
+                      <div className="mt-0.5 flex items-center justify-between text-[11px] text-ink-3">
+                        <span>{a.n} violating · <span className="text-critical">{a.severe} severe</span> · {money(a.pv)} PV</span>
+                      </div>
+                      <PortfolioBar pct={(a.pv / maxAcqPv) * 100} hex={SURCH_ACCENT} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* violation type + jurisdiction */}
+            <div className="rounded-xl border border-border p-3.5">
+              <div className="mb-2 flex items-center justify-between">
+                <SectionLabel>Violation type · jurisdiction</SectionLabel>
+                <span className="text-[10px] uppercase tracking-wide text-ink-3">click to filter</span>
+              </div>
+              <div className="space-y-2">
+                {p.byViolation.map((v) => {
+                  const hex = violationHex(v.vt);
+                  const active = filter?.kind === "vt" && filter.value === v.vt;
+                  return (
+                    <button key={v.vt} onClick={() => toggle("vt", v.vt)} className={`block w-full rounded-lg border px-2.5 py-2 text-left transition-colors ${active ? "border-cyan/60 bg-cyan/[0.04]" : "border-border hover:bg-surface-2"}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="flex items-center gap-2 text-[12.5px] font-semibold text-ink">
+                          <span className="h-2 w-2 rounded-full" style={{ background: hex }} /> {v.vt}
+                          <SevChip severity={v.severity} />
+                        </span>
+                        <span className="text-[14px] font-extrabold text-ink tnum">{fmtNumber(v.n)}</span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[11px] text-ink-3">
+                        <span>{money(v.pv)} PV · {Math.round((v.pv / totVtPv) * 100)}% of violation PV</span>
+                      </div>
+                      <PortfolioBar pct={(v.pv / totVtPv) * 100} hex={hex} />
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-3 border-t border-border pt-2.5">
+                <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-ink-3">By jurisdiction</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {p.byJurisdiction.map((j) => {
+                    const active = filter?.kind === "jur" && filter.value === j.region;
+                    return (
+                      <button key={j.region} onClick={() => toggle("jur", j.region)} className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors ${active ? "border-cyan/60 bg-cyan/[0.06] text-ink" : "border-border text-ink-2 hover:bg-surface-2"}`}>
+                        {j.region} <span className="text-ink-3 tnum">{j.n}</span>
+                        <span className="text-ink-3">·</span>
+                        <span className="text-ink-3 tnum">{money(j.pv)}</span>
+                        <span className="ml-0.5 h-1 w-6 overflow-hidden rounded-full bg-surface-2">
+                          <span className="block h-full rounded-full" style={{ width: `${Math.max(6, (j.pv / maxJurPv) * 100)}%`, background: SURCH_ACCENT }} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* NCA math + editable rate */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-dashed p-3" style={{ borderColor: `${SURCH_ACCENT}66` }}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-ink-3">Recovery math</span>
+            <span className="inline-flex items-center gap-2 text-[13px]">
+              <span className="rounded-md border border-border bg-surface px-2 py-1 font-bold text-ink tnum">{fmtNumber(p.kpi.violating)}</span>
+              <span className="text-[11px] text-ink-3">violating</span>
+              <span className="font-bold text-ink-3">×</span>
+              <label className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-1 font-bold text-ink">
+                $<input type="number" min={0} step={500} value={ncaLow} onChange={(e) => setNcaLow(Math.max(0, Number(e.target.value) || 0))} className="w-16 bg-transparent text-[13px] font-bold text-ink outline-none tnum" aria-label="NCA low rate per merchant" />
+              </label>
+              <span className="text-ink-3">–</span>
+              <label className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-2 py-1 font-bold text-ink">
+                $<input type="number" min={0} step={500} value={ncaHigh} onChange={(e) => setNcaHigh(Math.max(0, Number(e.target.value) || 0))} className="w-20 bg-transparent text-[13px] font-bold text-ink outline-none tnum" aria-label="NCA high rate per merchant" />
+              </label>
+              <span className="text-[11px] text-ink-3">/ merchant</span>
+              <span className="font-bold text-ink-3">=</span>
+              <span className="rounded-md px-2.5 py-1 font-extrabold text-white tnum" style={{ background: SURCH_ACCENT }}>{money(p.kpi.ncaLow)}–{money(p.kpi.ncaHigh)}</span>
+            </span>
+            <span className="flex items-start gap-1.5 text-[11px] text-ink-3">
+              <Icon name="Info" size={12} className="mt-0.5 shrink-0" />
+              Per-merchant assessment band is a demo assumption — edit to reprice the opportunity.
+            </span>
+          </div>
+
+          {/* drill-down */}
+          <div className="mt-4">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <SectionLabel>Violating merchants{filter ? "" : " — top by PV"}</SectionLabel>
+              {filter ? (
+                <button onClick={() => setFilter(null)} className="inline-flex items-center gap-1 rounded-full bg-cyan/10 px-2 py-0.5 text-[11px] font-medium text-cyan">
+                  {filter.value} <Icon name="X" size={11} />
+                </button>
+              ) : null}
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full min-w-[720px] text-[12px]">
+                <thead>
+                  <tr className="bg-surface-2/60 text-left text-[10px] uppercase tracking-wide text-ink-3">
+                    <th className="px-3 py-2 font-medium">Merchant</th>
+                    <th className="px-3 py-2 font-medium">Jurisdiction</th>
+                    <th className="px-3 py-2 font-medium">Violation</th>
+                    <th className="px-3 py-2 font-medium">Acquirer</th>
+                    <th className="px-3 py-2 text-right font-medium">Surcharge</th>
+                    <th className="px-3 py-2 text-right font-medium">PV in violation</th>
+                    <th className="px-3 py-2 text-right font-medium">NCA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.map((m) => (
+                    <tr key={m.id} className="border-t border-border hover:bg-surface-2/50">
+                      <td className="px-3 py-2">
+                        <div className="font-semibold text-ink">{m.name}</div>
+                        <div className="text-[10.5px] text-ink-3 tnum">{m.id}</div>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="text-ink-2">{m.region}</div>
+                        <div className="text-[10.5px] text-ink-3">{m.city}, {m.country}</div>
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: violationHex(m.vt) }} />
+                          <span className="text-ink-2">{m.vt}</span>
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-ink-3">{m.acquirer}</td>
+                      <td className="px-3 py-2 text-right text-ink-2 tnum">
+                        {m.surchargePct.toFixed(1)}%
+                        <div className="text-[10.5px] text-ink-3">on {Math.round(m.pctSurcharged * 100)}%</div>
+                      </td>
+                      <td className="px-3 py-2 text-right font-semibold text-ink tnum">{fmtCurrency(m.pv)}</td>
+                      <td className="px-3 py-2 text-right text-ink-2 tnum">${fmtNumber(ncaLow / 1000)}–{fmtNumber(ncaHigh / 1000)}K</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-1.5 text-[10.5px] text-ink-3">
+              {filter ? `${shown.length} merchant${shown.length === 1 ? "" : "s"} · ${filter.value}` : `Showing top 12 of ${fmtNumber(p.merchants.length)}`}
+              {" · "}Acquirers are deterministic synthetic (the book carries no acquirer field); jurisdiction, rate & volume are real synthetic columns. Directional decision-support, not a compliance determination.
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </Card>
   );
 }
 
