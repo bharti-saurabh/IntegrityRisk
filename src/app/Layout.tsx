@@ -26,9 +26,12 @@ export function Layout({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <div className="flex min-h-screen">
+    // App shell locked to the viewport. ONE explicit scroll container (<main>)
+    // owns the vertical scroll, instead of relying on the window + html/body
+    // height:100% chain (which left the top of tall pages unreachable).
+    <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-surface lg:flex">
+      <aside className="hidden h-screen w-60 shrink-0 flex-col border-r border-border bg-surface lg:flex">
         <div className="flex items-center gap-2.5 px-4 py-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan to-violet text-white shadow-sm">
             <Icon name="Shield" size={19} />
@@ -100,7 +103,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-canvas/80 px-4 py-2 backdrop-blur-md">
+        <header className="z-30 flex shrink-0 items-center gap-3 border-b border-border bg-canvas/80 px-4 py-2 backdrop-blur-md">
           <button
             onClick={() => setPaletteOpen(true)}
             title="Search — merchants, cases, actions"
@@ -120,11 +123,11 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        <main key={location.pathname} className="flex-1 animate-fade-up px-4 py-5 sm:px-6">
+        <main key={location.pathname} className="min-h-0 flex-1 animate-fade-up overflow-y-auto px-4 py-5 sm:px-6">
           {children}
         </main>
 
-        <footer className="border-t border-border px-6 py-3 text-center text-[11px] text-ink-3">
+        <footer className="shrink-0 border-t border-border px-6 py-3 text-center text-[11px] text-ink-3">
           Demonstration environment. All data and entities are synthetic. Outputs are
           decision-support indicators, not final compliance determinations.
           {meta ? <span className="ml-2 opacity-60">· data {meta.dataVersion}</span> : null}
