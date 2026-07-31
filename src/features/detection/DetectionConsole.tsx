@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Tooltip, Legend,
@@ -677,7 +678,11 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
 function InvestigationDrawer({ open, onClose, title, children }: {
   open: boolean; onClose: () => void; title: string; children: ReactNode;
 }) {
-  return (
+  // Portal to <body>: this is a full-viewport overlay, and the page shell's
+  // <main> carries a transform (animate-fade-up) + overflow-y-auto. Left in
+  // place, `fixed` would resolve against that transformed ancestor and get
+  // clipped by its scroll box. Portaling escapes both.
+  return createPortal(
     <div className={`fixed inset-0 z-50 ${open ? "" : "pointer-events-none"}`} aria-hidden={!open}>
       <div
         onClick={onClose}
@@ -703,7 +708,8 @@ function InvestigationDrawer({ open, onClose, title, children }: {
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

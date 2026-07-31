@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Icon } from "@/components/ui/Icon";
 
@@ -115,7 +116,9 @@ function FullscreenViewer({ a, onClose }: { a: Anatomy; onClose: () => void }) {
     };
   }, [onClose]);
 
-  return (
+  // Portal to <body>: full-viewport overlay must escape the page shell's
+  // transformed, overflow-clipped <main> (see InvestigationDrawer).
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex flex-col bg-[#14181D]">
       {/* slim control bar */}
       <div className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-[#14181D] px-4 py-2.5 text-white">
@@ -156,7 +159,8 @@ function FullscreenViewer({ a, onClose }: { a: Anatomy; onClose: () => void }) {
         className="min-h-0 flex-1 border-0 bg-white"
         sandbox="allow-scripts allow-same-origin allow-popups"
       />
-    </div>
+    </div>,
+    document.body,
   );
 }
 
