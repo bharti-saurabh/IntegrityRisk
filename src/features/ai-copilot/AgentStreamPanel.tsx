@@ -124,11 +124,14 @@ export function AgentStreamPanel(props: AgentStreamPanelProps) {
 
   // A fresh run clears follow-ups and pins.
   useEffect(() => { setFollows([]); setPinned([]); }, [runId]);
-  // Follow the newest content. In the drawer this scrolls the internal region;
-  // on the full page it nudges the window — block:"nearest" avoids yanking.
+  // Follow the newest content ONLY inside the embedded drawer, where the panel
+  // owns a bounded internal scroll region. On the full page the panel flows at
+  // natural height and the *page* owns the scroll — auto-driving it there would
+  // fight the analyst trying to scroll up to the findings, so we leave it alone.
   useEffect(() => {
+    if (!props.embedded) return;
     bottomRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [cursor, follows]);
+  }, [cursor, follows]); // eslint-disable-line react-hooks/exhaustive-deps
   // Surface pin changes to the parent (export brief / case write-back).
   useEffect(() => { props.onPinnedChange?.(pinned); }, [pinned]); // eslint-disable-line react-hooks/exhaustive-deps
 

@@ -39,6 +39,7 @@ interface PersistedState {
 }
 
 interface AppState extends PersistedState {
+  demoActive: boolean; // guided tour running (not persisted — starts fresh each load)
   status: "idle" | "loading" | "ready" | "error";
   progress: { phase: string; pct: number };
   error: string | null;
@@ -65,6 +66,7 @@ interface AppState extends PersistedState {
   fileCase: (fc: Omit<FiledCase, "id" | "filedAt">) => void;
   clearFiledCases: () => void;
   setDemoStep: (n: number) => void;
+  setDemoActive: (b: boolean) => void;
   resetDemo: () => void;
 }
 
@@ -94,6 +96,7 @@ export const useAppStore = create<AppState>()(
       filedCases: [],
       ruleOverrides: {},
       demoStep: 0,
+      demoActive: false,
       seed: String(DEFAULT_GEN_CONFIG.seed),
 
       status: "idle",
@@ -197,7 +200,8 @@ export const useAppStore = create<AppState>()(
       clearFiledCases: () => set({ filedCases: [] }),
 
       setDemoStep: (n) => set({ demoStep: n }),
-      resetDemo: () => set({ demoStep: 0 }),
+      setDemoActive: (b) => set({ demoActive: b }),
+      resetDemo: () => set({ demoStep: 0, demoActive: false }),
     }),
     {
       name: "iicc-store-v1",

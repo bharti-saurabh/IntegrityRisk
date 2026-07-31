@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/stores/appStore";
 import { Icon } from "@/components/ui/Icon";
@@ -46,12 +45,38 @@ const STEPS: TourStep[] = [
   },
 ];
 
+// Launcher — lives in the top header. Starts the guided tour.
+export function DemoTourButton({ className }: { className?: string }) {
+  const navigate = useNavigate();
+  const setDemoActive = useAppStore((s) => s.setDemoActive);
+  const setDemoStep = useAppStore((s) => s.setDemoStep);
+
+  const start = () => {
+    setDemoActive(true);
+    setDemoStep(0);
+    navigate(STEPS[0].route);
+  };
+
+  return (
+    <button
+      onClick={start}
+      title="Take the guided tour of the Command Center"
+      className={
+        className ??
+        "inline-flex items-center gap-1.5 rounded-full border border-violet/40 bg-gradient-to-r from-violet/80 to-cyan/80 px-3 py-1 text-[11px] font-semibold text-white shadow-glow transition-opacity hover:opacity-90"
+      }
+    >
+      <Icon name="Play" size={12} /> Guided demo
+    </button>
+  );
+}
+
 export function DemoTour() {
   const navigate = useNavigate();
   const demoStep = useAppStore((s) => s.demoStep);
   const setDemoStep = useAppStore((s) => s.setDemoStep);
   const resetDemo = useAppStore((s) => s.resetDemo);
-  const [active, setActive] = useState(false);
+  const demoActive = useAppStore((s) => s.demoActive);
 
   const go = (n: number) => {
     const clamped = Math.max(0, Math.min(STEPS.length - 1, n));
@@ -59,27 +84,9 @@ export function DemoTour() {
     navigate(STEPS[clamped].route);
   };
 
-  const start = () => {
-    setActive(true);
-    setDemoStep(0);
-    navigate(STEPS[0].route);
-  };
+  const finish = () => resetDemo();
 
-  const finish = () => {
-    setActive(false);
-    resetDemo();
-  };
-
-  if (!active) {
-    return (
-      <button
-        onClick={start}
-        className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full border border-violet/40 bg-gradient-to-r from-violet/90 to-cyan/90 px-4 py-2.5 text-sm font-semibold text-white shadow-glow hover:opacity-90"
-      >
-        <Icon name="Play" size={15} /> Start guided demo
-      </button>
-    );
-  }
+  if (!demoActive) return null;
 
   const step = STEPS[demoStep];
 

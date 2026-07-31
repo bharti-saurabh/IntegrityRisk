@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { useAppStore } from "@/stores/appStore";
 import { CommandPalette } from "@/app/CommandPalette";
 import { PersonaSwitcher } from "@/app/PersonaSwitcher";
-import { DemoTour } from "@/app/DemoTour";
+import { DemoTour, DemoTourButton } from "@/app/DemoTour";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -112,6 +112,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </button>
 
           <div className="ml-auto flex items-center gap-2">
+            <DemoTourButton />
             <span className="hidden items-center gap-1.5 rounded-full border border-violet/30 bg-violet/10 px-2.5 py-1 text-[11px] font-medium text-ai sm:inline-flex">
               <Icon name="Sparkles" size={12} /> AI: Demo (deterministic)
             </span>
