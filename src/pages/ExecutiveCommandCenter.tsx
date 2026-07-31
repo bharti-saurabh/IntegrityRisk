@@ -229,6 +229,11 @@ function FiledCasesPanel({ cases, onClear, onOpen }: {
                   <div className="truncate text-[11px] text-ink-3">
                     behaves like {c.suspectedLabel} · <span className="text-ink-2">{c.disposition}</span>
                   </div>
+                  {c.pinnedFindings && c.pinnedFindings.length ? (
+                    <div className="mt-0.5 flex items-center gap-1 text-[10px] text-cyan">
+                      <Icon name="Pin" size={9} /> {c.pinnedFindings.length} pinned finding{c.pinnedFindings.length > 1 ? "s" : ""}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="hidden text-right text-[10.5px] text-ink-3 sm:block">{timeAgo(c.filedAt, now)}</span>

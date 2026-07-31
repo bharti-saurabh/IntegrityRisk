@@ -367,6 +367,15 @@ export interface InvestigationCase {
 // persist locally — the write-back that links the investigation desk to the
 // executive Command Center. Synthesis fields are the investigation's own free
 // text, not the generated-case enums.
+// A single investigation finding an analyst has pinned to the case summary.
+// Carries into the exported brief and the filed case.
+export interface PinnedFinding {
+  id: string; // `${stepId}:${lineIndex}` — stable within a run
+  text: string;
+  cite?: string;
+  tone?: "flag" | "ok" | "muted";
+}
+
 export interface FiledCase {
   id: string;
   filedAt: number; // epoch ms
@@ -381,6 +390,7 @@ export interface FiledCase {
   confidence: number; // 0..1
   href: string; // route to reopen the investigation
   plane: "A" | "B";
+  pinnedFindings?: PinnedFinding[]; // analyst-curated evidence carried onto the case
 }
 
 // --- Graph ------------------------------------------------------------------

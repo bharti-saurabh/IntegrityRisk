@@ -13,6 +13,7 @@ import { buildInvestigation, subjectFromRecord } from "@/features/ai-copilot/age
 import { AgentStreamPanel } from "@/features/ai-copilot/AgentStreamPanel";
 import { MCC_BY_CODE } from "@/data/mccTaxonomy";
 import { exportMarkdown } from "@/utils/exports";
+import type { PinnedFinding } from "@/types/domain";
 
 function routePrompt(text: string): string {
   const q = text.toLowerCase();
@@ -48,6 +49,7 @@ export default function Investigation() {
   const steps = useMemo(() => (subject ? buildInvestigation(subject) : []), [subject]);
 
   const [runId, setRunId] = useState(0);
+  const [pinnedFindings, setPinnedFindings] = useState<PinnedFinding[]>([]);
 
   // Reset the run whenever the merchant changes.
   useEffect(() => { setRunId((n) => n + 1); }, [activeId]);
@@ -71,6 +73,13 @@ export default function Investigation() {
       ``,
       `## Executive summary`,
       brief.executiveSummary,
+      ...(pinnedFindings.length
+        ? [
+            ``,
+            `## Analyst-pinned findings`,
+            ...pinnedFindings.map((p) => `- ${p.text}${p.cite ? ` [${p.cite}]` : ""}`),
+          ]
+        : []),
       ``,
       `## Agent investigation trace`,
       ...steps.map((s) => [
@@ -105,7 +114,7 @@ export default function Investigation() {
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(340px,420px)_1fr]">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(300px,360px)_1fr]">
         {/* Evidence dossier */}
         <div className="min-w-0 space-y-4">
           <Card className="p-4" glow={record.scores.tier === "critical" ? "critical" : null}>
@@ -187,6 +196,8 @@ export default function Investigation() {
           <AgentStreamPanel
             steps={steps}
             runId={runId}
+            enablePinning
+            onPinnedChange={setPinnedFindings}
             subjectName={m.tradeName}
             suspectedLabel={top.label.toLowerCase()}
             suspectedScore={top.similarity}
@@ -219,6 +230,7 @@ export default function Investigation() {
                   confidence: subject.synthesis.confidence,
                   href: `/investigate/${m.merchantId}`,
                   plane: "A",
+                  pinnedFindings: pinnedFindings.length ? pinnedFindings : undefined,
                 }),
             }}
             footerNote={`Leading typology: ${TYPOLOGY_LABELS[record.primaryTypology]} · Decision-support only — not a compliance determination.`}

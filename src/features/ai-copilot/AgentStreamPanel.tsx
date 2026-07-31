@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
+import type { PinnedFinding } from "@/types/domain";
 import type { AgentStep, StreamSource, StreamMetric } from "./agentStream";
 
 // Reusable presentation for an agentic investigation stream. Plays back a
@@ -106,6 +107,10 @@ export interface AgentStreamPanelProps {
   footerNote?: string;
   /** Render flush inside a slide-over drawer (no outer Card chrome / height cap). */
   embedded?: boolean;
+  /** Show a per-finding "Pin" control; pinned findings collect in the verdict summary. */
+  enablePinning?: boolean;
+  /** Notified whenever the pinned-findings set changes (for export / case write-back). */
+  onPinnedChange?: (pins: PinnedFinding[]) => void;
 }
 
 export function AgentStreamPanel(props: AgentStreamPanelProps) {
@@ -114,12 +119,22 @@ export function AgentStreamPanel(props: AgentStreamPanelProps) {
   const { cursor, done } = useStreamPlayback(steps, runId);
   const [follows, setFollows] = useState<Follow[]>([]);
   const [input, setInput] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = useState<PinnedFinding[]>([]);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setFollows([]); }, [runId]);
+  // A fresh run clears follow-ups and pins.
+  useEffect(() => { setFollows([]); setPinned([]); }, [runId]);
+  // Follow the newest content. In the drawer this scrolls the internal region;
+  // on the full page it nudges the window — block:"nearest" avoids yanking.
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [cursor, follows]);
+  // Surface pin changes to the parent (export brief / case write-back).
+  useEffect(() => { props.onPinnedChange?.(pinned); }, [pinned]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const pinnedIds = new Set(pinned.map((p) => p.id));
+  const togglePin = (f: PinnedFinding) =>
+    setPinned((prev) => (prev.some((p) => p.id === f.id) ? prev.filter((p) => p.id !== f.id) : [...prev, f]));
 
   const completed = done ? steps.length : cursor.step;
   const corroborating = steps.filter((s, i) => i < completed && s.verdict === "corroborates").length;
@@ -202,13 +217,24 @@ export function AgentStreamPanel(props: AgentStreamPanelProps) {
         </span>
       </div>
 
-      <div ref={scrollRef} className="flex-1 space-y-2.5 overflow-y-auto px-4 py-3">
+      <div className={props.embedded ? "min-h-0 flex-1 space-y-2.5 overflow-y-auto px-4 py-3" : "space-y-2.5 px-4 py-3"}>
         {steps.map((s, i) => {
           if (i > cursor.step) return null;
           const active = i === cursor.step;
           const revealed = active ? cursor.line : s.lines.length;
           const thinking = active && cursor.thinking;
-          return <StepBlock key={`${runId}-${s.id}`} step={s} revealed={revealed} thinking={thinking} active={active && !done} />;
+          return (
+            <StepBlock
+              key={`${runId}-${s.id}`}
+              step={s}
+              revealed={revealed}
+              thinking={thinking}
+              active={active && !done}
+              enablePinning={props.enablePinning}
+              pinnedIds={pinnedIds}
+              onTogglePin={togglePin}
+            />
+          );
         })}
 
         {done ? (
@@ -224,6 +250,9 @@ export function AgentStreamPanel(props: AgentStreamPanelProps) {
             hypothesis={props.hypothesis}
             confidence={props.confidence}
             confidenceLabel={props.confidenceLabel}
+            enablePinning={props.enablePinning}
+            pinned={pinned}
+            onUnpin={(id) => setPinned((prev) => prev.filter((p) => p.id !== id))}
           />
         ) : null}
 
@@ -237,6 +266,7 @@ export function AgentStreamPanel(props: AgentStreamPanelProps) {
             </div>
           </div>
         ))}
+        <div ref={bottomRef} />
       </div>
 
       {props.caseAction ? (
@@ -297,7 +327,9 @@ export function AgentStreamPanel(props: AgentStreamPanelProps) {
   );
 
   if (props.embedded) return <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-surface">{body}</div>;
-  return <Card className="flex max-h-[calc(100vh-130px)] flex-col p-0" glow="cyan">{body}</Card>;
+  // Full-page: no height cap and no internal scroll region — the panel flows at
+  // its natural height so the page scrolls cleanly to the verdict + file button.
+  return <Card className="p-0" glow="cyan">{body}</Card>;
 }
 
 function MetricChip({ m }: { m: StreamMetric }) {
@@ -318,7 +350,12 @@ function MetricChip({ m }: { m: StreamMetric }) {
   );
 }
 
-function StepBlock({ step, revealed, thinking, active }: { step: AgentStep; revealed: number; thinking: boolean; active: boolean }) {
+function StepBlock({
+  step, revealed, thinking, active, enablePinning, pinnedIds, onTogglePin,
+}: {
+  step: AgentStep; revealed: number; thinking: boolean; active: boolean;
+  enablePinning?: boolean; pinnedIds?: Set<string>; onTogglePin?: (f: PinnedFinding) => void;
+}) {
   const src = SOURCE_META[step.source];
   const verdict = step.verdict ? VERDICT_META[step.verdict] : null;
   const complete = !active && revealed >= step.lines.length;
@@ -356,6 +393,8 @@ function StepBlock({ step, revealed, thinking, active }: { step: AgentStep; reve
               {step.lines.slice(0, revealed).map((l, i) => {
                 const isLast = active && i === revealed - 1;
                 const li = LINE_TONE[l.tone ?? "muted"];
+                const pinId = `${step.id}:${i}`;
+                const isPinned = pinnedIds?.has(pinId) ?? false;
                 return (
                   <div key={i} className={`flex items-start gap-2 rounded-md border px-2 py-1.5 text-[11.5px] leading-snug ${li.wrap}`}>
                     <span className={`mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${li.chip}`}>
@@ -366,6 +405,19 @@ function StepBlock({ step, revealed, thinking, active }: { step: AgentStep; reve
                       {l.cite ? <span className="ml-1 whitespace-nowrap rounded bg-surface px-1 py-px font-mono text-[9px] text-ink-3">{l.cite}</span> : null}
                       {isLast ? <span className="ml-0.5 inline-block h-3 w-1 animate-pulse bg-cyan/60 align-middle" /> : null}
                     </span>
+                    {enablePinning && !isLast ? (
+                      <button
+                        onClick={() => onTogglePin?.({ id: pinId, text: l.text, cite: l.cite, tone: l.tone })}
+                        title={isPinned ? "Unpin from case summary" : "Pin to case summary"}
+                        className={`mt-px flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-0.5 text-[9px] font-semibold transition-colors ${
+                          isPinned
+                            ? "border-cyan/50 bg-cyan/15 text-cyan"
+                            : "border-border bg-surface/60 text-ink-3 hover:border-cyan/40 hover:text-cyan"
+                        }`}
+                      >
+                        <Icon name={isPinned ? "PinOff" : "Pin"} size={10} /> {isPinned ? "Pinned" : "Pin"}
+                      </button>
+                    ) : null}
                   </div>
                 );
               })}
@@ -381,6 +433,7 @@ function VerdictCard(props: {
   subjectName: string; suspectedLabel: string; scorePhrase: string; declaredMcc: string;
   corroborating: number; mitigating: number; disposition: string;
   recommended?: string; hypothesis?: string; confidence?: number; confidenceLabel?: string;
+  enablePinning?: boolean; pinned?: PinnedFinding[]; onUnpin?: (id: string) => void;
 }) {
   const conf = props.confidence != null ? Math.round(props.confidence * 100) : null;
   return (
@@ -409,6 +462,43 @@ function VerdictCard(props: {
           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
             <div className="h-full rounded-full bg-gradient-to-r from-cyan to-violet" style={{ width: `${conf}%` }} />
           </div>
+        </div>
+      ) : null}
+
+      {props.enablePinning ? (
+        <div className="mt-3 border-t border-dashed border-border pt-3">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-cyan">
+            <Icon name="Pin" size={11} /> Analyst-pinned findings
+            {props.pinned && props.pinned.length ? (
+              <span className="rounded-full bg-cyan/15 px-1.5 py-px text-[9px] text-cyan tnum">{props.pinned.length}</span>
+            ) : null}
+          </div>
+          {props.pinned && props.pinned.length ? (
+            <div className="mt-2 space-y-1.5">
+              {props.pinned.map((p) => {
+                const li = LINE_TONE[p.tone ?? "muted"];
+                return (
+                  <div key={p.id} className="flex items-start gap-2 rounded-md border border-border bg-surface/60 px-2.5 py-1.5 text-[11px]">
+                    <span className={`mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${li.chip}`}>
+                      <Icon name={li.icon} size={10} />
+                    </span>
+                    <span className="min-w-0 flex-1 text-ink-2">
+                      {p.text}
+                      {p.cite ? <span className="ml-1 whitespace-nowrap rounded bg-surface px-1 py-px font-mono text-[9px] text-ink-3">{p.cite}</span> : null}
+                    </span>
+                    <button onClick={() => props.onUnpin?.(p.id)} title="Unpin from summary" className="mt-px shrink-0 text-ink-3 hover:text-critical">
+                      <Icon name="X" size={12} />
+                    </button>
+                  </div>
+                );
+              })}
+              <div className="text-[10px] text-ink-3">Carried into the Export brief and the filed case.</div>
+            </div>
+          ) : (
+            <div className="mt-2 rounded-md border border-dashed border-border bg-surface/40 px-2.5 py-2 text-[11px] italic text-ink-3">
+              Hit <b className="not-italic text-ink-2">Pin</b> on any finding above to build the case summary — pinned evidence carries into the Export brief and the filed case.
+            </div>
+          )}
         </div>
       ) : null}
 
