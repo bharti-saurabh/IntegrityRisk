@@ -111,6 +111,8 @@ export interface AgentStreamPanelProps {
   enablePinning?: boolean;
   /** Notified whenever the pinned-findings set changes (for export / case write-back). */
   onPinnedChange?: (pins: PinnedFinding[]) => void;
+  /** Seed pins so a re-opened investigation restores the analyst's prior selection. */
+  initialPinned?: PinnedFinding[];
 }
 
 export function AgentStreamPanel(props: AgentStreamPanelProps) {
@@ -119,11 +121,16 @@ export function AgentStreamPanel(props: AgentStreamPanelProps) {
   const { cursor, done } = useStreamPlayback(steps, runId);
   const [follows, setFollows] = useState<Follow[]>([]);
   const [input, setInput] = useState("");
-  const [pinned, setPinned] = useState<PinnedFinding[]>([]);
+  const [pinned, setPinned] = useState<PinnedFinding[]>(props.initialPinned ?? []);
   const bottomRef = useRef<HTMLDivElement>(null);
+  // Latest seed pins, read at replay time so re-opening an investigation
+  // restores the analyst's prior pins instead of wiping them.
+  const initialPinnedRef = useRef(props.initialPinned);
+  initialPinnedRef.current = props.initialPinned;
 
-  // A fresh run clears follow-ups and pins.
-  useEffect(() => { setFollows([]); setPinned([]); }, [runId]);
+  // A fresh run clears follow-ups; pins reset to the seed (empty on Plane A,
+  // the merchant's stored pins when re-opened from the detection console).
+  useEffect(() => { setFollows([]); setPinned(initialPinnedRef.current ?? []); }, [runId]);
   // Follow the newest content ONLY inside the embedded drawer, where the panel
   // owns a bounded internal scroll region. On the full page the panel flows at
   // natural height and the *page* owns the scroll — auto-driving it there would

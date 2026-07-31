@@ -26,6 +26,7 @@ import { TIER_HEX, TIER_ORDER, FAMILY_META, type OverviewTier, type FamilyKey } 
 import { subjectFromExplorer, buildInvestigation } from "@/features/ai-copilot/agentStream";
 import { AgentStreamPanel } from "@/features/ai-copilot/AgentStreamPanel";
 import { useAppStore } from "@/stores/appStore";
+import type { PinnedFinding } from "@/types/domain";
 
 // The deterministic verdict the agent settles on — reused for the pinned
 // findings card so the dossier shows the same synthesis the drawer streamed.
@@ -247,6 +248,9 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [investigatedIds, setInvestigatedIds] = useState<Set<string>>(() => new Set());
   const [runId, setRunId] = useState(0);
+  // Analyst-pinned findings, kept per merchant so they survive closing/re-opening
+  // the investigation modal and feed the summary card below the charts.
+  const [pinnedByMerchant, setPinnedByMerchant] = useState<Map<string, PinnedFinding[]>>(() => new Map());
   // Analyst triage on the model's flag: a merchant can be Cleared (false
   // positive) or Confirmed (escalate). Kept local to the console so it doesn't
   // perturb the persisted case store; filing a formal case is the durable path.
@@ -306,6 +310,7 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
     setSelectedId(cohort[0]?.merchant_id ?? null);
     setDrawerOpen(false);
     setInvestigatedIds(new Set());
+    setPinnedByMerchant(new Map());
     setDispositions(new Map());
     setQuery("");
     setTierFilter("all");
@@ -616,6 +621,7 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
               merchants={merchants}
               investigated={investigatedIds.has(selected.merchant_id)}
               onInvestigate={openInvestigation}
+              pinned={pinnedByMerchant.get(selected.merchant_id) ?? []}
               disposition={dispositions.get(selected.merchant_id) ?? null}
               onDispose={(d) => disposeMerchant(selected.merchant_id, d)}
             />
@@ -623,13 +629,22 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
         </div>
       </div>
 
-      {/* ---- Investigation slide-over (agent runs here, dossier stays put) - */}
-      <InvestigationDrawer open={drawerOpen} onClose={closeDrawer} title={selected?.merchant_name ?? ""}>
+      {/* ---- Investigation modal (agent runs here, dossier stays put) ------- */}
+      <InvestigationModal open={drawerOpen} onClose={closeDrawer} title={selected?.merchant_name ?? ""}>
         {drawerOpen && selected ? (() => {
           const subject = subjectFromExplorer(selected, model);
           return (
             <AgentStreamPanel
               embedded
+              enablePinning
+              initialPinned={pinnedByMerchant.get(selected.merchant_id) ?? []}
+              onPinnedChange={(pins) =>
+                setPinnedByMerchant((prev) => {
+                  const next = new Map(prev);
+                  next.set(selected.merchant_id, pins);
+                  return next;
+                })
+              }
               steps={buildInvestigation(subject)}
               runId={runId}
               subjectName={selected.merchant_name}
@@ -665,17 +680,17 @@ export function DetectionConsole({ config }: { config: TypologyConfig }) {
             />
           );
         })() : null}
-      </InvestigationDrawer>
+      </InvestigationModal>
     </div>
   );
 }
 
-// ---- investigation slide-over ---------------------------------------------
-// A right-anchored drawer that overlays the console while the agent runs, so
-// the evidence dossier underneath stays intact. Always mounted (so the panel
-// slides in rather than pops), children mount only while open (so playback
-// starts on open and stops on close).
-function InvestigationDrawer({ open, onClose, title, children }: {
+// ---- investigation modal --------------------------------------------------
+// A centered pop-up that overlays the console while the agent runs, so the
+// evidence dossier underneath stays intact. Always mounted (so it fades/scales
+// in rather than popping); children mount only while open (so playback starts
+// on open and stops on close).
+function InvestigationModal({ open, onClose, title, children }: {
   open: boolean; onClose: () => void; title: string; children: ReactNode;
 }) {
   // Portal to <body>: this is a full-viewport overlay, and the page shell's
@@ -693,7 +708,7 @@ function InvestigationDrawer({ open, onClose, title, children }: {
         role="dialog"
         aria-modal="true"
         aria-label="AI investigation"
-        className={`absolute right-0 top-0 flex h-full w-full max-w-[560px] flex-col border-l border-border bg-surface shadow-2xl transition-transform duration-300 ease-out ${open ? "translate-x-0" : "translate-x-full"}`}
+        className={`absolute left-1/2 top-1/2 flex max-h-[86vh] w-[min(94vw,720px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl transition-all duration-300 ease-out ${open ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
       >
         <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
           <Icon name="Building2" size={14} className="text-ink-3" />
@@ -715,14 +730,17 @@ function InvestigationDrawer({ open, onClose, title, children }: {
 
 // ---- evidence panel -------------------------------------------------------
 
-function EvidencePanel({ merchant: m, model: c, config, stats, merchants, investigated, onInvestigate, disposition, onDispose }: {
+function EvidencePanel({ merchant: m, model: c, config, stats, merchants, investigated, onInvestigate, pinned, disposition, onDispose }: {
   merchant: ExplorerMerchant; model: DetectionModel; config: TypologyConfig; stats: SignalStat[];
   merchants: ExplorerMerchant[]; investigated: boolean; onInvestigate: () => void;
+  pinned: PinnedFinding[];
   disposition: "cleared" | "confirmed" | null; onDispose: (d: "cleared" | "confirmed" | null) => void;
 }) {
   const beyond = stats.filter((s) => s.z >= 3);
   const surcharge = config.family === "surcharge" ? assessSurcharge(m) : null;
-  const synthesis = investigated ? subjectFromExplorer(m, c).synthesis : null;
+  // The synthesis is deterministic, so the summary tag can render before the
+  // agent has been run — it doubles as the entry point into the full workup.
+  const synthesis = useMemo(() => subjectFromExplorer(m, c).synthesis, [m, c]);
   // Model-routed merchants carry score drivers → show the ML score decomposition
   // and drive the charts off those features. Rule-routed families keep the
   // fixed-signal lens and their rule-based flag basis.
@@ -760,9 +778,6 @@ function EvidencePanel({ merchant: m, model: c, config, stats, merchants, invest
           </Button>
         </div>
       </div>
-
-      {/* pinned AI findings — the collapsed result of a completed investigation */}
-      {synthesis ? <FindingsCard synthesis={synthesis} onReopen={onInvestigate} /> : null}
 
       {surcharge ? (
         <SurchargeCompliance a={surcharge} />
@@ -832,6 +847,10 @@ function EvidencePanel({ merchant: m, model: c, config, stats, merchants, invest
           </div>
         </>
       )}
+
+      {/* AI investigation summary — the synthesis tag that sits below the charts
+          and is itself the entry point into the full agent workup (pop-up). */}
+      <InvestigationSummary synthesis={synthesis} pinned={pinned} investigated={investigated} onOpen={onInvestigate} />
 
       {/* analyst triage — resolve the model's flag before it can leave the queue */}
       {!surcharge ? <TriageBar disposition={disposition} onDispose={onDispose} /> : null}
@@ -976,41 +995,72 @@ function TriageBar({ disposition, onDispose }: {
   );
 }
 
-// ---- pinned AI findings ---------------------------------------------------
-// The durable summary a completed investigation leaves in the dossier: verdict,
-// confidence, recommended disposition, and a way back into the full run. Shown
-// on any merchant the analyst has already investigated in this session.
-function FindingsCard({ synthesis, onReopen }: { synthesis: InvestigationSynthesis; onReopen: () => void }) {
+// ---- AI investigation summary ---------------------------------------------
+// The synthesis tag that sits below the deviation charts: verdict, confidence,
+// the analyst's pinned evidence, and the recommended disposition. The whole card
+// is the click-target that pops open the full agent workup (modal). Pinned
+// evidence is curated inside that pop-up and reflects back up here.
+const PIN_DOT: Record<string, string> = { flag: "bg-critical", ok: "bg-ok", muted: "bg-ink-3" };
+
+function InvestigationSummary({ synthesis, pinned, investigated, onOpen }: {
+  synthesis: InvestigationSynthesis; pinned: PinnedFinding[]; investigated: boolean; onOpen: () => void;
+}) {
   const conf = synthesis.confidence != null ? Math.round(synthesis.confidence * 100) : null;
   return (
-    <div className="mx-4 mt-4 overflow-hidden rounded-xl border border-violet/30 bg-gradient-to-br from-violet/[0.07] to-cyan/[0.04]">
-      <div className="flex items-center gap-2 border-b border-violet/20 px-3.5 py-2.5">
-        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-violet to-cyan text-white">
-          <Icon name="Sparkles" size={13} />
-        </span>
-        <span className="text-[12px] font-bold text-ink">AI investigation — findings</span>
-        {conf != null ? (
-          <span className="ml-auto rounded-full bg-ok/15 px-2 py-0.5 text-[10px] font-semibold text-ok tnum">
-            {conf}%{synthesis.confidenceLabel ? ` · ${synthesis.confidenceLabel}` : ""}
+    <div className="px-4 pb-4">
+      <button
+        onClick={onOpen}
+        className="group block w-full rounded-xl border border-cyan/30 bg-gradient-to-br from-cyan/[0.06] to-violet/[0.05] p-3.5 text-left shadow-card transition-all hover:-translate-y-px hover:border-cyan/50 hover:shadow-glow"
+      >
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan/[0.14] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan">
+            <Icon name="Sparkles" size={11} /> AI investigation summary
           </span>
-        ) : null}
-      </div>
-      <div className="px-3.5 py-3">
-        <p className="text-[12px] leading-relaxed text-ink-2"><b className="text-ink">{synthesis.hypothesis}</b></p>
-        {synthesis.recommended ? (
-          <div className="mt-2 flex items-start gap-2 rounded-lg border border-border bg-surface/70 px-2.5 py-1.5 text-[11.5px]">
-            <Icon name="Target" size={12} className="mt-0.5 shrink-0 text-cyan" />
-            <span className="text-ink-2"><b className="text-ink">Recommended:</b> {synthesis.recommended}</span>
+          <span className="ml-auto inline-flex items-center gap-1 text-[11.5px] font-semibold text-cyan">
+            {investigated ? "Open full investigation" : "Run full investigation"}
+            <Icon name="ArrowRight" size={13} className="transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </div>
+
+        <p className="mt-2.5 text-[12.5px] leading-relaxed text-ink-2"><b className="text-ink">{synthesis.hypothesis}</b></p>
+
+        {conf != null ? (
+          <div className="mt-2.5">
+            <div className="flex items-center justify-between text-[10px] text-ink-3">
+              <span>Confidence{synthesis.confidenceLabel ? ` — ${synthesis.confidenceLabel}` : ""}</span>
+              <span className="font-semibold text-ink-2 tnum">{conf}%</span>
+            </div>
+            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+              <div className="h-full rounded-full bg-gradient-to-r from-cyan to-violet" style={{ width: `${conf}%` }} />
+            </div>
           </div>
         ) : null}
-        <div className="mt-1.5 flex items-start gap-2 rounded-lg border border-border bg-surface/70 px-2.5 py-1.5 text-[11.5px]">
+
+        <div className="mt-3 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-cyan">
+          <Icon name="Pin" size={11} /> Pinned evidence
+          {pinned.length ? <span className="rounded-full bg-cyan/15 px-1.5 py-px text-[9px] tnum">{pinned.length}</span> : null}
+        </div>
+        {pinned.length ? (
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {pinned.map((p) => (
+              <span key={p.id} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-border bg-surface px-2 py-1 text-[11px] text-ink-2">
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${PIN_DOT[p.tone ?? "muted"]}`} />
+                <span className="truncate">{p.text}</span>
+                {p.cite ? <span className="shrink-0 rounded bg-surface-2 px-1 py-px font-mono text-[9px] text-ink-3">{p.cite}</span> : null}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-1.5 rounded-lg border border-dashed border-border bg-surface/50 px-2.5 py-2 text-[11px] italic text-ink-3">
+            Open the investigation and hit <b className="not-italic text-ink-2">Pin</b> on any finding to build this summary.
+          </div>
+        )}
+
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-border bg-surface/70 px-2.5 py-1.5 text-[11.5px]">
           <Icon name="Briefcase" size={12} className="mt-0.5 shrink-0 text-amber" />
           <span className="text-ink-2"><b className="text-ink">Disposition:</b> {synthesis.disposition}</span>
         </div>
-        <button onClick={onReopen} className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-ai hover:underline">
-          <Icon name="Sparkles" size={12} /> Reopen full investigation
-        </button>
-      </div>
+      </button>
     </div>
   );
 }
