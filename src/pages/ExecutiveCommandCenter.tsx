@@ -1,8 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  PieChart, Pie, Cell,
-} from "recharts";
+import { ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from "recharts";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, SectionLabel, Button } from "@/components/ui/primitives";
 import { Icon } from "@/components/ui/Icon";
@@ -20,12 +17,6 @@ import {
  *  Command Center renders only these families, and every headline total is
  *  recomputed from them so the summary stays internally consistent. */
 const ACTIVE_FAMILIES: FamilyKey[] = ["mcc_miscoding", "surcharge"];
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-function monthLabel(iso: string): string {
-  const m = Number(iso.slice(5, 7));
-  return m >= 1 && m <= 12 ? MONTHS[m - 1] : iso;
-}
 
 /** Stacked severity bar — encodes each family's tier mix as proportion, not number. */
 function SeverityBar({ counts }: { counts: Record<OverviewTier, number> }) {
@@ -254,7 +245,7 @@ function FiledCasesPanel({ cases, onClear, onOpen }: {
 
 export default function ExecutiveCommandCenter() {
   const navigate = useNavigate();
-  const { portfolio, detection, families, priority, trend, meta } = overview;
+  const { portfolio, detection, families, priority, meta } = overview;
   const filedCases = useAppStore((s) => s.filedCases);
   const clearFiledCases = useAppStore((s) => s.clearFiledCases);
 
@@ -293,8 +284,8 @@ export default function ExecutiveCommandCenter() {
       {/* ══════════ Headline coverage + trend ══════════ */}
       <section>
         <SectionLabel>Portfolio at a glance</SectionLabel>
-        <div className="mt-2 grid gap-4 lg:grid-cols-[1fr_1.35fr]">
-          <Card className="grid grid-cols-2 overflow-hidden">
+        <div className="mt-2">
+          <Card className="grid grid-cols-2 divide-x divide-y divide-border overflow-hidden lg:grid-cols-4 lg:divide-y-0">
             {[
               {
                 l: "Merchants monitored",
@@ -316,55 +307,13 @@ export default function ExecutiveCommandCenter() {
                 v: detection ? `${fmtPct(detection.precision)} · ${fmtNumber(detection.alertVolume)}` : "—",
                 d: "precision · alerts vs. labels",
               },
-            ].map((s, i) => (
-              <div
-                key={s.l}
-                className={`border-border p-4 ${i % 2 === 1 ? "border-l" : ""} ${i > 1 ? "border-t" : ""}`}
-              >
+            ].map((s) => (
+              <div key={s.l} className="p-4">
                 <SectionLabel>{s.l}</SectionLabel>
                 <div className="mt-1.5 text-[26px] font-bold leading-none tracking-tight tnum">{s.v}</div>
                 <div className="mt-1.5 text-[11px] text-ink-3 tnum">{s.d}</div>
               </div>
             ))}
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <SectionLabel>Settled volume · total vs. flagged</SectionLabel>
-              <div className="flex items-center gap-3 text-[10.5px] font-semibold text-ink-3">
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-sm" style={{ background: CHART.cyan }} /> Total
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-2 rounded-sm" style={{ background: CHART.rose }} /> Flagged
-                </span>
-              </div>
-            </div>
-            <div className="mt-3 h-[168px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trend} margin={{ left: -14, right: 6, top: 4 }}>
-                  <defs>
-                    <linearGradient id="gVol" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={CHART.cyan} stopOpacity={0.35} />
-                      <stop offset="100%" stopColor={CHART.cyan} stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gFlag" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={CHART.rose} stopOpacity={0.45} />
-                      <stop offset="100%" stopColor={CHART.rose} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={CHART.grid} vertical={false} />
-                  <XAxis dataKey="date" tick={{ fill: CHART.axis, fontSize: 10 }} tickFormatter={monthLabel} minTickGap={16} />
-                  <YAxis tick={{ fill: CHART.axis, fontSize: 10 }} tickFormatter={(v) => fmtCompact(v)} width={44} />
-                  <Tooltip
-                    content={<ChartTooltip fmt={(v) => fmtCurrency(v, true)} />}
-                    labelFormatter={(l) => monthLabel(String(l))}
-                  />
-                  <Area name="Total volume" type="monotone" dataKey="volume" stroke={CHART.cyan} fill="url(#gVol)" strokeWidth={2} />
-                  <Area name="Flagged volume" type="monotone" dataKey="flaggedVolume" stroke={CHART.rose} fill="url(#gFlag)" strokeWidth={2} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
           </Card>
         </div>
       </section>

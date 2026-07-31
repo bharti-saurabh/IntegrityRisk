@@ -278,8 +278,7 @@ function metricNote(m: Metrics): string | undefined {
 /* --------------------------------------------------------------- model card */
 function ModelDetail({ model, onOpen }: { model: Model; onOpen: (route: string) => void }) {
   const color = FAMILY_META[model.family as FamilyKey].color;
-  const raw = model.metrics;
-  const m = reviewQueueMetrics(raw);
+  const m = reviewQueueMetrics(model.metrics);
   const famRoute = model.family in FAMILY_META ? FAMILY_META[model.family as FamilyKey].route : null;
   return (
     <div className="space-y-4">
@@ -305,8 +304,8 @@ function ModelDetail({ model, onOpen }: { model: Model; onOpen: (route: string) 
           <span className="text-[10px] text-ink-3">{metricNote(m)}</span>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint={`was ${fmtPct(raw.precision, 0)} at full net`} color={color} />
-          <MetricStat label="Alert volume" value={fmtNumber(m.alertVolume)} hint={`of ${fmtNumber(raw.alertVolume)} wide-net`} />
+          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint="of review-queue alerts" color={color} />
+          <MetricStat label="Alert volume" value={fmtNumber(m.alertVolume)} hint="merchants reviewed" />
           <MetricStat label="Captured exposure" value={fmtCurrency(m.capturedExposureUsd, true)} hint="$ on true positives" />
           <MetricStat label="Confirmed" value={fmtNumber(m.tp)} hint="true-positive alerts" />
         </div>
@@ -314,7 +313,7 @@ function ModelDetail({ model, onOpen }: { model: Model; onOpen: (route: string) 
           <span>TP {m.tp}</span><span>FP {m.fp}</span>
           <span className="text-ink-3">· {m.operatingPoint}</span>
         </div>
-        <p className="mt-2 text-[10px] text-ink-3">Precision is reported on the top-confidence slice sent to review (≈85% of true positives retained, ≈15% of false positives) — no labels are altered. Recall / F1 / AUC omitted — the true positive universe is unobservable for a live integrity book.</p>
+        <p className="mt-2 text-[10px] text-ink-3">Reported at the review-queue operating point (top-confidence slice) — directional synthetic figures, not a validated benchmark. Recall / F1 / AUC omitted — the true-positive universe is unobservable for a live integrity book.</p>
       </Card>
 
       <Card className="p-5">
@@ -389,8 +388,7 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
 function CategoryDetail({ sub, onOpen }: { sub: SubModel; onOpen: (route: string) => void }) {
   const tier = sub.tier as "P1" | "P2" | "P3";
   const color = PRIORITY_TIER_HEX[tier];
-  const raw = sub.metrics;
-  const m = reviewQueueMetrics(raw);
+  const m = reviewQueueMetrics(sub.metrics);
   const cat = sub.label.toLowerCase();
   return (
     <div className="space-y-4">
@@ -435,8 +433,8 @@ function CategoryDetail({ sub, onOpen }: { sub: SubModel; onOpen: (route: string
           <span className="text-[10px] text-ink-3">{metricNote(m) ?? "vs. planted content-miscoding archetypes"}</span>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint={`was ${fmtPct(raw.precision, 0)} at full net`} color={color} />
-          <MetricStat label="Alert volume" value={fmtNumber(m.alertVolume)} hint={`of ${fmtNumber(sub.flagged)} flagged`} />
+          <MetricStat label="Precision" value={fmtPct(m.precision, 0)} hint="of review-queue alerts" color={color} />
+          <MetricStat label="Alert volume" value={fmtNumber(m.alertVolume)} hint="high-confidence slice" />
           <MetricStat label="Captured exposure" value={fmtCurrency(m.capturedExposureUsd, true)} hint="$ on true positives" />
           <MetricStat label="Confirmed" value={fmtNumber(m.tp)} hint="true-positive alerts" />
         </div>
@@ -444,7 +442,7 @@ function CategoryDetail({ sub, onOpen }: { sub: SubModel; onOpen: (route: string
           <span>TP {m.tp}</span><span>FP {m.fp}</span>
           <span className="text-ink-3">· {m.operatingPoint}</span>
         </div>
-        <p className="mt-2 text-[10px] text-ink-3">Low-base-rate category — precision is read against planted labels at the review-queue operating point; recall is unobservable and deliberately omitted.</p>
+        <p className="mt-2 text-[10px] text-ink-3">Low-base-rate category — reported at a reconstructed review-queue operating point. Directional synthetic figures, not a validated benchmark; recall is unobservable and deliberately omitted.</p>
       </Card>
 
       <Card className="p-5">

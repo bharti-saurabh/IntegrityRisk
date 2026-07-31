@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anatomy of Surcharge Abuse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F7F5; --panel:#FFFFFF; --ink:#14181D; --muted:#5C6570; --faint:#8B939C;
+  --line:#E2E5E1; --leaf:#2F7D51; --leaf-bg:#EDF5EF; --amber:#C06E12; --amber-bg:#FBF3E6;
+  --oxide:#B3271E; --oxide-bg:#F9ECEA; --net:#2456D6; --net-bg:#EBF0FC;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;background:var(--paper);color:var(--ink);
+  font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.mono{font-family:'IBM Plex Mono',monospace}
+
+/* ---------- ambient background ---------- */
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.blob{position:absolute;border-radius:50%;filter:blur(110px);opacity:.55;will-change:transform}
+#blobA{width:55vw;height:55vw;top:-18vw;left:-14vw;background:#DCE8E1}
+#blobB{width:48vw;height:48vw;bottom:-16vw;right:-12vw;background:#E3E9F5}
+#blobC{width:38vw;height:38vw;top:30vh;left:55vw;background:#F3ECDF;opacity:.4}
+#grid{position:absolute;inset:0;background-image:radial-gradient(rgba(20,24,29,.05) 1px,transparent 1.4px);background-size:28px 28px}
+#ghost{position:absolute;right:-2vw;bottom:-7vh;font-family:'IBM Plex Mono',monospace;font-weight:600;
+  font-size:28vw;line-height:1;color:rgba(20,24,29,.05);letter-spacing:-.02em;user-select:none;opacity:0}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(20,24,29,.07))}
+.token{position:absolute;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;
+  color:rgba(20,24,29,.14);white-space:nowrap}
+
+/* ---------- chrome ---------- */
+#progressWrap{position:fixed;left:0;right:0;bottom:0;height:3px;z-index:50}
+#progressBar{height:100%;width:0;background:var(--ink);transition:width .5s cubic-bezier(.6,0,.2,1)}
+#hint{position:fixed;right:28px;bottom:20px;z-index:50;color:var(--faint);font-size:13px;display:flex;gap:8px;align-items:center}
+#hint kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;border:1px solid var(--line);background:var(--panel);
+  border-radius:6px;padding:3px 10px;color:var(--muted);box-shadow:0 1px 0 var(--line)}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.scene{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:5vh 6vw;visibility:hidden;opacity:0}
+.headline{font-size:clamp(26px,3.4vw,44px);font-weight:700;letter-spacing:-.02em;text-align:center}
+
+/* ---------- sA : cold open ---------- */
+#sA .pair{display:flex;gap:4vw;align-items:center;justify-content:center;flex-wrap:wrap}
+.pricecard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px 28px;width:290px;opacity:0}
+.pricecard .pc-shop{font-weight:700;font-size:16px}
+.pricecard .pc-item{font-size:13.5px;color:var(--muted);margin-top:4px}
+.pricecard .pc-amt{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:38px;margin-top:14px}
+.pricecard .pc-lbl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.18em;color:var(--faint);margin-top:6px;text-transform:uppercase}
+#stmtCard .pc-amt{color:var(--oxide)}
+#deltaChip{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;background:var(--oxide);color:#fff;
+  border-radius:8px;padding:8px 14px;opacity:0}
+#sAbig{margin-top:5vh;font-size:clamp(28px,4vw,52px);font-weight:800;letter-spacing:-.02em;text-align:center;opacity:0}
+#sAsub{margin-top:1.6vh;font-size:clamp(16px,1.9vw,22px);color:var(--oxide);font-weight:600;opacity:0}
+
+/* ---------- sB : rules that flip into violations ---------- */
+#ruleRow{display:flex;gap:16px;margin-top:5vh;flex-wrap:wrap;justify-content:center}
+.rflip{perspective:1200px;width:218px;height:172px;opacity:0}
+.rinner{position:relative;width:100%;height:100%;transform-style:preserve-3d}
+.rface{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:6px}
+.rface .re{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.rface .rt{font-weight:700;font-size:17.5px;line-height:1.25}
+.rface .rs{font-size:12.5px;line-height:1.45}
+.rface.rfront{background:var(--panel);border:1.4px solid #BFD6C6}
+.rface.rfront .re{color:var(--leaf)} .rface.rfront .rs{color:var(--muted)}
+.rface.rback{background:var(--oxide);color:#fff;transform:rotateY(180deg);box-shadow:0 16px 40px rgba(179,39,30,.25)}
+.rface.rback .re{color:#F1C7C2} .rface.rback .rs{color:#F4DCD9}
+#sBsub{margin-top:4vh;font-size:15px;color:var(--muted);opacity:0}
+
+/* ---------- sC : the record ---------- */
+#sC .pair{display:flex;gap:4vw;margin-top:4.5vh;flex-wrap:wrap;justify-content:center}
+.payload{background:var(--panel);border:1.4px solid var(--line);border-radius:14px;padding:22px 26px;width:310px;
+  font-family:'IBM Plex Mono',monospace;font-size:13px;opacity:0;position:relative}
+.payload .pl{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)}
+.payload .pl:last-of-type{border-bottom:none}
+.payload .pk{color:var(--faint)}
+.payload .hotv{color:var(--oxide);font-weight:600}
+.payload .okv{color:var(--leaf);font-weight:600}
+.payload .pbadge{position:absolute;top:-10px;left:22px;font-size:10px;letter-spacing:.14em;border-radius:5px;padding:4px 10px;color:#fff}
+#plTagged .pbadge{background:var(--leaf)}
+#plHidden .pbadge{background:var(--amber)}
+#sCbig{margin-top:4.5vh;font-size:clamp(19px,2.4vw,29px);font-weight:700;letter-spacing:-.01em;opacity:0}
+
+/* ---------- sD : approach A ---------- */
+#sD .pipe{display:flex;gap:20px;align-items:center;justify-content:center;margin-top:4vh;flex-wrap:wrap;max-width:1250px}
+.stagebox{opacity:0;display:flex;flex-direction:column;align-items:center;gap:12px}
+.stagelbl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);text-align:center}
+.arrow{opacity:0;color:var(--faint);font-size:22px}
+.parsechip{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:12.5px;width:196px;
+  display:flex;justify-content:space-between}
+.parsechip .mono{color:var(--net);font-weight:600}
+#formulaCard{background:var(--panel);border:1.4px solid var(--line);border-radius:12px;padding:18px 20px;
+  font-family:'IBM Plex Mono',monospace;font-size:13.5px;width:250px;text-align:center;line-height:1.9}
+#formulaCard .fres{font-size:22px;font-weight:600;color:var(--oxide)}
+#checkCard{background:var(--panel);border:1.4px solid var(--line);border-radius:12px;padding:16px 18px;width:270px}
+#checkCard .cr{font-family:'IBM Plex Mono',monospace;font-size:12px;padding:8px 0;border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;align-items:center}
+#checkCard .cr:last-child{border-bottom:none}
+.failstamp{font-size:10px;letter-spacing:.12em;background:var(--oxide);color:#fff;border-radius:4px;padding:3px 8px;font-weight:600;opacity:0}
+
+/* ---------- sE : approach B ---------- */
+#sE .stage{display:flex;gap:4vw;align-items:center;justify-content:center;margin-top:3.5vh;flex-wrap:wrap}
+#browser{width:min(460px,88vw);background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  box-shadow:0 16px 50px rgba(20,24,29,.08);opacity:0;position:relative}
+#browser .bbar{display:flex;gap:8px;align-items:center;background:#EFF1EF;padding:10px 14px;border-bottom:1px solid var(--line)}
+#browser .bdot{width:9px;height:9px;border-radius:50%;background:#D3D8D3}
+#browser .burl{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);background:var(--panel);
+  border-radius:6px;padding:5px 12px;flex:1}
+#browser .bbody{padding:20px 22px;display:flex;flex-direction:column;gap:10px}
+#browser .bline{height:10px;border-radius:5px;background:#ECEEEC}
+#browser .bline.w60{width:60%} #browser .bline.w85{width:85%} #browser .bline.w40{width:40%} #browser .bline.w75{width:75%}
+#quoteLine{font-size:14.5px;line-height:1.55;padding:4px 6px;border-radius:6px}
+#quoteLine.lit{background:var(--amber-bg);outline:1.5px solid #EBC9A3}
+#scanBeam{position:absolute;left:0;right:0;top:44px;height:34px;
+  background:linear-gradient(180deg,rgba(36,86,214,0),rgba(36,86,214,.12),rgba(36,86,214,0));opacity:0}
+#evCol{display:flex;flex-direction:column;gap:12px;width:min(330px,86vw)}
+#evChip{background:var(--panel);border-left:4px solid var(--amber);border:1px solid #EBC9A3;border-left:4px solid var(--amber);
+  border-radius:10px;padding:13px 16px;opacity:0}
+#evChip .et{font-weight:600;font-size:14px}
+#evChip .es{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--amber);margin-top:4px}
+.mrow{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;
+  font-size:12px;display:flex;justify-content:space-between;align-items:center;opacity:0}
+.mrow .pass{color:var(--leaf);font-weight:600}
+.mrow .fail{color:var(--oxide);font-weight:600}
+#sEbig{margin-top:3.5vh;font-size:clamp(18px,2.2vw,26px);font-weight:700;letter-spacing:-.01em;text-align:center;opacity:0}
+
+/* ---------- sF : test buy + verdict ---------- */
+#sF .stage{display:flex;gap:4vw;align-items:stretch;justify-content:center;margin-top:4vh;flex-wrap:wrap}
+#testCard{background:var(--panel);border:1.4px solid var(--line);border-radius:14px;padding:22px 26px;width:300px;opacity:0}
+#testCard .tc-e{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--net);text-transform:uppercase}
+#testCard .tc-t{font-weight:700;font-size:17px;margin-top:8px}
+#testCard .tc-rows{margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:13px}
+#testCard .tc-rows div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)}
+#testCard .tc-rows div:last-child{border-bottom:none}
+#caseCard{background:var(--panel);border:1.6px solid var(--oxide);border-radius:14px;padding:22px 26px;width:340px;opacity:0;
+  box-shadow:0 16px 50px rgba(179,39,30,.12);position:relative}
+#caseCard .cbanner{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;background:var(--oxide);
+  color:#fff;border-radius:7px;padding:7px 12px;text-align:center}
+#caseCard .crow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+#caseCard .crow:last-of-type{border-bottom:none}
+#caseCard .ck{color:var(--muted)}
+#caseCard .cv{font-weight:600}
+#riskN{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:26px;color:var(--oxide)}
+#actions{display:flex;flex-direction:column;gap:9px;width:270px;justify-content:center}
+.act{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:13.5px;font-weight:500;opacity:0;display:flex;gap:10px;align-items:center}
+.act .an{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--net);font-weight:600}
+
+/* ---------- sG : funnel + end ---------- */
+#funnel{display:flex;gap:16px;align-items:stretch;justify-content:center;margin-top:5vh;flex-wrap:wrap}
+.fcard{background:var(--panel);border:1.4px solid var(--line);border-radius:14px;padding:20px 22px;width:212px;opacity:0}
+.fcard .fe{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.fcard .ft{font-weight:700;font-size:17px;margin-top:8px}
+.fcard .fn{font-size:13px;margin-top:6px;color:var(--muted)}
+.farrow{align-self:center;color:var(--faint);font-size:22px;opacity:0}
+#endCard{z-index:30;background:transparent}
+#endCard .wordmark{font-size:clamp(40px,6vw,74px);font-weight:800;letter-spacing:-.03em;opacity:0}
+#endCard .wordmark::after{content:"";display:inline-block;width:.18em;height:.18em;background:var(--net);border-radius:3px;margin-left:.12em}
+#endCard .tag{font-size:clamp(17px,2vw,24px);color:var(--muted);margin-top:2vh;opacity:0}
+#endCard .caps{display:flex;gap:14px;margin-top:5vh;flex-wrap:wrap;justify-content:center}
+#endCard .cap{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px 20px;font-size:14px;font-weight:500;opacity:0}
+#endCard .replay{margin-top:6vh;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--faint);opacity:0}
+
+@media (max-width:900px){
+  #sA .pair,#sC .pair,#sE .stage,#sF .stage,#sD .pipe{flex-direction:column;gap:3vh}
+  .arrow{transform:rotate(90deg)}
+  .scene{padding:4vh 5vw}
+}
+</style>
+</head>
+<body>
+
+<div id="bg">
+  <div class="blob" id="blobA"></div>
+  <div class="blob" id="blobB"></div>
+  <div class="blob" id="blobC"></div>
+  <div id="grid"></div>
+  <div id="ghost">5%</div>
+  <div id="vig"></div>
+</div>
+
+<div id="progressWrap"><div id="progressBar"></div></div>
+<div id="hint"><span>press</span> <kbd>space</kbd></div>
+
+<!-- sA : cold open -->
+<section class="scene" id="sA">
+  <div class="pair">
+    <div class="pricecard" id="shelfCard">
+      <div class="pc-shop">Summit Auto Service</div>
+      <div class="pc-item">Brake pads, fitted &middot; Houston, TX</div>
+      <div class="pc-amt">$49.98</div>
+      <div class="pc-lbl">the price on the invoice</div>
+    </div>
+    <div id="deltaChip">+$2.50 &middot; 5.0%</div>
+    <div class="pricecard" id="stmtCard">
+      <div class="pc-shop">Card statement</div>
+      <div class="pc-item">SUMMIT AUTO SVC HOUSTON TX</div>
+      <div class="pc-amt" id="stmtAmt">$49.98</div>
+      <div class="pc-lbl">the amount that settled</div>
+    </div>
+  </div>
+  <div id="sAbig">The $2.50 nobody agreed to.</div>
+  <div id="sAsub">Charged to a debit card.</div>
+</section>
+
+<!-- sB : the rulebook, then the abuse -->
+<section class="scene" id="sB">
+  <div class="headline" id="sBh" style="opacity:0">Surcharging is allowed. On terms.</div>
+  <div id="ruleRow">
+    <div class="rflip" id="r1"><div class="rinner">
+      <div class="rface rfront"><div class="re">where</div><div class="rt">Some places ban it outright</div><div class="rs">EU consumer cards &middot; CT &middot; MA &middot; PR</div></div>
+      <div class="rface rback"><div class="re">the abuse</div><div class="rt">Surcharged anyway</div><div class="rs">fee applied in a banned jurisdiction</div></div>
+    </div></div>
+    <div class="rflip" id="r2"><div class="rinner">
+      <div class="rface rfront"><div class="re">which card</div><div class="rt">Credit only</div><div class="rs">never debit or prepaid, however it&rsquo;s routed</div></div>
+      <div class="rface rback"><div class="re">the abuse</div><div class="rt">Debit surcharged</div><div class="rs">run as &ldquo;credit&rdquo; to blur the line</div></div>
+    </div></div>
+    <div class="rflip" id="r3"><div class="rinner">
+      <div class="rface rfront"><div class="re">how much</div><div class="rt">Capped at 2&ndash;3%</div><div class="rs">or the cost of acceptance, whichever is lower</div></div>
+      <div class="rface rback"><div class="re">the abuse</div><div class="rt">5% charged</div><div class="rs">cap ignored, cost never calculated</div></div>
+    </div></div>
+    <div class="rflip" id="r4"><div class="rinner">
+      <div class="rface rfront"><div class="re">when</div><div class="rt">Disclosed before payment</div><div class="rs">signage at the door and the checkout</div></div>
+      <div class="rface rback"><div class="re">the abuse</div><div class="rt">Revealed at the terminal</div><div class="rs">no signage, no warning, no choice</div></div>
+    </div></div>
+  </div>
+  <div id="sBsub">Break any one of these, and a legal practice becomes abuse.</div>
+</section>
+
+<!-- sC : the record -->
+<section class="scene" id="sC">
+  <div class="headline" id="sCh" style="opacity:0">The clearing record has a field for this.</div>
+  <div class="pair">
+    <div class="payload" id="plTagged">
+      <div class="pbadge">AUDITABLE</div>
+      <div class="pl"><span class="pk">MERCHANT</span><span>SUMMIT AUTO SVC</span></div>
+      <div class="pl"><span class="pk">PRODUCT</span><span>CREDIT</span></div>
+      <div class="pl"><span class="pk">AMOUNT</span><span>51.48</span></div>
+      <div class="pl"><span class="pk">SURCHARGE</span><span class="okv">1.50</span></div>
+    </div>
+    <div class="payload" id="plHidden">
+      <div class="pbadge">INVISIBLE</div>
+      <div class="pl"><span class="pk">MERCHANT</span><span>SUMMIT AUTO SVC</span></div>
+      <div class="pl"><span class="pk">PRODUCT</span><span class="hotv">DEBIT</span></div>
+      <div class="pl"><span class="pk">AMOUNT</span><span class="hotv">52.48</span></div>
+      <div class="pl"><span class="pk">SURCHARGE</span><span class="hotv">&mdash;</span></div>
+    </div>
+  </div>
+  <div id="sCbig">The merchants who break the rules rarely fill it in.</div>
+</section>
+
+<!-- sD : approach A -->
+<section class="scene" id="sD">
+  <div class="eyebrow" id="sDe" style="opacity:0">approach a &middot; deterministic audit</div>
+  <div class="headline" id="sDh" style="opacity:0;margin-top:1.4vh">Where the field is tagged, it&rsquo;s arithmetic.</div>
+  <div class="pipe">
+    <div class="stagebox" id="dst1">
+      <div class="parsechip"><span>geography</span><span class="mono">TX &middot; US</span></div>
+      <div class="parsechip"><span>product</span><span class="mono">DEBIT</span></div>
+      <div class="parsechip"><span>amount</span><span class="mono">52.48</span></div>
+      <div class="parsechip"><span>surcharge</span><span class="mono">2.50</span></div>
+      <div class="stagelbl">parsed from clearing</div>
+    </div>
+    <div class="arrow" id="da1">&rarr;</div>
+    <div class="stagebox" id="dst2">
+      <div id="formulaCard">
+        2.50 &divide; (52.48 &minus; 2.50)<br>
+        <span class="fres" id="fres">= 5.0%</span>
+      </div>
+      <div class="stagelbl">effective surcharge</div>
+    </div>
+    <div class="arrow" id="da2">&rarr;</div>
+    <div class="stagebox" id="dst3">
+      <div id="checkCard">
+        <div class="cr"><span>product: DEBIT &rarr; prohibited</span><span class="failstamp">FAIL</span></div>
+        <div class="cr"><span>5.0% vs 3.0% cap</span><span class="failstamp">FAIL</span></div>
+        <div class="cr"><span>jurisdiction: TX &rarr; permitted</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--leaf);font-weight:600">PASS</span></div>
+      </div>
+      <div class="stagelbl">checked against local statute</div>
+    </div>
+  </div>
+</section>
+
+<!-- sE : approach B -->
+<section class="scene" id="sE">
+  <div class="eyebrow" id="sEe" style="opacity:0">approach b &middot; web evidence</div>
+  <div class="headline" id="sEh" style="opacity:0;margin-top:1.4vh">Where it isn&rsquo;t, the merchant usually tells on themselves.</div>
+  <div class="stage">
+    <div id="browser">
+      <div class="bbar">
+        <span class="bdot"></span><span class="bdot"></span><span class="bdot"></span>
+        <span class="burl">summitautoservice.com/checkout</span>
+      </div>
+      <div class="bbody">
+        <div class="bline w60"></div>
+        <div class="bline w85"></div>
+        <div class="bline w40"></div>
+        <div id="quoteLine">&ldquo;A 3% convenience fee applies to all card payments.&rdquo;</div>
+        <div class="bline w75"></div>
+        <div class="bline w40"></div>
+      </div>
+      <div id="scanBeam"></div>
+    </div>
+    <div id="evCol">
+      <div id="evChip"><div class="et">Their own words, on the record</div><div class="es">&ldquo;all card payments&rdquo; = debit included</div></div>
+      <div class="mrow"><span>disclosure: published</span><span class="pass">PASS</span></div>
+      <div class="mrow"><span>product scope: all cards</span><span class="fail">FAIL</span></div>
+      <div class="mrow"><span>fee label: &ldquo;convenience&rdquo;</span><span class="fail">FAIL</span></div>
+    </div>
+  </div>
+  <div id="sEbig">The claim is evidence. The test buy makes it proof.</div>
+</section>
+
+<!-- sF : test buy + verdict -->
+<section class="scene" id="sF">
+  <div class="headline" id="sFh" style="opacity:0">One audit transaction closes the case.</div>
+  <div class="stage">
+    <div id="testCard">
+      <div class="tc-e">third-party audit transaction</div>
+      <div class="tc-t">Test buy, debit card</div>
+      <div class="tc-rows">
+        <div><span>base amount</span><span>20.00</span></div>
+        <div><span>settled</span><span style="color:var(--oxide);font-weight:600">20.60</span></div>
+        <div><span>effective surcharge</span><span style="color:var(--oxide);font-weight:600">3.0% on debit</span></div>
+      </div>
+    </div>
+    <div id="caseCard">
+      <div class="cbanner">SEVERE VIOLATION &middot; CASE OPENED</div>
+      <div class="crow"><span class="ck">Merchant</span><span class="cv">Summit Auto Service</span></div>
+      <div class="crow"><span class="ck">Risk score</span><span id="riskN">0</span></div>
+      <div class="crow"><span class="ck">Primary violation</span><span class="cv" style="color:var(--oxide)">Debit surcharge</span></div>
+      <div class="crow"><span class="ck">Secondary</span><span class="cv">Exceeded cap &middot; mislabeled fee</span></div>
+    </div>
+    <div id="actions">
+      <div class="act"><span class="an">01</span> Warning letter to merchant and acquirer</div>
+      <div class="act"><span class="an">02</span> Fine and chargeback rights initiated</div>
+      <div class="act"><span class="an">03</span> Re-audit in 90 days</div>
+    </div>
+  </div>
+</section>
+
+<!-- sG : funnel -->
+<section class="scene" id="sG">
+  <div class="headline" id="sGh" style="opacity:0">Two roads in. One standard of proof.</div>
+  <div id="funnel">
+    <div class="fcard"><div class="fe">tagged data</div><div class="ft">Deterministic audit</div><div class="fn">rules, caps, product checks</div></div>
+    <div class="farrow">&rarr;</div>
+    <div class="fcard"><div class="fe">untagged data</div><div class="ft">Web evidence</div><div class="fn">the merchant&rsquo;s own disclosures</div></div>
+    <div class="farrow">&rarr;</div>
+    <div class="fcard"><div class="fe">verification</div><div class="ft">Audit transaction</div><div class="fn">true clearing data, captured</div></div>
+    <div class="farrow">&rarr;</div>
+    <div class="fcard"><div class="fe">outcome</div><div class="ft">Enforcement</div><div class="fn">warning, fine, re-audit</div></div>
+  </div>
+</section>
+
+<!-- end card -->
+<section class="scene" id="endCard">
+  <div class="wordmark">Straive</div>
+  <div class="tag">Every surcharge, checked against the rules that apply to it.</div>
+  <div class="caps">
+    <div class="cap">Deterministic transaction audits</div>
+    <div class="cap">GenAI web evidence</div>
+    <div class="cap">Audit transactions and enforcement</div>
+  </div>
+  <div class="replay">press space to replay</div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduced) gsap.globalTimeline.timeScale(6);
+gsap.defaults({ease:'power3.out'});
+const $ = s => document.querySelector(s);
+
+/* ---------- ambient background ---------- */
+(function(){
+  const bg = $('#bg');
+  const words = ['SURCHG 1.50 · CREDIT · PASS','SURCHG 2.10 · DEBIT · FAIL','CAP 3.0% · TX · US','PSD2 · CONSUMER · BAN',
+    'EFF 5.0% · OVER CAP','DISCLOSURE · NONE FOUND','AUDIT TXN · 20.60 · CAPTURED','FEE "CONVENIENCE" · REVIEW',
+    'DURBIN · DEBIT · PROHIBITED','RISK 87 · SEVERE','CT · MA · PR · BANNED','SURCHG — · AMT 52.48'];
+  for (let i = 0; i < 12; i++){
+    const t = document.createElement('div');
+    t.className = 'token'; t.textContent = words[i % words.length];
+    t.style.left = (4 + Math.random() * 90) + '%'; t.style.top = '105%';
+    bg.appendChild(t);
+    gsap.to(t, {y: -(innerHeight * 1.35), duration: 50 + Math.random() * 40, repeat: -1, ease: 'none', delay: -Math.random() * 70});
+  }
+  gsap.to('#blobA', {x:'7vw',  y:'5vh',  duration:26, yoyo:true, repeat:-1, ease:'sine.inOut'});
+  gsap.to('#blobB', {x:'-6vw', y:'-4vh', duration:31, yoyo:true, repeat:-1, ease:'sine.inOut'});
+  gsap.to('#blobC', {x:'-8vw', y:'6vh',  duration:23, yoyo:true, repeat:-1, ease:'sine.inOut'});
+})();
+
+const BG = {
+  neutral:{a:'#DCE8E1', b:'#E3E9F5', c:'#F3ECDF', ghost:0},
+  rules:  {a:'#D3E9DA', b:'#E7F0E9', c:'#F1EBD9', ghost:.3},
+  abuse:  {a:'#F2D8D3', b:'#EFE2E0', c:'#F6E3DC', ghost:.4},
+  record: {a:'#D6E1F5', b:'#E4EAF7', c:'#EDF1F8', ghost:.4},
+  audit:  {a:'#D5E0F6', b:'#DEF0E8', c:'#EAEDF6', ghost:.45},
+  web:    {a:'#DDEBE2', b:'#E2EAF4', c:'#EFEBDE', ghost:.4},
+  case:   {a:'#F4D8D2', b:'#EFE6E4', c:'#F3E9E2', ghost:.5},
+  brand:  {a:'#DAE4F8', b:'#E8EDF6', c:'#F1F0EA', ghost:0}
+};
+function bgTo(n){
+  const s = BG[n];
+  gsap.to('#blobA', {backgroundColor:s.a, duration:1.6, ease:'sine.inOut'});
+  gsap.to('#blobB', {backgroundColor:s.b, duration:1.6, ease:'sine.inOut'});
+  gsap.to('#blobC', {backgroundColor:s.c, duration:1.6, ease:'sine.inOut'});
+  gsap.to('#ghost', {opacity:s.ghost, duration:1.4});
+}
+function countTo(el, target, dur, fmt){
+  const o = {v: 0};
+  return gsap.to(o, {v: target, duration: dur, ease: 'power1.out',
+    onUpdate: () => { el.textContent = fmt ? fmt(o.v) : Math.floor(o.v).toLocaleString('en-US'); }});
+}
+
+/* ---------- scene driver ---------- */
+let current = null;
+function enter(tl, id, dur = .6){
+  if (current) tl.to(current, {autoAlpha:0, duration:.45, ease:'power2.in'}, 0);
+  tl.fromTo(id, {autoAlpha:0}, {autoAlpha:1, duration:dur}, current ? .35 : 0);
+  current = id;
+  return tl;
+}
+
+const steps = [
+
+/* 1 — the invoice */
+() => {
+  const tl = gsap.timeline();
+  enter(tl, '#sA');
+  tl.fromTo('#shelfCard', {autoAlpha:0, y:30, scale:.96}, {autoAlpha:1, y:0, scale:1, duration:.8});
+  return tl;
+},
+
+/* 2 — the statement, and the gap */
+() => {
+  const tl = gsap.timeline();
+  tl.fromTo('#stmtCard', {autoAlpha:0, y:30, scale:.96}, {autoAlpha:1, y:0, scale:1, duration:.8})
+    .add(countTo($('#stmtAmt'), 52.48, 1.2, v => '$' + v.toFixed(2)), '-=.3')
+    .fromTo('#deltaChip', {autoAlpha:0, scale:.5}, {autoAlpha:1, scale:1, duration:.5, ease:'back.out(2.2)'})
+    .fromTo('#sAbig', {autoAlpha:0, y:22}, {autoAlpha:1, y:0, duration:.8});
+  return tl;
+},
+
+/* 3 — the kicker */
+() => gsap.timeline()
+  .fromTo('#sAsub', {autoAlpha:0, y:14}, {autoAlpha:1, y:0, duration:.7}),
+
+/* 4 — the rulebook */
+() => {
+  bgTo('rules');
+  const tl = gsap.timeline();
+  enter(tl, '#sB');
+  tl.fromTo('#sBh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#ruleRow .rflip', {autoAlpha:0, y:26}, {autoAlpha:1, y:0, duration:.55, stagger:.16}, '-=.2');
+  return tl;
+},
+
+/* 5 — flip: banned places */
+() => {
+  bgTo('abuse');
+  return gsap.timeline().to('#r1 .rinner', {rotationY:180, duration:.9, ease:'power4.inOut'});
+},
+
+/* 6 — flip: debit */
+() => gsap.timeline().to('#r2 .rinner', {rotationY:180, duration:.9, ease:'power4.inOut'}),
+
+/* 7 — flip: the cap */
+() => gsap.timeline().to('#r3 .rinner', {rotationY:180, duration:.9, ease:'power4.inOut'}),
+
+/* 8 — flip: disclosure, and the point */
+() => gsap.timeline()
+  .to('#r4 .rinner', {rotationY:180, duration:.9, ease:'power4.inOut'})
+  .fromTo('#sBsub', {autoAlpha:0, y:12}, {autoAlpha:1, y:0, duration:.7}),
+
+/* 9 — the record */
+() => {
+  bgTo('record');
+  const tl = gsap.timeline();
+  enter(tl, '#sC');
+  tl.fromTo('#sCh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#plTagged', {autoAlpha:0, x:-26}, {autoAlpha:1, x:0, duration:.7}, '-=.25')
+    .fromTo('#plHidden', {autoAlpha:0, x:26}, {autoAlpha:1, x:0, duration:.7}, '-=.5')
+    .fromTo('#sCbig', {autoAlpha:0, y:16}, {autoAlpha:1, y:0, duration:.8});
+  return tl;
+},
+
+/* 10 — approach A: parse */
+() => {
+  bgTo('audit');
+  const tl = gsap.timeline();
+  enter(tl, '#sD');
+  tl.fromTo('#sDe', {autoAlpha:0}, {autoAlpha:1, duration:.5})
+    .fromTo('#sDh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7}, '-=.3')
+    .fromTo('#dst1', {autoAlpha:0}, {autoAlpha:1, duration:.4}, '-=.2')
+    .fromTo('#dst1 .parsechip', {autoAlpha:0, x:-18}, {autoAlpha:1, x:0, duration:.45, stagger:.13});
+  return tl;
+},
+
+/* 11 — approach A: the math and the verdicts */
+() => {
+  const tl = gsap.timeline();
+  tl.fromTo('#da1', {autoAlpha:0}, {autoAlpha:1, duration:.3})
+    .fromTo('#dst2', {autoAlpha:0, y:14}, {autoAlpha:1, y:0, duration:.5})
+    .fromTo('#fres', {scale:.6, autoAlpha:0}, {scale:1, autoAlpha:1, duration:.5, ease:'back.out(2)'}, '+=.3')
+    .fromTo('#da2', {autoAlpha:0}, {autoAlpha:1, duration:.3})
+    .fromTo('#dst3', {autoAlpha:0, y:14}, {autoAlpha:1, y:0, duration:.5})
+    .fromTo('#checkCard .failstamp', {autoAlpha:0, scale:.5}, {autoAlpha:1, scale:1, duration:.4, stagger:.35, ease:'back.out(2.5)'});
+  return tl;
+},
+
+/* 12 — approach B: the scan */
+() => {
+  bgTo('web');
+  const tl = gsap.timeline();
+  enter(tl, '#sE');
+  tl.fromTo('#sEe', {autoAlpha:0}, {autoAlpha:1, duration:.5})
+    .fromTo('#sEh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7}, '-=.3')
+    .fromTo('#browser', {autoAlpha:0, y:26}, {autoAlpha:1, y:0, duration:.8}, '-=.2')
+    .fromTo('#scanBeam', {autoAlpha:0}, {autoAlpha:1, duration:.2})
+    .to('#scanBeam', {top:250, duration:1.6, ease:'power1.inOut'})
+    .call(() => $('#quoteLine').classList.add('lit'), null, '-=.7')
+    .to('#scanBeam', {autoAlpha:0, duration:.3});
+  return tl;
+},
+
+/* 13 — approach B: evidence and mapping */
+() => gsap.timeline()
+  .fromTo('#evChip', {autoAlpha:0, x:26}, {autoAlpha:1, x:0, duration:.55, ease:'back.out(1.4)'})
+  .fromTo('.mrow', {autoAlpha:0, x:18}, {autoAlpha:1, x:0, duration:.45, stagger:.22})
+  .fromTo('#sEbig', {autoAlpha:0, y:14}, {autoAlpha:1, y:0, duration:.7}),
+
+/* 14 — the test buy */
+() => {
+  bgTo('case');
+  const tl = gsap.timeline();
+  enter(tl, '#sF');
+  tl.fromTo('#sFh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#testCard', {autoAlpha:0, y:26}, {autoAlpha:1, y:0, duration:.7}, '-=.2');
+  return tl;
+},
+
+/* 15 — the verdict */
+() => {
+  const tl = gsap.timeline();
+  tl.fromTo('#caseCard', {autoAlpha:0, y:26, scale:.97}, {autoAlpha:1, y:0, scale:1, duration:.7})
+    .add(countTo($('#riskN'), 87, 1.4, v => Math.floor(v)), '-=.3');
+  return tl;
+},
+
+/* 16 — the action plan */
+() => gsap.timeline()
+  .fromTo('#actions .act', {autoAlpha:0, x:24}, {autoAlpha:1, x:0, duration:.5, stagger:.22}),
+
+/* 17 — the funnel */
+() => {
+  const tl = gsap.timeline();
+  enter(tl, '#sG');
+  tl.fromTo('#sGh', {autoAlpha:0, y:-14}, {autoAlpha:1, y:0, duration:.7})
+    .fromTo('#funnel .fcard', {autoAlpha:0, y:24}, {autoAlpha:1, y:0, duration:.55, stagger:.22}, '-=.2')
+    .fromTo('#funnel .farrow', {autoAlpha:0}, {autoAlpha:1, duration:.4, stagger:.22}, '-=1.4');
+  return tl;
+},
+
+/* 18 — Straive */
+() => {
+  bgTo('brand');
+  const tl = gsap.timeline();
+  enter(tl, '#endCard');
+  tl.fromTo('#endCard .wordmark', {autoAlpha:0, y:26}, {autoAlpha:1, y:0, duration:.9})
+    .fromTo('#endCard .tag', {autoAlpha:0, y:16}, {autoAlpha:1, y:0, duration:.7}, '-=.4')
+    .fromTo('#endCard .cap', {autoAlpha:0, y:14}, {autoAlpha:1, y:0, duration:.5, stagger:.14}, '-=.2')
+    .fromTo('#endCard .replay', {autoAlpha:0}, {autoAlpha:1, duration:.6}, '+=.3');
+  return tl;
+}
+];
+
+/* ---------- driver ---------- */
+let idx = 0, activeTl = null, started = false;
+function updateBar(){ $('#progressBar').style.width = (idx / steps.length * 100) + '%'; }
+function next(){
+  if (activeTl && activeTl.isActive()){ activeTl.progress(1); return; }
+  if (idx >= steps.length){ location.reload(); return; }
+  if (!started){ started = true; gsap.to('#hint', {autoAlpha:.4, duration:.5}); }
+  activeTl = steps[idx++]();
+  updateBar();
+}
+addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'ArrowRight' || e.code === 'Enter'){ e.preventDefault(); next(); }
+});
+addEventListener('click', next);
+addEventListener('touchend', e => { e.preventDefault(); next(); }, {passive:false});
+next();
+</script>
+</body>
+</html>

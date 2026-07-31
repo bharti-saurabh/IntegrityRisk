@@ -45,7 +45,7 @@ const ANATOMIES: Anatomy[] = [
   },
   {
     key: "surcharge",
-    file: "surcharge_anatomy3.html",
+    file: "surcharge_abuse_anatomy.html",
     eyebrow: "Fee-integrity typology",
     title: "Card Surcharge Abuse",
     blurb:

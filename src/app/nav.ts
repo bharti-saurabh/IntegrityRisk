@@ -15,9 +15,12 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/anatomy", label: "Anatomy", icon: "Fingerprint", group: "Overview", personas: ["executive", "analyst"] },
   { to: "/mcc", label: "MCC Miscoding Models", icon: "ScanSearch", group: "Typologies", personas: ["analyst"] },
   { to: "/surcharge", label: "Card Surcharge", icon: "BadgePercent", group: "Typologies" },
-  // MCC Abuse, Split-Ticketing and Cash-Disbursement retired from the nav — the demo
-  // is scoped to the two typologies with a live console + anatomy. Their routes
+  // Kept visible but disabled ("Soon") — these three typologies aren't wired to a
+  // live console yet, so their nav entries render non-clickable and their routes
   // redirect to the Command Center (see App.tsx).
+  { to: "/mcc-abuse", label: "MCC Abuse", icon: "Repeat", group: "Typologies", disabled: true },
+  { to: "/split", label: "Split-Ticketing", icon: "Scissors", group: "Typologies", disabled: true },
+  { to: "/cash", label: "Cash Disbursement", icon: "Banknote", group: "Typologies", disabled: true },
   { to: "/models", label: "Model Store", icon: "Boxes", group: "Models", personas: ["data-scientist", "executive"] },
   { to: "/rules", label: "Rules Engine", icon: "Filter", group: "Models" },
 ];
